@@ -7,6 +7,11 @@ const facultySchema = new mongoose.Schema({
     required:true
   },
 
+  college:{
+    type:String,
+    required:true
+  },
+
   department:{
     type:String,
     required:true
@@ -70,9 +75,15 @@ const facultySchema = new mongoose.Schema({
     ref:"Faculty"
   }],
 
-    rejectedApprovals:[{
-    type:mongoose.Schema.Types.ObjectId,
-    ref:"Faculty"
+    rejectedApprovals: [{
+    name: String,
+    email: String,
+    department: String,
+    rejectedReason: String,
+    rejectedAt: {
+      type: Date,
+      default: Date.now
+    }
   }],
 
   superAdminRole:{
