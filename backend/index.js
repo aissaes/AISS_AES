@@ -21,14 +21,16 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
   "https://aiss-aes-8ju1.vercel.app",
-    'http://localhost:5173',
-          'https://aiss-aes-8ju1.vercel.app' // local React dev
+  'http://localhost:5173',
+  'https://aiss-aes-8ju1.vercel.app' // local React dev
 ];
+
 
 app.use(cors({
   origin: allowedOrigins,
   credentials: true
 }));
+
 
 app.use(express.json());
 app.use(cookieParser());
