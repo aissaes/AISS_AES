@@ -11,6 +11,7 @@ import facultyAuthRouter from "./routes/facultyAuth.js";
 import facultyRouter from "./routes/facultyRoutes.js";
 import hodRouter from "./routes/hodRoutes.js";
 import superAdminRouter from "./routes/superAdminRoutes.js";
+import institutionRoute from "./routes/institutionRoutes.js";
 
 dotenv.config();
 
@@ -19,7 +20,9 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
-  "https://aiss-aes-8ju1.vercel.app"
+  "https://aiss-aes-8ju1.vercel.app",
+    'http://localhost:5173',
+          'https://aiss-aes-8ju1.vercel.app' // local React dev
 ];
 
 app.use(cors({
@@ -39,8 +42,19 @@ app.use(async (req, res, next) => {
 // routes
 app.use("/faculty/auth", facultyAuthRouter);
 app.use("/faculty", facultyRouter);
+
 app.use("/faculty/hod", hodRouter);
+
 app.use("/faculty/superadmin", superAdminRouter);
+
+app.use("/faculty/hod",hodRouter);
+app.use("/faculty/superadmin",superAdminRouter);
+app.use('/institute',institutionRoute);
+
+// app.use("/faculty/timetable", timetableRoutes);
+// app.use("/faculty/question-paper", questionPaperRoutes);
+
+
 
 // Local dev server — Vercel uses the export below instead
 const PORT = process.env.PORT || 5000;
