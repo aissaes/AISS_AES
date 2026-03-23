@@ -14,12 +14,13 @@ import sendEmail from "./configurations/nodemailer.js";
 
 // Routes imports
 import facultyAuthRouter from "./routes/facultyAuth.js";
+import overallAdminAuthRouter from "./routes/overallAdminAuth.js";
+import overallAdminRouter from "./routes/overallAdminRoutes.js";
 import facultyRouter from "./routes/facultyRoutes.js";
 import hodRouter from "./routes/hodRoutes.js";
-import superAdminRouter from "./routes/superAdminRoutes.js";
-
-// import timetableRoutes from "./routes/timeTableRoutes.js";
-// import questionPaperRoutes from "./routes/questionPaperRoutes.js";
+import collegeAdminRouter from "./routes/collegeAdminRoutes.js";
+import timetableRoutes from "./routes/timeTableRoutes.js";
+import questionPaperRoutes from "./routes/questionPaperRoutes.js";
 
 const PORT = 5000;
 connectDB();
@@ -42,10 +43,14 @@ app.use(cookieParser());
 app.use("/faculty/auth", facultyAuthRouter);
 app.use("/faculty", facultyRouter);
 app.use("/faculty/hod",hodRouter);
-app.use("/faculty/superadmin",superAdminRouter);
+app.use("/faculty/collegeadmin",collegeAdminRouter);
+app.use("/faculty/timetable", timetableRoutes);
+app.use("/faculty/question-paper", questionPaperRoutes);
 
-// app.use("/faculty/timetable", timetableRoutes);
-// app.use("/faculty/question-paper", questionPaperRoutes);
+app.use("/overallAdmin/auth", overallAdminAuthRouter);
+app.use("/overallAdmin", overallAdminRouter);
+
+
 
 
 

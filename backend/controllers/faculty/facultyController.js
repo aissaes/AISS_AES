@@ -69,7 +69,45 @@ export const updateProfile = async (req, res) => {
   }
 };
 
+// password changing
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
 
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "Please provide both your current and new password." });
+    }
+
+    // 1. Fetch the user (we need the password hash, so we don't use .select("-password") here!)
+    const faculty = await Faculty.findById(req.user.id);
+    if (!faculty) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // 2. Verify the current password
+    const isMatch = await bcrypt.compare(currentPassword, faculty.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Incorrect current password. Password change denied." });
+    }
+
+    // 3. Prevent changing to the exact same password
+    const isSamePassword = await bcrypt.compare(newPassword, faculty.password);
+    if (isSamePassword) {
+      return res.status(400).json({ message: "New password cannot be the same as the old password." });
+    }
+
+    // 4. Hash and save the new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    faculty.password = hashedNewPassword;
+    await faculty.save();
+
+    res.status(200).json({ message: "Password changed successfully." });
+
+  } catch (error) {
+    console.error("Error changing password:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message });
+  }
+};
 
 
 // Fetch lists of pending, approved, and rejected faculty By Hod or super admin
@@ -81,8 +119,8 @@ export const getFacultyApprovedList = async (req, res) => {
     // Find the logged-in HOD/SuperAdmin and populate the references
     // We only select the fields we actually need to show on the frontend card/table
     const admin = await Faculty.findById(adminId)
-      .populate("pendingApprovals", "name email department phone college")
-      .populate("acceptedApprovals", "name email department phone college");
+      .populate("pendingApprovals", "name email department phone collegeId")
+      .populate("acceptedApprovals", "name email department phone collegeId");
 
     if (!admin) {
       return res.status(404).json({ message: "Admin user not found" });
@@ -206,7 +244,7 @@ export const getDepartmentFaculty = async (req, res) => {
 
     // Fetch all approved faculty in that specific department
     const deptFaculty = await Faculty.find({
-      college: currentUser.college,
+      collegeId: currentUser.collegeId,
       department: targetDepartment,
       isApproved: true,
       role: { $in: ["faculty", "hod"] } // Exclude the super admin from this list

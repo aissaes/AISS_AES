@@ -7,11 +7,12 @@ const facultySchema = new mongoose.Schema({
     required:true
   },
 
-  college:{
-    type:String,
-    required:true
+  collegeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "College",
+    required: true,
+    index: true
   },
-
   department:{
     type:String,
     required:true
@@ -36,7 +37,7 @@ const facultySchema = new mongoose.Schema({
   // role system
   role:{
     type:String,
-    enum:["faculty","hod","superAdmin"],
+    enum:["faculty","hod","collegeAdmin"],
     default:"faculty"
   },
 
@@ -86,7 +87,7 @@ const facultySchema = new mongoose.Schema({
     }
   }],
 
-  superAdminRole:{
+  collegeAdminRole:{
     type:String,
     default:"Dean"
   }

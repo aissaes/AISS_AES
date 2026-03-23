@@ -1,18 +1,30 @@
-// import express from "express";
-// import { verifyToken } from "../middlewares/authMiddleware.js";
-// import { isHOD } from "../middlewares/roleMiddleware.js";
-// import { uploadQuestionPaper, viewQuestionPaper, getMyAssignedExams, getMyPreparedPapers } from "../controllers/questionPaper.js";
+import express from "express";
+import { verifyToken } from "../middlewares/authMiddleware.js";
+import { isHOD,isHODOrCollegeAdmin } from "../middlewares/roleMiddleware.js";
+import { 
+  uploadQuestionPaper, 
+  getFacultyAssignments, 
+  getPendingPapers, 
+  getApprovedPapers,
+  reviewQuestionPaper,
+  getQuestionPaperById,
+  updateQuestionPaper
+} from "../controllers/questionPaperController.js";
 
-// const questionRouter = express.Router();
+const questionPaperRouter = express.Router();
 
-// // Any authenticated faculty can view their exams and upload papers
-// questionRouter.get("/my-exams", verifyToken, getMyAssignedExams);
+// --- faculty ROUTES ---
+questionPaperRouter.get("/assignments", verifyToken, getFacultyAssignments);
+questionPaperRouter.post("/upload", verifyToken, uploadQuestionPaper);
+questionPaperRouter.put("/update/:paperId", verifyToken, updateQuestionPaper);
 
-// // Fetch completed exams (paper already uploaded)
-// questionRouter.get("/history", verifyToken, getMyPreparedPapers);
+// --- HOD ROUTES ---
+questionPaperRouter.get("/pending", verifyToken, isHOD, getPendingPapers);
+questionPaperRouter.get("/approved", verifyToken , getApprovedPapers);
 
-// questionRouter.get("/view/:examId", verifyToken, isHOD, viewQuestionPaper);
+questionPaperRouter.put("/review/:paperId", verifyToken, isHOD, reviewQuestionPaper);
 
-// questionRouter.post("/upload", verifyToken, uploadQuestionPaper);
+// --- SHARED ROUTES (Teachers & HODs) ---
+questionPaperRouter.get("/:paperId", verifyToken, isHODOrCollegeAdmin, getQuestionPaperById);
 
-// export default questionRouter;  
+export default questionPaperRouter;
