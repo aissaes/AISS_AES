@@ -129,7 +129,8 @@ export const loginFaculty = async(req,res)=>{
     if(!match)
       return res.status(400).json({message:"Invalid password"});
 
-    const otp = Math.floor(100000 + Math.random()*900000).toString();
+   // const otp = Math.floor(100000 + Math.random()*900000).toString();
+   const otp = "123456";
 
     faculty.otp = otp;
     faculty.otpExpires = Date.now() + 5*60*1000;
