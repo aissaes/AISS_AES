@@ -1,5 +1,9 @@
 import College from "../models/college.js";
 import crypto from "crypto";
+import Faculty from "../models/faculty.js";
+import bcrypt from "bcryptjs";
+import OverallAdmin from "../models/overallAdmin.js";
+import sendEmail from "../configurations/nodemailer.js";
 
 // 1. Fetch all colleges (ID and Name only) for the frontend dropdown
 export const getAllCollegesList = async (req, res) => {
@@ -32,9 +36,9 @@ export const getCollegeDepartments = async (req, res) => {
 };
 
 // POST: Public route for the landing page form
+// POST: Public route for the landing page form
 export const collegeRegisterRequest = async (req, res) => {
   try {
-    // REMOVED 'password' from req.body
     const { collegeName, location, departments, adminName, adminEmail, adminPhone } = req.body;
 
     if (!collegeName || !adminName || !adminEmail) {
@@ -58,14 +62,14 @@ export const collegeRegisterRequest = async (req, res) => {
       location,
       departments,
       collegeAdminId: null,
-      status: "Pending" // Assuming you added this to your schema!
+      status: "Pending"
     });
 
     // 4. Create the Admin (isApproved: false)
     const newAdmin = await Faculty.create({
       name: adminName,
       email: adminEmail,
-      password: hashedDummy, // Assigned the locked dummy password
+      password: hashedDummy,
       collegeId: newCollege._id,
       department: "Administration",
       phone: adminPhone,
@@ -76,6 +80,23 @@ export const collegeRegisterRequest = async (req, res) => {
     // 5. Link them
     newCollege.collegeAdminId = newAdmin._id;
     await newCollege.save();
+
+    // 6. Notify the Overall Admin via Email
+    try {
+      // Find the master admin account
+      const masterAdmin = await OverallAdmin.findOne(); 
+      
+      if (masterAdmin && masterAdmin.email) {
+        await sendEmail(
+          masterAdmin.email,
+          "Action Required: New College Registration - AISS Platform",
+          `Hello ${masterAdmin.name},\n\nA new college has just requested to join the AISS platform.\n\nCollege Details:\n- College Name: ${collegeName}\n- Location: ${location || 'Not provided'}\n- Applicant Name: ${adminName}\n- Applicant Email: ${adminEmail}\n\nPlease log in to your Overall Admin dashboard to review and approve/reject this request.\n\nBest Regards,\nThe AISS System`
+        );
+      }
+    } catch (emailError) {
+      console.error("Failed to send notification email to overall admin:", emailError);
+      // We don't throw the error here so the user still gets a success response!
+    }
 
     res.status(201).json({ message: "Request submitted successfully! Waiting for Overall Admin approval." });
 
