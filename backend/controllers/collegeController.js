@@ -1,5 +1,7 @@
 import College from "../models/college.js";
 import crypto from "crypto";
+import Faculty from "../models/faculty.js";
+import bcrypt from "bcryptjs";
 
 // 1. Fetch all colleges (ID and Name only) for the frontend dropdown
 export const getAllCollegesList = async (req, res) => {
