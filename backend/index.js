@@ -1,6 +1,7 @@
+import "dotenv/config"; 
+
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 
 import connectDB from "./configurations/database.js";
@@ -17,16 +18,15 @@ import timetableRoutes from "./routes/timeTableRoutes.js";
 import questionPaperRoutes from "./routes/questionPaperRoutes.js";
 import collegeRouter from "./routes/collegeRoutes.js";
 
-
-dotenv.config();
-
+// You no longer need dotenv.config() down here.
 const app = express();
 
 // updated CORS array for local & Vercel
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
-  "https://aiss-aes-8ju1.vercel.app"
+  "https://aiss-aes-8ju1.vercel.app",
+  "https://aiss-aes-frontend.vercel.app"
 ];
 
 app.use(cors({
