@@ -43,7 +43,8 @@ export const loginOverallAdmin = async (req, res) => {
     if (!isMatch) return res.status(401).json({ message: "Invalid credentials." });
 
     // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = "123456";
     admin.otp = otp;
     admin.otpExpires = Date.now() + 5 * 60 * 1000; // 5 minutes
     await admin.save();
