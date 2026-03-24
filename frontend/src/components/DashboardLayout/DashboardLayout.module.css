@@ -1,0 +1,571 @@
+/* ══════════════════════════════════════════════════════
+   DashboardLayout.module.css
+   Merged from:
+     - DashboardLayout.css (old layout styles)
+     - HODDashboard.css    (old card / table patterns)
+     - global index.css    (old animation / token patches)
+══════════════════════════════════════════════════════ */
+
+/* ── Page loader ── */
+.loader {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: var(--bg-page);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(99, 102, 241, 0.15);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loaderText {
+  font-size: 0.88rem;
+  color: var(--text-2);
+  letter-spacing: 0.04em;
+}
+
+/* ══════════════════════════════════════════════════════
+   SHELL
+══════════════════════════════════════════════════════ */
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ══════════════════════════════════════════════════════
+   SIDEBAR
+   Merged from old .sidebar, .sidebarHeader,
+   .sidebarBrand, .navLinks, .sidebarFooter
+══════════════════════════════════════════════════════ */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-base);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  inset-block: 0;
+  left: 0;
+  z-index: 200;
+  overflow: hidden;
+  /* Old pattern: backdrop-filter for glass feel */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Brand row — from old .sidebarBrand / .sidebarHeader */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 20px 18px;
+  border-bottom: 1px solid var(--border-base);
+  flex-shrink: 0;
+  /* Old pattern: slide-down animation on mount */
+  animation: slideDown 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+.brandIcon {
+  width: 33px;
+  height: 33px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), #7c3aed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 4px 16px var(--accent-glow);
+  flex-shrink: 0;
+}
+
+.brandName {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--text-1);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.brandSub {
+  font-size: 0.64rem;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  margin-top: 1px;
+}
+
+/* View-mode banner (when superAdmin views hod/faculty UI) */
+.viewModeBanner {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 16px;
+  font-size: 0.75rem;
+  color: var(--warning);
+  background: rgba(245, 158, 11, 0.08);
+  border-bottom: 1px solid rgba(245, 158, 11, 0.18);
+  flex-shrink: 0;
+}
+.viewModeBanner strong { color: #fbbf24; }
+
+/* ── Nav ── */
+.nav {
+  flex: 1;
+  padding: 12px 10px;
+  overflow-y: auto;
+}
+
+.navList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* From old .navItem — keeping same semantic, better styling */
+.navItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-2);
+  font-size: 0.865rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  text-align: left;
+  position: relative;
+  /* From old: matches .navLinks a hover behaviour */
+}
+
+.navItem:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-1);
+}
+
+.navActive {
+  background: rgba(99, 102, 241, 0.1) !important;
+  border-color: rgba(99, 102, 241, 0.18) !important;
+  color: var(--accent-light) !important;
+}
+
+.navIcon  { flex-shrink: 0; display: flex; }
+.navLabel { flex: 1; }
+
+.navPip {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  flex-shrink: 0;
+}
+
+/* Pending approval badge on nav item */
+.navBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 100px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0 5px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(239,68,68,0.4);
+  animation: badgePop 0.3s var(--spring) both;
+}
+
+@keyframes badgePop {
+  from { transform: scale(0.5); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+/* Notification bell in topbar */
+.bellWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  color: var(--text-2);
+  cursor: default;
+}
+
+.bellBadge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 100px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  box-shadow: 0 2px 8px rgba(239,68,68,0.4);
+  animation: badgePop 0.3s var(--spring) both;
+}
+
+/* ══════════════════════════════════════════════════════
+   ROLE SWITCHER — new sidebar section
+   (SuperAdmin / HOD switching views)
+══════════════════════════════════════════════════════ */
+.switcherSection {
+  padding: 10px 10px;
+  border-top: 1px solid var(--border-base);
+  flex-shrink: 0;
+}
+
+.switcherHeading {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0 4px;
+  margin-bottom: 6px;
+}
+
+.switchBtns {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.switchBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 11px;
+  border-radius: 8px;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-3);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  width: 100%;
+}
+.switchBtn:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-2);
+}
+.switchBtnActive {
+  background: rgba(99, 102, 241, 0.08) !important;
+  border-color: rgba(99, 102, 241, 0.18) !important;
+  color: var(--accent-light) !important;
+}
+
+/* ── User card + Logout ── */
+.sidebarBottom {
+  border-top: 1px solid var(--border-base);
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.userCard {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-base);
+}
+
+.userAvatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #7c3aed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.userName {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Role pill — merged from old .userRole + new badge patterns */
+.rolePill {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 100px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border: 1px solid;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  width: fit-content;
+}
+
+.badgeSA      { background: rgba(167,139,250,0.12); border-color: rgba(167,139,250,0.3); color: #c4b5fd; }
+.badgeHOD     { background: rgba(99,102,241,0.12);  border-color: rgba(99,102,241,0.28); color: var(--accent-light); }
+.badgeFaculty { background: rgba(148,163,184,0.1);  border-color: rgba(148,163,184,0.2); color: var(--text-2); }
+
+/* Logout btn — from old .logoutBtn */
+.logoutBtn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  border-radius: 9px;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--danger);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  width: 100%;
+}
+.logoutBtn:hover {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.18);
+}
+
+/* ══════════════════════════════════════════════════════
+   MAIN AREA
+   Merged from old .mainContent + .contentArea
+══════════════════════════════════════════════════════ */
+.main {
+  flex: 1;
+  margin-left: var(--sidebar-w);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ── Topbar — from old .topbar, .topbarLeft, .topbarRight ── */
+.topbar {
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 30px;
+  border-bottom: 1px solid var(--border-base);
+  background: rgba(8, 14, 28, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-shrink: 0;
+  gap: 16px;
+}
+
+.topbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.topbarIcon { color: var(--accent-light); opacity: 0.65; flex-shrink: 0; }
+
+.pageTitle {
+  font-size: 0.97rem;
+  font-weight: 600;
+  color: var(--text-1);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+/* "viewing as" badge in topbar */
+.viewingBadge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 10px;
+  padding: 2px 9px;
+  border-radius: 100px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.22);
+  color: #fbbf24;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.topbarRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* Quick-switch dropdown in topbar */
+.quickSwitch {
+  position: relative;
+}
+
+.quickSwitchBtn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 8px;
+  color: var(--accent-light);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+.quickSwitchBtn:hover {
+  background: rgba(99, 102, 241, 0.14);
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+.chevronOpen { transform: rotate(180deg); }
+
+.quickSwitchMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 185px;
+  background: #0c1428;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 11px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  z-index: 500;
+  animation: dropIn 0.16s ease forwards;
+}
+
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.quickSwitchItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  color: var(--text-2);
+  font-size: 0.84rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.14s, color 0.14s;
+  text-align: left;
+}
+.quickSwitchItem:hover {
+  background: rgba(99, 102, 241, 0.08);
+  color: var(--text-1);
+}
+.quickSwitchItemActive {
+  background: rgba(99, 102, 241, 0.1) !important;
+  color: var(--accent-light) !important;
+}
+
+.activeCheck {
+  margin-left: auto;
+  color: var(--success);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* Topbar user info — from old .userInfoRight */
+.topbarMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.topbarName {
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--text-1);
+  white-space: nowrap;
+}
+
+.topbarRole {
+  font-size: 0.67rem;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.topbarAvatar {
+  width: 33px;
+  height: 33px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #7c3aed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.83rem;
+  font-weight: 800;
+  color: #fff;
+  box-shadow: 0 2px 10px var(--accent-glow);
+  flex-shrink: 0;
+}
+
+/* ── Content area — from old .contentArea ── */
+.content {
+  flex: 1;
+  padding: 28px 30px;
+  animation: pageIn 0.3s ease forwards;
+}
+
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}

@@ -1,9 +1,16 @@
 import React from 'react';
+import { BrowserRouter } from 'react-router-dom';
+import { ToastProvider } from './components/Toast/Toast';
+import AppRoutes from './routes/AppRoutes';
 
-const App=()=>{
+function App() {
   return (
-    <h1>Salam valekumm lyaarrriii</h1>
-  )
+    <BrowserRouter>
+      <ToastProvider>
+        <AppRoutes />
+      </ToastProvider>
+    </BrowserRouter>
+  );
 }
 
 export default App;
