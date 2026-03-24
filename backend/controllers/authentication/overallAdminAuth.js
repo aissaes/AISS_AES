@@ -53,7 +53,7 @@ export const loginOverallAdmin = async (req, res) => {
       "AISS Platform - Admin Login OTP",
       `Hello ${admin.name},
       
-       Your master admin login OTP is: ${otp}
+       Your overall admin login OTP is: ${otp}
        
        This is valid for 5 minutes. Do not share this with anyone.`
     );

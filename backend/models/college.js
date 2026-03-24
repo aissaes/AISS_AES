@@ -15,7 +15,12 @@ const collegeSchema = new mongoose.Schema({
   collegeAdminId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Faculty" // Links to the person running this specific college
-  }
+  },
+  status: { 
+    type: String, 
+    enum: ["Pending", "Approved"], 
+    default: "Pending" 
+  },
 }, { timestamps: true });
 
 const College = mongoose.model("College", collegeSchema);
