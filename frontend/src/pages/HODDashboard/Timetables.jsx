@@ -74,7 +74,21 @@ const Timetables = () => {
 
     setCreating(true);
     try {
-      await timetableAPI.create(formData);
+      // Create a formatted payload for Mongoose
+      const payload = {
+        course: formData.course,
+        semester: formData.semester,
+        examType: formData.examType,
+        exams: formData.examDetails.map(exam => ({
+          ...exam,
+          date: new Date(exam.date),
+          startTime: new Date(`${exam.date}T${exam.startTime}:00`),
+          endTime: new Date(`${exam.date}T${exam.endTime}:00`),
+          maxMarks: Number(exam.maxMarks)
+        }))
+      };
+
+      await timetableAPI.create(payload);
       toast('Timetable created! Assigned faculty have been notified via email.', 'success');
       setCreateModal(false);
       resetCreateForm();
@@ -101,7 +115,16 @@ const Timetables = () => {
     }
     setAddingExam(true);
     try {
-      await timetableAPI.addExam(addExamModal.timetableId, newExam);
+      // Create a formatted payload for Mongoose
+      const payload = {
+        ...newExam,
+        date: new Date(newExam.date),
+        startTime: new Date(`${newExam.date}T${newExam.startTime}:00`),
+        endTime: new Date(`${newExam.date}T${newExam.endTime}:00`),
+        maxMarks: Number(newExam.maxMarks)
+      };
+
+      await timetableAPI.addExam(addExamModal.timetableId, payload);
       toast('Exam added! The assigned faculty has been notified.', 'success');
       setAddExamModal({ open: false, timetableId: null, timetableName: '' });
       setNewExam({ subjectName: '', subjectCode: '', date: '', startTime: '', endTime: '', maxMarks: 30, assignedFaculty: '' });

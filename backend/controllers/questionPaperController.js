@@ -201,25 +201,47 @@ export const getQuestionPaperById = async (req, res) => {
   try {
     const { paperId } = req.params;
 
+    // 1. Safely extract the logged-in user's ID directly from the token payload
+    const userId = req.user.id || req.user._id;
+    const userIdString = userId.toString();
+
+    // 2. Fetch the paper
     const paper = await QuestionPaper.findById(paperId)
       .populate("examId", "subjectName subjectCode date maxMarks duration")
       .populate("createdBy", "name email");
 
     if (!paper) return res.status(404).json({ message: "Question paper not found" });
 
-    // Security check: Only allow the author, the HOD, or the College Admin to view it
-    const user = await Faculty.findById(req.user.id);
-    const isAuthor = paper.createdBy._id.toString() === req.user.id;
-    const isAuthorizedAdmin = (user.role === "hod" || user.role === "collegeAdmin") && user.collegeId.toString() === paper.collegeId.toString(); 
+    // 3. Fetch the logged-in user's profile to check their role and college
+    const user = await Faculty.findById(userIdString);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
+    // 4. Safely extract the paper author's ID (handles both populated and unpopulated states)
+    const authorIdString = paper.createdBy._id ? paper.createdBy._id.toString() : paper.createdBy.toString();
+
+    // --- SECURITY CHECKS ---
+    
+    // Check A: Is this the person who wrote the paper?
+    const isAuthor = authorIdString === userIdString;
+
+    // Check B: Is this an HOD or College Admin from the SAME college?
+    const paperCollegeIdString = paper.collegeId ? paper.collegeId.toString() : "";
+    const userCollegeIdString = user.collegeId ? user.collegeId.toString() : "";
+    
+    const isAuthorizedAdmin = (user.role === "hod" || user.role === "collegeAdmin") && 
+                              (userCollegeIdString === paperCollegeIdString); 
+
+    // If they aren't the author, AND they aren't the boss... block them.
     if (!isAuthor && !isAuthorizedAdmin) {
+       console.log(`[Auth Block] User ${userIdString} tried to access Paper ${paperId}`);
        return res.status(403).json({ message: "Unauthorized to view this paper" });
     }
 
+    // 5. Success! Send the paper.
     res.status(200).json({ paper });
   } catch (error) {
     console.error("Error fetching question paper:", error);
-    res.status(500).json({ message: "Internal server error", error });
+    res.status(500).json({ message: "Internal server error", error: error.message });
   }
 };
 

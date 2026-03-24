@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import {
   Home, Settings as SettingsIcon, Building2, CheckCircle2, Clock,
   RefreshCw, Shield, ArrowRightLeft, AlertTriangle, MapPin,
@@ -18,16 +18,33 @@ const AdminHome = () => {
   const [activeColleges, setActiveColleges]   = useState([]);
   const [loading, setLoading]                 = useState(true);
   const [approvingId, setApprovingId]         = useState(null);
+  const [selectedCollege, setSelectedCollege] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [pendingRes, activeRes] = await Promise.all([
-        overallAdminAPI.getPendingColleges().catch(() => ({ data: { colleges: [] } })),
+        overallAdminAPI.getPendingColleges().catch((err) => {
+          console.error("API Error (Pending):", err);
+          return { data: { colleges: null } };
+        }),
         collegeAPI.getList().catch(() => ({ data: { colleges: [] } }))
       ]);
-      setPendingColleges(Array.isArray(pendingRes.data?.colleges) ? pendingRes.data.colleges : []);
-      setActiveColleges(Array.isArray(activeRes.data?.colleges) ? activeRes.data.colleges : []);
+
+      let pendingList = Array.isArray(pendingRes.data?.colleges) ? pendingRes.data.colleges : [];
+      let activeList = Array.isArray(activeRes.data?.colleges) ? activeRes.data.colleges : [];
+
+      // Fallback: If pending API fails, extract pending colleges from the active list
+      if (!pendingRes.data?.colleges) {
+        pendingList = activeList.filter(college => college.status === 'Pending' || college.status === 'pending');
+      }
+
+      // Strict Filter: Ensure active list has NO pending colleges
+      const pendingIds = new Set(pendingList.map(c => c._id));
+      activeList = activeList.filter(college => !pendingIds.has(college._id) && college.status !== 'Pending' && college.status !== 'pending');
+
+      setPendingColleges(pendingList);
+      setActiveColleges(activeList);
     } catch {
       toast('Failed to load platform data.', 'error');
     } finally {
@@ -159,7 +176,12 @@ const AdminHome = () => {
         ) : (
           <div className={styles.collegeGrid}>
             {activeColleges.map(college => (
-              <div key={college._id} className={styles.collegeCard} style={{ borderColor: 'var(--success-border)', background: 'var(--bg-1)' }}>
+              <div 
+                key={college._id} 
+                className={styles.collegeCard} 
+                style={{ borderColor: 'var(--success-border)', background: 'var(--bg-1)', cursor: 'pointer', transition: 'all 0.2s' }}
+                onClick={() => setSelectedCollege(college)}
+              >
                 <div className={styles.collegeHeader}>
                   <div className={styles.collegeIcon} style={{ background: 'var(--success-dim)', color: 'var(--success)' }}><Library size={20} /></div>
                   <div>
@@ -178,6 +200,59 @@ const AdminHome = () => {
           </div>
         )}
       </div>
+
+      {/* Active College Details Modal */}
+      <Modal 
+        isOpen={!!selectedCollege} 
+        onClose={() => setSelectedCollege(null)} 
+        title="Institution Overview"
+        footer={<button className={styles.cancelBtn} onClick={() => setSelectedCollege(null)}>Close</button>}
+      >
+        {selectedCollege && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ padding: '15px', background: 'var(--success-dim)', color: 'var(--success)', borderRadius: '12px' }}>
+                <Library size={28} />
+              </div>
+              <div>
+                <h3 style={{ margin: '0 0 4px 0', fontSize: '20px', color: 'var(--text-1)' }}>{selectedCollege.collegeName}</h3>
+                <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <MapPin size={14} /> {selectedCollege.location || 'Location not specified'}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: 'var(--text-2)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Departments ({selectedCollege.departments?.length || 0})
+              </h4>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {selectedCollege.departments?.map(dept => (
+                  <span key={dept} style={{ padding: '6px 12px', background: 'var(--bg-2)', border: '1px solid var(--border)', color: 'var(--text-1)', borderRadius: '6px', fontSize: '13px' }}>
+                    {dept}
+                  </span>
+                ))}
+                {(!selectedCollege.departments || selectedCollege.departments.length === 0) && (
+                  <span style={{ fontSize: '14px', color: 'var(--text-3)' }}>No departments listed.</span>
+                )}
+              </div>
+            </div>
+
+            {selectedCollege.collegeAdminId && (
+              <div style={{ background: 'var(--bg-2)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  <Users size={16} /> Admin Contact Info
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-1)' }}><strong>Name:</strong> {selectedCollege.collegeAdminId.name || 'N/A'}</p>
+                  <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-1)' }}><strong>Email:</strong> {selectedCollege.collegeAdminId.email || 'N/A'}</p>
+                  <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-1)' }}><strong>Phone:</strong> {selectedCollege.collegeAdminId.phone || 'N/A'}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
@@ -268,6 +343,7 @@ const AdminSettings = () => {
 /* ══════════════ DASHBOARD SHELL ══════════════ */
 const OverallAdminDashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { logout } = useAuth();
 
   const navItems = [
