@@ -1,6 +1,20 @@
 import mongoose from "mongoose";
 
 const examSchema = new mongoose.Schema({
+
+  collegeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "College",
+    required: true,
+    index: true
+  },
+  
+  department: {
+    type: String,
+    required: true,
+    index: true
+  },
+
   subjectName: {
     type: String,
     required: true
@@ -31,8 +45,6 @@ const examSchema = new mongoose.Schema({
     ]
   },
 
-   
-
   date: {
     type: Date,
     required: true
@@ -43,7 +55,7 @@ const examSchema = new mongoose.Schema({
     required: true
   },
 
-  instructions: [String],
+  
 
   startTime: {
     type: Date,
@@ -55,33 +67,35 @@ const examSchema = new mongoose.Schema({
     required: true
   },
 
-  isPaperQuestionUploaded:{
-    type:Boolean,
-    default:false
+  isPaperQuestionUploaded: {
+    type: Boolean,
+    default: false
   },
-  assignedFaculty:{
-    type:mongoose.Schema.Types.ObjectId,
-    ref:"Faculty",
-    required:true
+  
+  assignedFaculty: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Faculty",
+    required: true,
+    index: true
   },
 
   questionPaper: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "QuestionPaper",
-    default:null
+    default: null
   }
 
-});
+}, { timestamps: true }); // Automatically handles createdAt and updatedAt
 
 const Exam = mongoose.model("Exam", examSchema);
 
 export default Exam;
 
 
-
-
 // {
 //   "_id": "6641a2...",
+//   "collegeId": "665c2b...",
+//   "department": "Computer Science",
 //   "subjectName": "Cryptography and Network Security",
 //   "subjectCode": "CS502",
 //   "course": "B.Tech",
@@ -89,10 +103,7 @@ export default Exam;
 //   "examType": "Mid Semester Examination",
 //   "date": "2026-03-20T00:00:00.000Z",
 //   "maxMarks": 30,
-//   "instructions": [
-//     "Answer all questions",
-//     "Use blue pen only"
-//   ],
+
 //   "startTime": "2026-03-20T09:00:00.000Z",
 //   "endTime": "2026-03-20T11:00:00.000Z",
 //   "questionPaper": "664abc123...",

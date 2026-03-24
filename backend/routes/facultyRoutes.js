@@ -1,10 +1,11 @@
 import express from "express";
 import { verifyToken } from "../middlewares/authMiddleware.js";
-import { isHODOrSuperAdmin } from "../middlewares/roleMiddleware.js"; // <-- Import the dual-role middleware
+import { isHODOrCollegeAdmin } from "../middlewares/roleMiddleware.js"; // <-- Import the dual-role middleware
 
 import { 
   getMyProfile, 
   updateProfile, 
+  changePassword,
   getFacultyApprovedList,
   approveFaculty,
   rejectFaculty,
@@ -17,15 +18,16 @@ const facultyRouter = express.Router();
 
 facultyRouter.get("/me", verifyToken, getMyProfile);
 facultyRouter.put("/profile", verifyToken, updateProfile);
+facultyRouter.put("/change-password", verifyToken, changePassword);
 
 // ACCESSIBLE ONLY BY HOD & SUPER ADMIN
 
-facultyRouter.get("/approvals", verifyToken, isHODOrSuperAdmin, getFacultyApprovedList);
+facultyRouter.get("/approvals", verifyToken, isHODOrCollegeAdmin, getFacultyApprovedList);
 
 // Moved these here so the Super Admin can approve the very first batch of faculty!
-facultyRouter.post("/approve", verifyToken, isHODOrSuperAdmin, approveFaculty);
-facultyRouter.post("/reject", verifyToken, isHODOrSuperAdmin, rejectFaculty);
+facultyRouter.post("/approve", verifyToken, isHODOrCollegeAdmin, approveFaculty);
+facultyRouter.post("/reject", verifyToken, isHODOrCollegeAdmin, rejectFaculty);
 
 // Both HOD and Super Admin might need to view a specific department's faculty list
-facultyRouter.get("/", verifyToken, isHODOrSuperAdmin, getDepartmentFaculty);
+facultyRouter.get("/", verifyToken, isHODOrCollegeAdmin, getDepartmentFaculty);
 export default facultyRouter;

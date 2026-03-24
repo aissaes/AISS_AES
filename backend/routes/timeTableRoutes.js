@@ -1,15 +1,31 @@
-// import express from "express";
-// import { verifyToken } from "../middlewares/authMiddleware.js";
-// import { isHOD } from "../middlewares/roleMiddleware.js";
-// import { createTimetable, getTimetables, updateExam, deleteExam } from "../controllers/timetable.js";
+import express from "express";
+import { verifyToken } from "../middlewares/authMiddleware.js";
+import { isHOD } from "../middlewares/roleMiddleware.js";
+import { 
+  createTimetable, 
+  getTimetables, 
+  addExamToTimetable,
+  updateExam, 
+  deleteExam,
+  getTimetableById,
+  getExamById,      
+} from "../controllers/timetableController.js";
 
-// const timeTableRouter = express.Router();
+const timeTableRouter = express.Router();
 
-// // Only HODs can create the timetable
-// timeTableRouter.post("/create", verifyToken, isHOD, createTimetable);
+// Anyone logged in (Faculty, HOD, College Admin) can view the timetables for their department
+timeTableRouter.get("/", verifyToken, getTimetables); 
 
-// timeTableRouter.get("/", verifyToken, getTimetables); // Anyone logged in can view
-// timeTableRouter.put("/exam/:examId", verifyToken, isHOD, updateExam); // Only HOD can edit
-// timeTableRouter.delete("/exam/:examId", verifyToken, isHOD, deleteExam); // Only HOD can delete
+timeTableRouter.get("/:timetableId", verifyToken, getTimetableById);
+timeTableRouter.get("/exam/:examId", verifyToken, getExamById);
 
-// export default timeTableRouter;
+// ONLY HODs can create, edit, or delete the timetables
+timeTableRouter.post("/create", verifyToken, isHOD, createTimetable);
+
+//Hod adding a new exam inside a timetable
+timeTableRouter.post("/:timetableId/add-exam", verifyToken, isHOD, addExamToTimetable);
+
+timeTableRouter.put("/exam/:examId", verifyToken, isHOD, updateExam); 
+timeTableRouter.delete("/exam/:examId", verifyToken, isHOD, deleteExam); 
+
+export default timeTableRouter;

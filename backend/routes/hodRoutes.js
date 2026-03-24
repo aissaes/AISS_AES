@@ -1,6 +1,6 @@
 import express from "express";
 import { verifyToken } from "../middlewares/authMiddleware.js";
-import { isHOD, isHODOrSuperAdmin } from "../middlewares/roleMiddleware.js"; 
+import { isHOD } from "../middlewares/roleMiddleware.js"; 
 
 import { 
   transferHOD 

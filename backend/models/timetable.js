@@ -1,7 +1,13 @@
 import mongoose from "mongoose";
 
 const timetableSchema = new mongoose.Schema({
-
+  
+  collegeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "College",
+    required: true,
+    index: true
+  },
   course:{
     type:String,
     required:true

@@ -1,62 +1,68 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import "dotenv/config.js";
 import cookieParser from "cookie-parser";
 
 import connectDB from "./configurations/database.js";
 
-// Routes
+// --- ROUTES ---
 import facultyAuthRouter from "./routes/facultyAuth.js";
+import overallAdminAuthRouter from "./routes/overallAdminAuth.js";
+import overallAdminRouter from "./routes/overallAdminRoutes.js";
 import facultyRouter from "./routes/facultyRoutes.js";
 import hodRouter from "./routes/hodRoutes.js";
-import superAdminRouter from "./routes/superAdminRoutes.js";
-import institutionRoute from "./routes/institutionRoutes.js";
+
+import collegeAdminRouter from "./routes/collegeAdminRoutes.js";
+import timetableRoutes from "./routes/timeTableRoutes.js";
+import questionPaperRoutes from "./routes/questionPaperRoutes.js";
+import collegeRouter from "./routes/collegeRoutes.js";
+
 
 dotenv.config();
 
 const app = express();
 
+// updated CORS array for local & Vercel
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
-  "https://aiss-aes-8ju1.vercel.app",
-  'http://localhost:5173',
-  'https://aiss-aes-8ju1.vercel.app' // local React dev
+  "https://aiss-aes-8ju1.vercel.app"
 ];
-
 
 app.use(cors({
   origin: allowedOrigins,
   credentials: true
 }));
 
-
 app.use(express.json());
 app.use(cookieParser());
 
-// 🔥 connect DB inside request lifecycle
+//  Vercel Fix: Connect DB inside request lifecycle
 app.use(async (req, res, next) => {
   await connectDB();
   next();
 });
 
-// routes
-app.use("/faculty/auth", facultyAuthRouter);
-app.use("/faculty", facultyRouter);
+// --- ROUTE MAPPINGS ---
 
+// Public / Base Routes
+app.use("/college", collegeRouter);
+
+// Auth Routes
+app.use("/faculty/auth", facultyAuthRouter);
+app.use("/overallAdmin/auth", overallAdminAuthRouter);
+
+// Faculty & hod Routes
+app.use("/faculty", facultyRouter);
 app.use("/faculty/hod", hodRouter);
 
-app.use("/faculty/superadmin", superAdminRouter);
+// Administration Routes
+app.use("/faculty/collegeadmin", collegeAdminRouter);
+app.use("/overallAdmin", overallAdminRouter);
 
-app.use("/faculty/hod",hodRouter);
-app.use("/faculty/superadmin",superAdminRouter);
-app.use('/institute',institutionRoute);
-
-// app.use("/faculty/timetable", timetableRoutes);
-// app.use("/faculty/question-paper", questionPaperRoutes);
-
-
+// Academic Feature Routes
+app.use("/faculty/timetable", timetableRoutes);
+app.use("/faculty/question-paper", questionPaperRoutes);
 
 // Local dev server — Vercel uses the export below instead
 const PORT = process.env.PORT || 5000;

@@ -1,16 +1,22 @@
 import sendEmail from "../../configurations/nodemailer.js";
 import Faculty from "../../models/faculty.js";
+import College from "../../models/college.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 export const registerFaculty = async (req, res) => {
   try {
-    const { name, email, password, college, department, phone } = req.body;
+    const { name, email, password, collegeId, department, phone } = req.body;
 
     // 1. Check if email already exists for a cleaner error message
     const existingFaculty = await Faculty.findOne({ email });
     if (existingFaculty) {
       return res.status(400).json({ message: "Email is already registered" });
+    }
+    // NEW: Fetch the College to make sure it exists and to get its real name for emails!
+    const collegeDoc = await College.findById(collegeId);
+    if (!collegeDoc) {
+      return res.status(404).json({ message: "Selected college does not exist." });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -19,14 +25,14 @@ export const registerFaculty = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      college,
+      collegeId,
       department,
       phone
     });
 
     // 2. Route the approval to the correct authority
     const hod = await Faculty.findOne({
-      college,
+      collegeId,
       department,
       role: "hod"
     });
@@ -42,7 +48,7 @@ export const registerFaculty = async (req, res) => {
         - Name: ${faculty.name}
         - Email: ${faculty.email}
         - Department: ${faculty.department}
-        - College: ${faculty.college}
+        - College: ${collegeDoc.collegeName}
         - Phone: ${faculty.phone}
 
         Please review and approve or reject this request from your dashboard.
@@ -51,17 +57,17 @@ export const registerFaculty = async (req, res) => {
         AISS Team`
         );
     } else {
-      const superAdmin = await Faculty.findOne({
-        college,
-        role: "superAdmin"
+      const collegeAdmin = await Faculty.findOne({
+        collegeId,
+        role: "collegeAdmin"
       });
 
-      // 3. Safety check and pushing to superAdmin's pending list
-      if (superAdmin) {
-        superAdmin.pendingApprovals.push(faculty._id);
-        await superAdmin.save();
-        await sendEmail(superAdmin.email,"Faculty Approval Required (No HOD Assigned)",
-              `Dear ${superAdmin.name},
+      // 3. Safety check and pushing to collegeAdmin's pending list
+      if (collegeAdmin) {
+        collegeAdmin.pendingApprovals.push(faculty._id);
+        await collegeAdmin.save();
+        await sendEmail(collegeAdmin.email,"Faculty Approval Required (No HOD Assigned)",
+              `Dear ${collegeAdmin.name},
 
             A new faculty registration has been received for a department without an assigned HOD.
 
@@ -69,7 +75,7 @@ export const registerFaculty = async (req, res) => {
             - Name: ${faculty.name}
             - Email: ${faculty.email}
             - Department: ${faculty.department}
-            - College: ${faculty.college}
+            - College: ${collegeDoc.collegeName}
             - Phone: ${faculty.phone}
 
             Since no HOD is assigned, you are requested to review and approve or reject this registration.
@@ -78,7 +84,7 @@ export const registerFaculty = async (req, res) => {
             AISS Team`
             );
       } else {
-        console.warn(`No Super Admin or HOD found for college: ${college}`);
+        console.warn(`No College Admin or HOD found for college: ${collegeId}`);
         // Optionally, handle what happens if a college has zero admins yet.
       }
     }
@@ -91,7 +97,7 @@ export const registerFaculty = async (req, res) => {
       \n\nYour account is currently PENDING approval by your College Administration.
        You will receive another email once your account is activated.
        \n\nHere are the details you submitted:
-       \n- Name: ${faculty.name}\n- College: ${faculty.college}\n- Department: ${faculty.department}\n- Phone: ${faculty.phone}
+       \n- Name: ${faculty.name}\n- College: ${collegeDoc.collegeName}\n- Department: ${faculty.department}\n- Phone: ${faculty.phone}
        \n\nIf any of these details are incorrect, please contact your administration.\n\nBest Regards,\nThe AISS Team`
     );
 
@@ -182,12 +188,16 @@ export const verifyOTP = async(req,res)=>{
 
     res.json({
       message: "Login successful",
-      role: faculty.role ,// Send role so frontend knows where to redirect, but DO NOT send the token!
-      token  //  since frontend not done yet, so we kept this to help testing in postman , will be commented later
+      role: faculty.role 
     });
 
-  }catch(err){
-    res.status(500).json(err);
+  }
+    catch(err) {
+    console.error(" CRASH IN VERIFY OTP:", err); // This forces it to print in the terminal!
+    res.status(500).json({ 
+      message: "Internal server error", 
+      error: err.message 
+    });
   }
 };
 
@@ -198,44 +208,4 @@ export const logoutFaculty = (req, res) => {
     sameSite: "none",
   });
   res.status(200).json({ message: "Logged out successfully" });
-};
-
-// Hidden endpoint to create the FIRST Super Admin for a college
-export const seedSuperAdmin = async (req, res) => {
-  try {
-    const { devKey, name, email, password, college, phone } = req.body;
-
-    // 1. Strict Developer Verification
-    if (devKey !== process.env.DEV_SECRET_KEY) {
-      return res.status(403).json({ message: "Unauthorized: Invalid Developer Key" });
-    }
-
-    // 2. Prevent creating multiple Super Admins for the same college
-    const existingAdmin = await Faculty.findOne({ college, role: "superAdmin" });
-    if (existingAdmin) {
-      return res.status(400).json({ message: `${college} already has a Super Admin.` });
-    }
-
-    // 3. Hash password and create the user directly
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const superAdmin = await Faculty.create({
-      name,
-      email,
-      password: hashedPassword,
-      college,
-      department: "Administration", // Default department for the top admin
-      phone,
-      role: "superAdmin",
-      isApproved: true // Bypass the approval system entirely!
-    });
-
-    res.status(201).json({ 
-      message: `Super Admin successfully created for ${college}` 
-    });
-
-  } catch (error) {
-    console.error("Seeding error:", error);
-    res.status(500).json({ message: "Internal server error", error });
-  }
 };
