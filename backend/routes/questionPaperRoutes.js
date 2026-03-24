@@ -25,6 +25,6 @@ questionPaperRouter.get("/approved", verifyToken , getApprovedPapers);
 questionPaperRouter.put("/review/:paperId", verifyToken, isHOD, reviewQuestionPaper);
 
 // --- SHARED ROUTES (Teachers & HODs) ---
-questionPaperRouter.get("/:paperId", verifyToken, isHODOrCollegeAdmin, getQuestionPaperById);
+questionPaperRouter.get("/:paperId", verifyToken, getQuestionPaperById);
 
 export default questionPaperRouter;

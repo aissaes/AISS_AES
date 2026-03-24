@@ -5,17 +5,17 @@ import bcrypt from "bcryptjs";
 import OverallAdmin from "../models/overallAdmin.js";
 import sendEmail from "../configurations/nodemailer.js";
 
-// 1. Fetch all colleges (ID and Name only) for the frontend dropdown
 export const getAllCollegesList = async (req, res) => {
-  try {
+  try {
+    // Only fetch colleges where status is NOT 'Pending'
     // We only send the _id and collegeName to keep the payload tiny and fast
-    const colleges = await College.find().select('_id collegeName');
-    
-    res.status(200).json({ colleges });
-  } catch (error) {
-    console.error("Error fetching colleges:", error);
-    res.status(500).json({ message: "Internal server error", error: error.message });
-  }
+    const colleges = await College.find({ status: { $ne: 'Pending' } }).select('_id collegeName');
+    
+    res.status(200).json({ colleges });
+  } catch (error) {
+    console.error("Error fetching colleges:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message });
+  }
 };
 
 // 2. Fetch departments for a specific college (Triggered when user selects a college)
