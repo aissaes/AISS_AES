@@ -90,9 +90,9 @@ export const verifyOverallAdminOTP = async (req, res) => {
     );
 
     res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      httpOnly: true,     // cannot be accessed by JS
+      secure: true,       // required for SameSite=None on Vercel
+      sameSite: "none",   // THIS ALLOWS THE CROSS-DOMAIN COOKIE
       maxAge: 24 * 60 * 60 * 1000, // 1 day
     });
 
