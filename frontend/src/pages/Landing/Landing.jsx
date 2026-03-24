@@ -3,8 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import {
   BrainCircuit, ArrowRight, Sparkles, Shield, GraduationCap,
   ClipboardCheck, BarChart3, Users, Lock, Zap, Eye, CheckCircle2,
-  Crown, Building2
+  Crown, Building2, Mail, Phone, MapPin, Search
 } from 'lucide-react';
+import { collegeAPI } from '../../api/client';
+import { useToast } from '../../components/Toast/Toast';
+import Modal from '../../components/Modal/Modal';
 import styles from './Landing.module.css';
 
 /* ─────────────────────────────────────────────────
@@ -68,14 +71,14 @@ const FadeUp = ({ children, className = '' }) => {
 const FEATURES = [
   { icon: <BrainCircuit size={24} />, cls: 'iconPurple', title: 'AI-Powered Evaluation',     desc: 'Leverage advanced AI to grade answer sheets with precision, consistency, and speed — eliminating human bias.' },
   { icon: <ClipboardCheck size={24} />, cls: 'iconCyan',  title: 'Smart Answer Analysis',    desc: 'Deep NLP analysis of student responses with keyword matching, semantic understanding, and contextual scoring.' },
-  { icon: <Shield size={24} />,         cls: 'iconGreen', title: 'Role-Based Security',       desc: 'Granular access control with Super Admin, HOD, and Faculty roles — each with tailored permissions and views.' },
+  { icon: <Shield size={24} />,         cls: 'iconGreen', title: 'Role-Based Security',       desc: 'Granular access control with College Admin, HOD, and Faculty roles — each with tailored permissions and views.' },
   { icon: <BarChart3 size={24} />,      cls: 'iconAmber', title: 'Real-time Analytics',       desc: 'Live dashboards with performance metrics, grade distributions, and actionable insights at every level.' },
-  { icon: <Lock size={24} />,           cls: 'iconPink',  title: 'Encrypted Data Vault',      desc: 'AES-256-GCM encrypted local caching with role-isolated storage — your data stays yours.' },
+  { icon: <Lock size={24} />,           cls: 'iconPink',  title: 'Instant UI Access',      desc: 'Optimized local caching so dashboards and analytics load instantly while securely authenticating in the background.' },
   { icon: <Zap size={24} />,            cls: 'iconRed',   title: '2FA Authentication',        desc: 'Email-based OTP verification on every login for maximum account security.' },
 ];
 
 const STEPS = [
-  { title: 'Register & Get Approved',  desc: 'Faculty submits registration → HOD or Super Admin reviews and approves the request.' },
+  { title: 'Register & Get Approved',  desc: 'Faculty submits registration → HOD or College Admin reviews and approves the request.' },
   { title: 'Secure Login with OTP',    desc: 'Two-factor authentication via email OTP ensures only verified users access the system.' },
   { title: 'Upload & Evaluate',        desc: 'Upload student answer sheets and let AI analyze, score, and generate detailed feedback.' },
   { title: 'Review & Export Results',   desc: 'Review AI-graded results on your dashboard, compare analytics, and export reports.' },
@@ -84,7 +87,7 @@ const STEPS = [
 const STATS = [
   { value: '99.2%', label: 'Grading Accuracy',  cls: 'statGrad1', fill: '99' },
   { value: '10×',   label: 'Faster Evaluation',  cls: 'statGrad2', fill: '92' },
-  { value: '256-bit', label: 'AES Encryption',   cls: 'statGrad3', fill: '100' },
+  { value: 'Zero', label: 'Latency UI',   cls: 'statGrad3', fill: '100' },
   { value: '24/7',  label: 'Availability',       cls: 'statGrad4', fill: '95' },
 ];
 
@@ -92,9 +95,9 @@ const ROLES = [
   {
     icon: <Crown size={28} />,
     cls: 'roleSA',
-    title: 'Super Admin',
+    title: 'College Admin',
     desc: 'College-wide oversight and administration.',
-    perks: ['Approve/reject faculty & HOD registrations', 'Transfer Super Admin role', 'View all departments & analytics'],
+    perks: ['Approve/reject faculty & HOD registrations', 'Transfer College Admin role', 'View all departments & analytics'],
   },
   {
     icon: <Building2 size={28} />,
@@ -143,6 +146,32 @@ const Landing = () => {
     card.style.setProperty('--my', `${e.clientY - rect.top}px`);
   }, []);
 
+  const [collegeModalOpen, setCollegeModalOpen] = useState(false);
+  const [collegeForm, setCollegeForm] = useState({
+    collegeName: '', location: '', adminName: '', adminEmail: '', adminPhone: '', departments: ["Computer Science", "Engineering"] // default
+  });
+  const [registering, setRegistering] = useState(false);
+  const { toast } = useToast();
+
+  const handleRegisterCollege = async (e) => {
+    e.preventDefault();
+    if(!collegeForm.collegeName || !collegeForm.adminEmail || !collegeForm.adminName) {
+      toast('Please fill all required fields.', 'warning');
+      return;
+    }
+    setRegistering(true);
+    try {
+      await collegeAPI.registerRequest(collegeForm);
+      toast('College registration submitted! Our team will contact you shortly.', 'success', 6000);
+      setCollegeModalOpen(false);
+      setCollegeForm({ collegeName: '', location: '', adminName: '', adminEmail: '', adminPhone: '', departments: ["Computer Science", "Engineering"] });
+    } catch(err) {
+      toast(err.response?.data?.message || 'Registration failed.', 'error');
+    } finally {
+      setRegistering(false);
+    }
+  };
+
   return (
     <div className={styles.landing}>
       {/* Ambient orbs */}
@@ -162,6 +191,7 @@ const Landing = () => {
           <button className={styles.navLink} onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}>Features</button>
           <button className={styles.navLink} onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}>How It Works</button>
           <button className={styles.navLink} onClick={() => document.getElementById('roles')?.scrollIntoView({ behavior: 'smooth' })}>Roles</button>
+          <button className={styles.navLink} onClick={() => setCollegeModalOpen(true)}>Register Institution</button>
           <button className={styles.navLink} onClick={() => navigate('/login')}>Sign In</button>
           <button className={styles.navCta} onClick={() => navigate('/register')}>
             Get Started
@@ -192,12 +222,12 @@ const Landing = () => {
 
           <div className={styles.heroBtns}>
             <button className={styles.btnPrimary} onClick={() => navigate('/register')} id="hero-get-started">
-              <span>Get Started Free</span>
+              <span>Faculty Sign Up</span>
               <ArrowRight size={18} />
             </button>
-            <button className={styles.btnSecondary} onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })} id="hero-explore">
-              <Eye size={18} />
-              <span>Explore Features</span>
+            <button className={styles.btnSecondary} onClick={() => setCollegeModalOpen(true)} id="hero-explore">
+              <Building2 size={18} />
+              <span>Register College</span>
             </button>
           </div>
         </div>
@@ -339,13 +369,13 @@ const Landing = () => {
               and more secure academic evaluations.
             </p>
             <div className={styles.ctaBtns}>
-              <button className={styles.btnPrimary} onClick={() => navigate('/register')} id="cta-get-started">
-                <span>Create Your Account</span>
-                <ArrowRight size={18} />
+              <button className={styles.btnPrimary} onClick={() => setCollegeModalOpen(true)} id="cta-get-started">
+                <Building2 size={18} />
+                <span>Register Your Institution</span>
               </button>
-              <button className={styles.btnSecondary} onClick={() => navigate('/login')} id="cta-sign-in">
-                <Lock size={16} />
-                <span>Sign In</span>
+              <button className={styles.btnSecondary} onClick={() => navigate('/register')} id="cta-sign-in">
+                <Users size={16} />
+                <span>Faculty Sign Up</span>
               </button>
             </div>
           </div>
@@ -365,6 +395,56 @@ const Landing = () => {
           <a href="#roles">Roles</a>
         </div>
       </footer>
+
+      <Modal
+        isOpen={collegeModalOpen}
+        onClose={() => !registering && setCollegeModalOpen(false)}
+        title="Register Your Institution"
+        size="lg"
+      >
+        <form onSubmit={handleRegisterCollege} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+           <p style={{ color: 'var(--text-3)', fontSize: 13, marginBottom: 8 }}>
+             Register your college to get access to the platform. Only the requesting person will get the College Admin account initially.
+           </p>
+           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+               <label style={{ fontSize: 13, color: 'var(--text-2)' }}>College Name *</label>
+               <input className={styles.modalInput} required value={collegeForm.collegeName} onChange={e => setCollegeForm({...collegeForm, collegeName: e.target.value})} placeholder="e.g. AISS Institute" style={{ padding: '10px 14px', borderRadius: 8, background: 'var(--bg-3)', border: '1px solid var(--border-2)', color: 'white' }} />
+             </div>
+             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+               <label style={{ fontSize: 13, color: 'var(--text-2)' }}>Location / City</label>
+               <input className={styles.modalInput} value={collegeForm.location} onChange={e => setCollegeForm({...collegeForm, location: e.target.value})} placeholder="e.g. Bangalore" style={{ padding: '10px 14px', borderRadius: 8, background: 'var(--bg-3)', border: '1px solid var(--border-2)', color: 'white' }} />
+             </div>
+           </div>
+
+           <h4 style={{ color: 'var(--text-1)', marginTop: '10px', fontSize: 14 }}>College Admin Details</h4>
+           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
+             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+               <label style={{ fontSize: 13, color: 'var(--text-2)' }}>Admin Name *</label>
+               <input className={styles.modalInput} required value={collegeForm.adminName} onChange={e => setCollegeForm({...collegeForm, adminName: e.target.value})} placeholder="e.g. Dr. John Doe" style={{ padding: '10px 14px', borderRadius: 8, background: 'var(--bg-3)', border: '1px solid var(--border-2)', color: 'white' }} />
+             </div>
+             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                 <label style={{ fontSize: 13, color: 'var(--text-2)' }}>Admin Email *</label>
+                 <input className={styles.modalInput} type="email" required value={collegeForm.adminEmail} onChange={e => setCollegeForm({...collegeForm, adminEmail: e.target.value})} placeholder="admin@institute.edu" style={{ padding: '10px 14px', borderRadius: 8, background: 'var(--bg-3)', border: '1px solid var(--border-2)', color: 'white' }} />
+               </div>
+               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                 <label style={{ fontSize: 13, color: 'var(--text-2)' }}>Admin Phone Number</label>
+                 <input className={styles.modalInput} type="tel" value={collegeForm.adminPhone} onChange={e => setCollegeForm({...collegeForm, adminPhone: e.target.value})} placeholder="+91 9876543210" style={{ padding: '10px 14px', borderRadius: 8, background: 'var(--bg-3)', border: '1px solid var(--border-2)', color: 'white' }} />
+               </div>
+             </div>
+           </div>
+           
+           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 16 }}>
+             <button type="button" onClick={() => setCollegeModalOpen(false)} style={{ padding: '10px 18px', background: 'var(--surface-3)', border: '1px solid var(--border-2)', borderRadius: 8, color: 'var(--text-2)', cursor: 'pointer' }} disabled={registering}>
+               Cancel
+             </button>
+             <button type="submit" style={{ padding: '10px 18px', background: 'var(--primary)', border: 'none', borderRadius: 8, color: 'white', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }} disabled={registering}>
+               {registering ? 'Submitting...' : <><CheckCircle2 size={16} /> Submit Registration</>}
+             </button>
+           </div>
+        </form>
+      </Modal>
     </div>
   );
 };

@@ -2,6 +2,7 @@ import sendEmail from "../../configurations/nodemailer.js";
 import Faculty from "../../models/faculty.js";
 import College from "../../models/college.js";
 import bcrypt from "bcryptjs";
+import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 
 export const registerFaculty = async (req, res) => {
@@ -25,7 +26,7 @@ export const registerFaculty = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      collegeId,
+      collegeId: new mongoose.Types.ObjectId(collegeId),
       department,
       phone
     });

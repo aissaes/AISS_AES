@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import styles from './Modal.module.css';
 
@@ -18,7 +19,7 @@ const Modal = ({ isOpen, onClose, title, children, footer, size = 'md' }) => {
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       className={styles.overlay}
       ref={overlayRef}
@@ -39,7 +40,8 @@ const Modal = ({ isOpen, onClose, title, children, footer, size = 'md' }) => {
 
         {footer && <div className={styles.footer}>{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

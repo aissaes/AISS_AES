@@ -417,7 +417,7 @@
   white-space: nowrap;
 }
 
-.badgeSA      { background: rgba(167,139,250,0.12); border-color: rgba(167,139,250,0.3); color: #c4b5fd; }
+.badgeCA      { background: rgba(167,139,250,0.12); border-color: rgba(167,139,250,0.3); color: #c4b5fd; }
 .badgeHOD     { background: rgba(99,102,241,0.12);  border-color: rgba(99,102,241,0.3);  color: var(--accent-light); }
 .badgeFaculty { background: rgba(148,163,184,0.1);  border-color: rgba(148,163,184,0.2); color: var(--text-2); }
 .badgeSuccess { background: var(--success-bg);      border-color: var(--success-border); color: var(--success); }

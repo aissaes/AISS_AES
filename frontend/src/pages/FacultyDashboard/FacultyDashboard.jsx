@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Home, Settings as SettingsIcon, FileText, BarChart2, User, Building2, BookOpen, CheckCircle2, Clock } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout/DashboardLayout';
-import Settings from '../Settings/Settings';
 import { facultyAPI } from '../../api/client';
+import Settings from '../Settings/Settings';
+import Assignments from './Assignments';
+import FacultyTimetables from './Timetables';
 import styles from './FacultyDashboard.module.css';
 
 /* ── Stat Card ── */
@@ -78,10 +80,10 @@ const FacultyHome = () => {
 
       {/* Stats */}
       <div className={styles.statsGrid}>
-        <StatCard icon={FileText}   label="Papers Prepared"  value={paperCount}        color="blue"  />
-        <StatCard icon={CheckCircle2} label="Account Status" value={profile.isApproved ? 'Approved' : 'Pending'} color="green" />
+        <StatCard icon={FileText}   label="Papers"           value={paperCount}         color="blue"  />
+        <StatCard icon={CheckCircle2} label="Status"         value={profile.isApproved ? 'Approved' : 'Pending'} color="green" />
         <StatCard icon={BookOpen}   label="Department"       value={profile.department} color="violet"/>
-        <StatCard icon={Building2}  label="Institution"      value={profile.college}    color="amber" />
+        <StatCard icon={Building2}  label="Account Level"    value={roleLabel}          color="amber" />
       </div>
 
       {/* Profile Details Card */}
@@ -96,7 +98,6 @@ const FacultyHome = () => {
           <ProfileRow icon={FileText}  label="Role"        value={roleLabel} />
           <ProfileRow icon={FileText}  label="Phone"       value={profile.phone} />
           <ProfileRow icon={BookOpen}  label="Department"  value={profile.department} />
-          <ProfileRow icon={Building2} label="College"     value={profile.college} />
         </div>
       </div>
     </div>
@@ -107,8 +108,8 @@ const FacultyHome = () => {
 const FacultyDashboard = () => {
   const navItems = [
     { path: '/faculty',          label: 'My Overview',    icon: <Home      size={18} /> },
-    { path: '/faculty/grading',  label: 'Active Grading', icon: <FileText  size={18} /> },
-    { path: '/faculty/reports',  label: 'Reports',        icon: <BarChart2 size={18} /> },
+    { path: '/faculty/assignments',  label: 'Assignments', icon: <FileText  size={18} /> },
+    { path: '/faculty/timetables',  label: 'Timetables',        icon: <BookOpen size={18} /> },
     { path: '/faculty/settings', label: 'Settings',       icon: <SettingsIcon size={18} /> },
   ];
 
@@ -117,19 +118,11 @@ const FacultyDashboard = () => {
       <Routes>
         <Route path="/"         element={<FacultyHome />} />
         <Route path="/settings" element={<Settings />} />
-        <Route path="/grading"  element={<ComingSoon label="Active Grading" />} />
-        <Route path="/reports"  element={<ComingSoon label="Reports" />} />
+        <Route path="/assignments"  element={<Assignments />} />
+        <Route path="/timetables"  element={<FacultyTimetables />} />
       </Routes>
     </DashboardLayout>
   );
 };
-
-const ComingSoon = ({ label }) => (
-  <div className={styles.emptyCenter}>
-    <div className={styles.emptyIcon}>🚧</div>
-    <h3 className={styles.emptyTitle}>{label}</h3>
-    <p className={styles.emptyText}>This feature is coming soon. Check back later.</p>
-  </div>
-);
 
 export default FacultyDashboard;

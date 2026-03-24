@@ -4,16 +4,14 @@ import {
   LogOut, BrainCircuit, LayoutDashboard,
   ChevronDown, Repeat2, Shield, GraduationCap, Bell
 } from 'lucide-react';
-import { facultyAPI, authAPI } from '../../api/client';
-import { useToast } from '../Toast/Toast';
-import { secureStorage } from '../../utils/secureStorage';
+import { useAuth } from '../../context/AuthContext';
 import styles from './DashboardLayout.module.css';
 
 /* ──────────────────────────────────────────────────────────
    Role view switching — HOD only
 ────────────────────────────────────────────────────────── */
 const ROLE_VIEWS = {
-  superAdmin: [],
+  collegeAdmin: [],
   hod: [
     { key: 'hod',     label: 'HOD View',    icon: Shield,        base: '/hod'     },
     { key: 'faculty', label: 'Faculty View', icon: GraduationCap, base: '/faculty' },
@@ -22,14 +20,14 @@ const ROLE_VIEWS = {
 };
 
 const VIEW_BADGES = {
-  superAdmin: { label: 'Super Admin', cls: 'badgeSA'      },
+  collegeAdmin: { label: 'College Admin', cls: 'badgeCA'      },
   hod:        { label: 'HOD',         cls: 'badgeHOD'     },
   faculty:    { label: 'Faculty',     cls: 'badgeFaculty' },
 };
 
 const detectViewMode = (pathname) => {
-  if (pathname.startsWith('/superadmin')) return 'superAdmin';
-  if (pathname.startsWith('/hod'))        return 'hod';
+  if (pathname.toLowerCase().startsWith('/collegeadmin')) return 'collegeAdmin';
+  if (pathname.toLowerCase().startsWith('/hod'))        return 'hod';
   return 'faculty';
 };
 
@@ -39,10 +37,8 @@ const detectViewMode = (pathname) => {
 const DashboardLayout = ({ navItems, children }) => {
   const navigate  = useNavigate();
   const location  = useLocation();
-  const { toast } = useToast();
+  const { user: profile, logout, loading } = useAuth();
 
-  const [profile,      setProfile]      = useState(null);
-  const [loading,      setLoading]      = useState(true);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const switcherRef = useRef(null);
 
@@ -61,65 +57,8 @@ const DashboardLayout = ({ navItems, children }) => {
     return () => document.removeEventListener('mousedown', h);
   }, []);
 
-  /* ── Cache-first profile load ──
-       1. Read the role stored on login → know which encrypted bucket to open
-       2. Instantly show cached profile (if valid & < 30 min old)
-       3. Fetch fresh profile in background → update UI + refresh cache
-       4. If fresh fetch fails AND no cache → redirect to login
-  ── */
-  useEffect(() => {
-    let alive    = true;
-    let hadCache = false; // ✅ plain variable — not subject to stale closure
-
-    const load = async () => {
-      // Step 1 — try encrypted cache
-      const cachedRole = secureStorage.getRole();
-      if (cachedRole) {
-        const cached = await secureStorage.get(cachedRole);
-        if (cached?.profile && alive) {
-          setProfile(cached.profile);
-          setLoading(false);
-          hadCache = true; // ✅ mark before async gap
-        }
-      }
-
-      // Step 2 — always refresh from server in background
-      try {
-        const r    = await facultyAPI.getMe();
-        const prof = r.data.profile;
-        if (!alive) return;
-        setProfile(prof);
-        setLoading(false);
-        // Update encrypted cache
-        secureStorage.setRole(prof.role);
-        await secureStorage.set(prof.role, { profile: prof, cachedAt: Date.now() });
-      } catch (err) {
-        if (!alive) return;
-        // ✅ hadCache is reliably set — no stale closure issue
-        if (!hadCache) {
-          // Only show "session expired" if the user actually had a session before
-          // (i.e., a role was stored). Otherwise, just redirect silently.
-          const hadPreviousSession = !!secureStorage.getRole();
-          if (hadPreviousSession) {
-            toast('Session expired. Please log in again.', 'error');
-          }
-          secureStorage.clear();
-          navigate('/login');
-        }
-        setLoading(false);
-      }
-    };
-
-    load();
-    return () => { alive = false; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  /* ── Logout — clear all encrypted caches ── */
   const handleLogout = async () => {
-    try { await authAPI.logout(); } catch { /* ignore */ }
-    secureStorage.clear();
-    navigate('/login');
+    await logout();
   };
 
   const handleSwitchView = (view) => {
@@ -134,7 +73,7 @@ const DashboardLayout = ({ navItems, children }) => {
   const activeLabel = activeNavItem?.label || navItems[0]?.label || 'Dashboard';
 
   const roleLabel = {
-    superAdmin: 'Super Admin',
+    collegeAdmin: 'College Admin',
     hod:        'Head of Dept',
     faculty:    'Faculty',
   }[actualRole] || 'User';
@@ -260,6 +199,18 @@ const DashboardLayout = ({ navItems, children }) => {
               {isViewingOtherRole && (
                 <span className={styles.viewingBadge}>
                   viewing as {VIEW_BADGES[currentView]?.label}
+                </span>
+              )}
+              {profile?.collegeId?.collegeName && (
+                <span style={{ 
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  marginLeft: 16, padding: '4px 10px', 
+                  background: 'var(--bg-3)', border: '1px solid var(--border-2)',
+                  borderRadius: 12, fontSize: 12, color: 'var(--text-2)',
+                  fontWeight: 500
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
+                  {profile.collegeId.collegeName}
                 </span>
               )}
             </div>

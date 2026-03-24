@@ -7,7 +7,8 @@ export const getMyProfile = async (req, res) => {
   try {
     // req.user.id is securely extracted from the HTTP-Only cookie by the verifyToken middleware
     const faculty = await Faculty.findById(req.user.id)
-                                 .select("-password -otp -otpExpires"); 
+                                 .select("-password -otp -otpExpires")
+                                 .populate("collegeId", "collegeName location"); 
 
     if (!faculty) {
       return res.status(404).json({ message: "User not found" });
@@ -237,8 +238,7 @@ export const getDepartmentFaculty = async (req, res) => {
     // Determine which department to fetch based on role
     let targetDepartment = currentUser.department; // Default to the logged-in user's department (Perfect for HODs)
     
-    // If a Super Admin wants to view a *different* department, they can pass it as a query (e.g., ?department=Mechanical)
-    if (currentUser.role === "superAdmin" && req.query.department) {
+    if (currentUser.role === "collegeAdmin" && req.query.department) {
       targetDepartment = req.query.department;
     }
 

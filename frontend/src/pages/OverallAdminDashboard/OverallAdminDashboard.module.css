@@ -1,0 +1,618 @@
+/* Overall Admin Dashboard */
+.layout {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg-1);
+}
+
+/* Sidebar */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--surface-1);
+  border-right: 1px solid var(--border-1);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 10;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 18px;
+  border-bottom: 1px solid var(--border-1);
+}
+
+.brandIcon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.brandName {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text-0);
+}
+
+.brandSub {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 1px;
+}
+
+.nav {
+  flex: 1;
+  padding: 12px 10px;
+  overflow-y: auto;
+}
+
+.navList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.navItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: none;
+  border: none;
+  color: var(--text-2);
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.navItem:hover {
+  background: var(--bg-hover);
+  color: var(--text-1);
+}
+
+.navActive {
+  background: var(--primary-dim) !important;
+  color: var(--primary-light) !important;
+}
+
+.navIcon {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.sidebarBottom {
+  padding: 14px;
+  border-top: 1px solid var(--border-1);
+}
+
+.userCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.userAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: white;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.userName {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rolePill {
+  font-size: 10px;
+  color: var(--danger);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.logoutBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
+  background: var(--danger-dim);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.logoutBtn:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+/* Main */
+.main {
+  flex: 1;
+  min-width: 0;
+  padding: 28px 32px;
+  overflow-y: auto;
+}
+
+/* Page */
+.pageWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  animation: fadeInUp 0.4s var(--ease-out) both;
+}
+
+.pageHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.pageTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-0);
+}
+
+.pageSub {
+  font-size: 13.5px;
+  color: var(--text-3);
+  margin-top: 4px;
+}
+
+.refreshBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  color: var(--text-2);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.refreshBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-1);
+}
+
+/* Stats */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.statCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-1);
+  background: var(--surface-1);
+}
+
+.statIconWrap {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.statValue {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-0);
+}
+
+.statLabel {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+
+.amber .statIconWrap {
+  background: var(--amber-dim);
+  color: var(--amber);
+}
+
+.violet .statIconWrap {
+  background: var(--violet-dim);
+  color: var(--violet);
+}
+
+.green .statIconWrap {
+  background: var(--success-dim);
+  color: var(--success);
+}
+
+.blue .statIconWrap {
+  background: var(--info-dim);
+  color: var(--info);
+}
+
+/* Card */
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border-1);
+}
+
+.cardHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cardHeaderIcon {
+  color: var(--primary);
+}
+
+.cardTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-0);
+}
+
+.cardSub {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+
+/* College Grid */
+.collegeGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  padding: 20px;
+}
+
+.collegeCard {
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-2);
+  background: var(--surface-2);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: all var(--transition-fast);
+}
+
+.collegeCard:hover {
+  border-color: var(--border-3);
+}
+
+.collegeHeader {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.collegeIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--primary-dim);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.collegeName {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-0);
+}
+
+.collegeLoc {
+  font-size: 12px;
+  color: var(--text-3);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.deptTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.deptTag {
+  padding: 3px 8px;
+  font-size: 11px;
+  border-radius: var(--radius-full);
+  background: var(--violet-dim);
+  color: var(--violet);
+  font-weight: 500;
+}
+
+.adminInfo {
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg-3);
+}
+
+.adminTitle {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-3);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.adminRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-2);
+  margin-top: 4px;
+}
+
+.approveCollegeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  background: var(--success-dim);
+  border: 1px solid var(--success-border);
+  color: var(--success);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.approveCollegeBtn:hover {
+  background: rgba(34, 197, 94, 0.2);
+}
+
+.approveCollegeBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Empty */
+.empty {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.emptyIcon {
+  font-size: 32px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.emptyText {
+  color: var(--text-3);
+  font-size: 13.5px;
+}
+
+/* Table loader */
+.tableLoader {
+  display: flex;
+  justify-content: center;
+  padding: 40px;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--border-1);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+.btnSpinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+
+.approving {
+  opacity: 0.7;
+}
+
+/* Settings */
+.settingsForm {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 400px;
+}
+
+.formRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formRow label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.formInput {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: var(--bg-3);
+  border: 1px solid var(--border-2);
+  color: var(--text-1);
+  font-size: 14px;
+  transition: border-color var(--transition-fast);
+}
+
+.formInput:focus {
+  outline: none;
+  border-color: var(--border-focus);
+}
+
+.formBtn {
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  border: none;
+  color: white;
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  align-self: flex-start;
+}
+
+.formBtn:hover {
+  opacity: 0.9;
+}
+
+.formBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dangerBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  background: var(--danger-dim);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.dangerBtn:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+/* Modal */
+.cancelBtn {
+  padding: 9px 18px;
+  border-radius: var(--radius-md);
+  background: var(--surface-3);
+  border: 1px solid var(--border-2);
+  color: var(--text-2);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.dangerModalBtn {
+  padding: 9px 18px;
+  border-radius: var(--radius-md);
+  background: var(--danger);
+  border: none;
+  color: white;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dangerModalBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modalAlertDanger {
+  display: flex;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: var(--danger-dim);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.modalFields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

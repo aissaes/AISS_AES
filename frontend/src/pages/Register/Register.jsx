@@ -4,24 +4,9 @@ import {
   User, Mail, Lock, Phone, Building2, BookOpen,
   BrainCircuit, ArrowRight, ChevronDown, Eye, EyeOff
 } from 'lucide-react';
-import { authAPI } from '../../api/client';
+import { authAPI, collegeAPI } from '../../api/client';
 import { useToast } from '../../components/Toast/Toast';
 import styles from './Register.module.css';
-
-const COLLEGES = [
-  "IIT Bombay","IIT Delhi","IIT Kanpur","IIT Kharagpur","IIT Madras",
-  "IIT Roorkee","IIT Guwahati","IIT Hyderabad","NIT Trichy","NIT Surathkal",
-  "NIT Warangal","NIT Calicut","NIT Rourkela","NIT Raipur","MNNIT Allahabad",
-  "MNIT Jaipur","VIT Vellore","SRM Chennai","Amity University","BITS Pilani",
-];
-
-const DEPARTMENTS = [
-  "Computer Science and Engineering","Electronics and Communication Engineering",
-  "Electrical Engineering","Mechanical Engineering","Civil Engineering",
-  "Information Technology","Chemical Engineering","Aerospace Engineering",
-  "Biotechnology","Metallurgical Engineering","Mathematics","Physics",
-  "Management Studies","Architecture",
-];
 
 /* Searchable dropdown sub-component */
 const SearchableSelect = ({ id, icon: Icon, placeholder, options, value, onChange, name }) => {
@@ -35,8 +20,9 @@ const SearchableSelect = ({ id, icon: Icon, placeholder, options, value, onChang
     return () => document.removeEventListener('mousedown', h);
   }, []);
 
-  const filtered = options.filter(o => o.toLowerCase().includes(query.toLowerCase()));
-  const display  = open ? query : value;
+  const filtered = options.filter(o => (o.label || o).toLowerCase().includes(query.toLowerCase()));
+  const displayValue = options.find(o => o.value === value)?.label || value;
+  const display  = open ? query : displayValue;
 
   return (
     <div className={styles.selectWrap} ref={wrapRef}>
@@ -67,10 +53,10 @@ const SearchableSelect = ({ id, icon: Icon, placeholder, options, value, onChang
               <div
                 key={i}
                 role="option"
-                className={`${styles.dropItem} ${value === opt ? styles.dropActive : ''}`}
-                onMouseDown={() => { onChange({ target: { name, value: opt } }); setQuery(''); setOpen(false); }}
+                className={`${styles.dropItem} ${value === (opt.value || opt) ? styles.dropActive : ''}`}
+                onMouseDown={() => { onChange({ target: { name, value: opt.value || opt } }); setQuery(''); setOpen(false); }}
               >
-                {opt}
+                {opt.label || opt}
               </div>
             ))}
         </div>
@@ -85,17 +71,37 @@ const Register = () => {
   const { toast } = useToast();
 
   const [form, setForm] = useState({
-    name: '', email: '', password: '', college: '', department: '', phone: ''
+    name: '', email: '', password: '', collegeId: '', department: '', phone: ''
   });
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading]  = useState(false);
   const [error, setError]      = useState('');
 
+  const [colleges, setColleges] = useState([]);
+  const [departments, setDepartments] = useState([]);
+
+  useEffect(() => {
+    collegeAPI.getList().then(res => {
+      setColleges(res.data.colleges.map(c => ({ label: c.collegeName, value: c._id })));
+    }).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if (form.collegeId) {
+      collegeAPI.getDepartments(form.collegeId).then(res => {
+        setDepartments(res.data.departments.map(d => ({ label: d, value: d })));
+      }).catch(console.error);
+      setForm(p => ({ ...p, department: '' }));
+    } else {
+      setDepartments([]);
+    }
+  }, [form.collegeId]);
+
   const handleChange = (e) => setForm(p => ({ ...p, [e.target.name]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.college)    { setError('Please select a college.'); return; }
+    if (!form.collegeId)  { setError('Please select a college.'); return; }
     if (!form.department) { setError('Please select a department.'); return; }
     setError('');
     setLoading(true);
@@ -142,13 +148,13 @@ const Register = () => {
           <div className={styles.row2}>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="reg-college">College / Institute</label>
-              <SearchableSelect id="reg-college" icon={Building2} name="college" value={form.college}
-                onChange={handleChange} options={COLLEGES} placeholder="Search college…" />
+              <SearchableSelect id="reg-college" icon={Building2} name="collegeId" value={form.collegeId}
+                onChange={handleChange} options={colleges} placeholder="Search college…" />
             </div>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="reg-dept">Department</label>
               <SearchableSelect id="reg-dept" icon={BookOpen} name="department" value={form.department}
-                onChange={handleChange} options={DEPARTMENTS} placeholder="Search dept…" />
+                onChange={handleChange} options={departments} placeholder={form.collegeId ? "Search dept…" : "Select a college first"} />
             </div>
           </div>
 
