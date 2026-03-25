@@ -2,9 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LogOut, BrainCircuit, LayoutDashboard,
-  ChevronDown, Repeat2, Shield, GraduationCap, Bell
+  ChevronDown, Repeat2, Shield, GraduationCap, Bell, KeyRound
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { facultyAPI } from '../../api/client';
+import { useToast } from '../Toast/Toast';
+import ChangePasswordModal from '../ChangePassword/ChangePassword';
 import styles from './DashboardLayout.module.css';
 
 /* ──────────────────────────────────────────────────────────
@@ -38,8 +41,10 @@ const DashboardLayout = ({ navItems, children }) => {
   const navigate  = useNavigate();
   const location  = useLocation();
   const { user: profile, logout, loading } = useAuth();
+  const { toast } = useToast();
 
   const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const switcherRef = useRef(null);
 
   const actualRole  = profile?.role || 'faculty';
@@ -59,6 +64,11 @@ const DashboardLayout = ({ navItems, children }) => {
 
   const handleLogout = async () => {
     await logout();
+  };
+
+  const handleChangePassword = async (data) => {
+    await facultyAPI.changePassword(data);
+    toast('Password changed successfully!', 'success');
   };
 
   const handleSwitchView = (view) => {
@@ -181,6 +191,10 @@ const DashboardLayout = ({ navItems, children }) => {
               </span>
             </div>
           </div>
+          <button className={styles.changePassBtn} onClick={() => setPasswordModalOpen(true)}>
+            <KeyRound size={14} strokeWidth={2} />
+            <span>Change Password</span>
+          </button>
           <button className={styles.logoutBtn} onClick={handleLogout}>
             <LogOut size={15} strokeWidth={2} />
             <span>Sign Out</span>
@@ -273,6 +287,13 @@ const DashboardLayout = ({ navItems, children }) => {
           {children}
         </main>
       </div>
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={passwordModalOpen}
+        onClose={() => setPasswordModalOpen(false)}
+        onSubmit={handleChangePassword}
+      />
     </div>
   );
 };

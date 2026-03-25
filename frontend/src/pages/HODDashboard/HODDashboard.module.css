@@ -528,3 +528,62 @@
 }
 .dangerModalBtn:hover:not(:disabled) { box-shadow: 0 5px 18px rgba(239,68,68,0.4); transform: translateY(-1px); }
 .dangerModalBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ══ Additional missing classes ══ */
+.formRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formRow label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.formInput {
+  background: var(--bg-3);
+  border: 1px solid var(--border-base);
+  color: var(--text-1);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.formInput:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.15);
+}
+
+.wideModal {
+  max-width: 1000px !important;
+  width: 95vw !important;
+}
+
+.successModalBtn {
+  padding: 9px 20px;
+  background: linear-gradient(135deg, var(--success), #059669);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.87rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.16s;
+  box-shadow: 0 3px 12px rgba(16,185,129,0.25);
+}
+
+.successModalBtn:hover:not(:disabled) {
+  box-shadow: 0 5px 18px rgba(16,185,129,0.4);
+  transform: translateY(-1px);
+}
+
+.successModalBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

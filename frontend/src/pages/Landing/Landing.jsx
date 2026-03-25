@@ -148,7 +148,7 @@ const Landing = () => {
 
   const [collegeModalOpen, setCollegeModalOpen] = useState(false);
   const [collegeForm, setCollegeForm] = useState({
-    collegeName: '', location: '', adminName: '', adminEmail: '', adminPhone: '', departments: ["Computer Science", "Engineering"] // default
+    collegeName: '', location: '', adminName: '', adminEmail: '', adminPhone: ''
   });
   const [registering, setRegistering] = useState(false);
   const { toast } = useToast();
@@ -164,7 +164,7 @@ const Landing = () => {
       await collegeAPI.registerRequest(collegeForm);
       toast('College registration submitted! Our team will contact you shortly.', 'success', 6000);
       setCollegeModalOpen(false);
-      setCollegeForm({ collegeName: '', location: '', adminName: '', adminEmail: '', adminPhone: '', departments: ["Computer Science", "Engineering"] });
+      setCollegeForm({ collegeName: '', location: '', adminName: '', adminEmail: '', adminPhone: '' });
     } catch(err) {
       toast(err.response?.data?.message || 'Registration failed.', 'error');
     } finally {

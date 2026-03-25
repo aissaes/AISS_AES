@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import styles from './Modal.module.css';
 
-const Modal = ({ isOpen, onClose, title, children, footer, size = 'md' }) => {
+const Modal = ({ isOpen, onClose, title, children, footer, size = 'md', className = '' }) => {
   const overlayRef = useRef(null);
 
   useEffect(() => {
@@ -23,12 +23,14 @@ const Modal = ({ isOpen, onClose, title, children, footer, size = 'md' }) => {
     <div
       className={styles.overlay}
       ref={overlayRef}
-      onClick={(e) => e.target === overlayRef.current && onClose?.()}
+      onMouseDown={(e) => {
+        if (e.target === overlayRef.current) onClose?.();
+      }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
     >
-      <div className={`${styles.modal} ${styles[size]}`}>
+      <div className={`${styles.modal} ${styles[size] || ''} ${className}`}>
         <div className={styles.header}>
           <h3 className={styles.title} id="modal-title">{title}</h3>
           <button className={styles.closeBtn} onClick={onClose} aria-label="Close">

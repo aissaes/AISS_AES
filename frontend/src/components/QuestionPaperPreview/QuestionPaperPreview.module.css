@@ -1,0 +1,239 @@
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: var(--text-3);
+  font-size: 0.95rem;
+}
+
+.previewContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Instructions */
+.instructionsBox {
+  padding: 24px;
+  background: var(--surface-1);
+  border-radius: 16px;
+  border: 1px solid var(--border-base);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.instructionsTitle {
+  color: var(--text-1);
+  margin: 0 0 16px 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.instructionsList {
+  color: var(--text-2);
+  font-size: 0.95rem;
+  padding-left: 24px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  line-height: 1.6;
+}
+
+/* Sections */
+.sectionsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sectionCard {
+  padding: 24px;
+  background: var(--surface-1);
+  border-radius: 16px;
+  border: 1px solid var(--border-base);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-base);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.sectionTitle {
+  color: var(--text-0);
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.questionCountBadge {
+  font-size: 0.8rem;
+  color: var(--text-3);
+  font-weight: 500;
+  background: var(--bg-3);
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+
+.ruleDisplay {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--primary-dim, rgba(99, 102, 241, 0.1));
+  padding: 8px 16px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.ruleMain {
+  color: var(--primary);
+}
+
+.ruleCompulsory {
+  color: var(--amber, #f59e0b);
+}
+
+.ruleChoice {
+  color: var(--text-2);
+  font-size: 0.75rem;
+}
+
+/* Questions */
+.questionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.questionWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.subQuestionWrapper {
+  margin-top: 12px;
+}
+
+.questionContent {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 0;
+}
+
+.isSubContent {
+  padding: 10px 14px;
+  background: var(--bg-2);
+  border-radius: 10px;
+  border-left: 3px solid var(--border-2);
+}
+
+.isCompulsory {
+  border-left: 3px solid var(--amber, #f59e0b) !important;
+}
+
+.questionLabel {
+  color: var(--text-3);
+  font-size: 1rem;
+  font-weight: 700;
+  min-width: 28px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.compulsoryLabel {
+  color: var(--amber, #f59e0b);
+}
+
+.questionTextCol {
+  flex: 1;
+}
+
+.questionText {
+  color: var(--text-1);
+  font-size: 0.95rem;
+  margin: 0;
+  line-height: 1.7;
+}
+
+.questionImage {
+  max-width: 100%;
+  max-height: 220px;
+  margin-top: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-2);
+}
+
+.subRuleBox {
+  font-size: 0.8rem;
+  color: var(--amber, #f59e0b);
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: var(--amber-dim, rgba(245, 158, 11, 0.08));
+  border-radius: 8px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.subRuleChoice {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-2);
+  font-size: 0.75rem;
+}
+
+.marksBadge {
+  color: var(--primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  background: var(--primary-dim, rgba(99, 102, 241, 0.1));
+  padding: 6px 12px;
+  border-radius: 8px;
+}
+
+.childrenWrapper {
+  padding-left: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-left: 2px solid var(--border-2);
+  margin-left: 8px;
+}
+
+/* Feedback */
+.feedbackBox {
+  padding: 16px;
+  background: var(--amber-dim, rgba(245, 158, 11, 0.08));
+  border-radius: 10px;
+  border: 1px solid var(--amber-border, rgba(245, 158, 11, 0.2));
+}
+
+.feedbackTitle {
+  color: var(--amber, #f59e0b);
+  font-size: 0.85rem;
+  margin: 0 0 8px 0;
+}
+
+.feedbackText {
+  color: var(--text-2);
+  font-size: 0.9rem;
+  margin: 0;
+  line-height: 1.5;
+}

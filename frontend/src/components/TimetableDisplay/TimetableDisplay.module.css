@@ -1,0 +1,269 @@
+.emptyCenter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  background: var(--surface-1);
+  border-radius: 16px;
+  border: 1px dashed var(--border-2);
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  margin-bottom: 16px;
+  opacity: 0.8;
+}
+
+.emptyText {
+  color: var(--text-2);
+  font-size: 1rem;
+}
+
+.ttList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ttCard {
+  background: var(--surface-1);
+  border: 1px solid var(--border-base);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+}
+
+.ttCard:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  border-color: var(--border-hover);
+}
+
+.ttHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  cursor: pointer;
+  background: var(--surface-2);
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.ttHeader:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.ttHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.ttIconWrap {
+  width: 44px;
+  height: 44px;
+  background: var(--primary-dim, rgba(99, 102, 241, 0.1));
+  color: var(--primary);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ttTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-1);
+  margin: 0 0 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ttBadge {
+  font-size: 0.75rem;
+  background: var(--primary);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.ttSub {
+  font-size: 0.85rem;
+  color: var(--text-3);
+  margin: 0;
+}
+
+.ttHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.addBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid var(--border-1);
+  color: var(--text-1);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.addBtn:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+.expandIcon {
+  color: var(--text-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-2);
+}
+
+.ttBody {
+  border-top: 1px solid var(--border-base);
+  background: var(--bg-1);
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  padding: 14px 20px;
+  text-align: left;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border-base);
+}
+
+.table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-base);
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.dateCell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dateText {
+  color: var(--text-1);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.timeText {
+  color: var(--text-3);
+  font-size: 0.8rem;
+}
+
+.subjectText {
+  color: var(--text-1);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.codeBadge {
+  background: var(--bg-3);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: var(--text-2);
+  font-family: monospace;
+}
+
+.mutedText {
+  color: var(--text-2);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.facultyCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-1);
+  font-size: 0.9rem;
+  background: var(--surface-2);
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border-2);
+  display: inline-flex;
+}
+
+.facultyIcon {
+  color: var(--primary);
+}
+
+.statusBadge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: inline-flex;
+}
+
+.successBadge {
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
+  color: var(--success);
+}
+
+.pendingBadge {
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  color: var(--warning);
+}
+
+.deleteBtn {
+  background: transparent;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.deleteBtn:hover {
+  background: rgba(239, 68, 68, 0.1);
+}

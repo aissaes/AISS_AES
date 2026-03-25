@@ -1,0 +1,162 @@
+.examCard {
+  padding: 20px;
+  background: var(--surface-1);
+  border-radius: 14px;
+  border: 1px solid var(--border-base);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: border-color 0.2s;
+}
+
+.examCard:hover {
+  border-color: var(--border-hover);
+}
+
+.examCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.examIndex {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+.removeBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: var(--danger);
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.removeBtn:hover {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.gridTwo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.gridThree {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+.gridMarks {
+  display: grid;
+  grid-template-columns: 0.8fr 2.2fr;
+  gap: 16px;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.spanFull {
+  grid-column: 1 / -1;
+}
+
+.fieldLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fieldInput {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  outline: none;
+  transition: all 0.2s;
+  width: 100%;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.fieldInput:focus {
+  border-color: var(--primary);
+  background: rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1), 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+/* Fix visibility of native date/time calendar icons on dark backgrounds */
+.fieldInput::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.7;
+  cursor: pointer;
+  padding: 4px;
+}
+.fieldInput::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+.fieldInput::placeholder {
+  color: var(--text-3);
+}
+
+/* Meta Section */
+.metaSection {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-base);
+}
+
+.metaTitle {
+  color: var(--text-1);
+  font-size: 0.95rem;
+  margin: 0 0 16px 0;
+  font-weight: 700;
+}
+
+/* Add Subject */
+.addSubjectBtn {
+  margin-top: 16px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  background: var(--primary-dim, rgba(99, 102, 241, 0.08));
+  color: var(--primary);
+  border: 1px dashed var(--primary);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.addSubjectBtn:hover {
+  background: var(--primary-dim, rgba(99, 102, 241, 0.15));
+}
+
+@media (max-width: 640px) {
+  .gridTwo,
+  .gridThree,
+  .gridMarks {
+    grid-template-columns: 1fr;
+  }
+}
