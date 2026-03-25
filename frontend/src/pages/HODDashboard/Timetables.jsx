@@ -79,7 +79,7 @@ const Timetables = () => {
         course: formData.course,
         semester: formData.semester,
         examType: formData.examType,
-        exams: formData.examDetails.map(exam => ({
+        examDetails: formData.examDetails.map(exam => ({
           ...exam,
           date: new Date(exam.date),
           startTime: new Date(`${exam.date}T${exam.startTime}:00`),
