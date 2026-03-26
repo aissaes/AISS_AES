@@ -6,6 +6,11 @@ const studentSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    collegeId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "College",
+        required: true
+    },
     semester:{
         type:Number,
         required:true
@@ -33,8 +38,22 @@ const studentSchema = new mongoose.Schema({
         type:String,
         required:true,
         unique:true
+    },
+    password: {
+        type: String,
+        required: true
+    },
+    course: {
+        type: String,
+        required: true
+    },
+    role: {
+        type: String,
+        default: 'Student'
     }
 
 });
 
 const Student = mongoose.model("Student", studentSchema);
+
+export default Student;

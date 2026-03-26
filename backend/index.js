@@ -17,6 +17,8 @@ import collegeAdminRouter from "./routes/collegeAdminRoutes.js";
 import timetableRoutes from "./routes/timeTableRoutes.js";
 import questionPaperRoutes from "./routes/questionPaperRoutes.js";
 import collegeRouter from "./routes/collegeRoutes.js";
+import studentRouter from "./routes/studentRoutes.js";
+
 
 // You no longer need dotenv.config() down here.
 const app = express();
@@ -63,6 +65,10 @@ app.use("/overallAdmin", overallAdminRouter);
 // Academic Feature Routes
 app.use("/faculty/timetable", timetableRoutes);
 app.use("/faculty/question-paper", questionPaperRoutes);
+
+// Student Routes
+app.use("/student", studentRouter);
+
 
 // Local dev server — Vercel uses the export below instead
 const PORT = process.env.PORT || 5000;
