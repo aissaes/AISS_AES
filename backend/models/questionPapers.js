@@ -44,7 +44,10 @@ sections[i][j] -> question inside that section
 }
 */
 const questionSchema = new mongoose.Schema({
-
+  questionId:{
+    type:String,
+    required:true,
+  },
   text: {
     type: String,
     required: true

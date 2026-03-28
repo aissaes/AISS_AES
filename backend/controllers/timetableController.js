@@ -4,6 +4,7 @@ import Faculty from "../models/faculty.js";
 import College from "../models/college.js";
 import sendEmail from "../configurations/nodemailer.js";
 import QuestionPaper from "../models/questionPapers.js";
+import generateQR from "../configurations/qrcode.js";
 
 // 1. Create a new Timetable and its associated Exams
 export const createTimetable = async (req, res) => {

@@ -18,6 +18,7 @@ import timetableRoutes from "./routes/timeTableRoutes.js";
 import questionPaperRoutes from "./routes/questionPaperRoutes.js";
 import collegeRouter from "./routes/collegeRoutes.js";
 import studentRouter from "./routes/studentRoutes.js";
+import answerRoutes from "./routes/answerRoutes.js";
 
 
 // You no longer need dotenv.config() down here.
@@ -68,6 +69,9 @@ app.use("/faculty/question-paper", questionPaperRoutes);
 
 // Student Routes
 app.use("/student", studentRouter);
+
+//answer Routes
+app.use('/answer',answerRoutes);
 
 
 // Local dev server — Vercel uses the export below instead

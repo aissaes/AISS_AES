@@ -54,6 +54,10 @@ const examSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  token:{
+    type:String,
+    default:"Not generated"
+  },
 
   
 
@@ -83,7 +87,22 @@ const examSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "QuestionPaper",
     default: null
-  }
+  },
+
+  qrCode:{
+    type:String,
+    default:null
+  },
+
+  noofStudentsResgitered:{
+    type:Number,    
+  },
+
+  studentsResgistered:[
+    {
+    type:mongoose.Schema.Types.ObjectId,
+    ref:'Student'
+  }]
 
 }, { timestamps: true }); // Automatically handles createdAt and updatedAt
 
