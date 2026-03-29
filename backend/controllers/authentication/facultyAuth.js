@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 
 export const registerFaculty = async (req, res) => {
   try {
-    const { name, email, password, collegeId, department, phone } = req.body;
+    const { name, email, password, collegeId, department, course, phone } = req.body;
 
     // 1. Check if email already exists for a cleaner error message
     const existingFaculty = await Faculty.findOne({ email });
@@ -28,6 +28,7 @@ export const registerFaculty = async (req, res) => {
       password: hashedPassword,
       collegeId: new mongoose.Types.ObjectId(collegeId),
       department,
+      course,
       phone
     });
 

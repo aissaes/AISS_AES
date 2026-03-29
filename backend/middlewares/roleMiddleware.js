@@ -70,3 +70,12 @@ export const isOverallAdmin = async (req, res, next) => {
     res.status(500).json({ message: "Internal server error verifying Overall Admin role.", error });
   }
 };
+
+// 5. Student check
+export const isStudent = (req, res, next) => {
+  if (req.user && req.user.role === 'student') { // Ensure 'student' matches how you save it in the DB payload
+    next();
+  } else {
+    return res.status(403).json({ message: "Access denied. Student resources only." });
+  }
+};

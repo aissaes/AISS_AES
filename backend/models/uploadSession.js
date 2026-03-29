@@ -8,13 +8,13 @@ const uploadSchema=new mongoose.Schema({
         ref:'Exam'
     },
     token:{type:String},
-    expiresId:{type:Date},
+    expiresAt:{type:Date},
 });
 
-uploadSchema.index({expiresId:1},{expireAfterSeconds:0}) //for automatically deleting the data after the expiresAt time is reached
+uploadSchema.index({expiresAt:1},{expireAfterSeconds:0}) //for automatically deleting the data after the expiresAt time is reached
 
 
 const Upload=mongoose.model("Upload",uploadSchema);
 
 
-export default Upload;
+export default Upload;  

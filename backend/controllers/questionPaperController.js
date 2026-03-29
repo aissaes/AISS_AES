@@ -5,64 +5,47 @@ import College from "../models/college.js";
 import sendEmail from "../configurations/nodemailer.js";
 
 // 1. TEACHER: Upload the Question Paper
+
 export const uploadQuestionPaper = async (req, res) => {
   try {
-    const { examId, instructions, sections, sectionChoices } = req.body;
+    console.log("📥 Incoming Frontend Data:", JSON.stringify(req.body, null, 2));
 
-    // 1. Find the Exam
-    const exam = await Exam.findById(examId);
-    if (!exam) return res.status(404).json({ message: "Exam not found" });
+    const { subjectCode, sections, ...otherData } = req.body;
 
-    // 2. Security Check: Is this the officially assigned teacher?
-    if (exam.assignedFaculty.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Unauthorized: You are not assigned to this exam" });
+    // 1. Protect against missing sections
+    if (!sections || !Array.isArray(sections)) {
+      return res.status(400).json({ success: false, message: "Sections data is missing or invalid." });
     }
 
-    if (exam.isPaperQuestionUploaded) {
-      return res.status(400).json({ message: "A question paper is already uploaded for this exam" });
-    }
-
-    // 3. Create the Question Paper (Inheriting multi-tenant IDs from the Exam)
-    const questionPaper = await QuestionPaper.create({
-      examId: exam._id,
-      createdBy: req.user.id,
-      collegeId: exam.collegeId, 
-      instructions,
-      sections,
-      sectionChoices,
-      status: "Pending" // Explicitly start as pending
+    // 2. Auto-fill the missing questionIds
+    const formattedSections = sections.map((section, sectionIndex) => {
+      return section.map((question, questionIndex) => {
+        return {
+          ...question,
+          questionId: question.questionId || `S${sectionIndex + 1}-Q${questionIndex + 1}`
+        };
+      });
     });
 
-    // 4. Link the paper to the Exam
-    exam.questionPaper = questionPaper._id;
-    exam.isPaperQuestionUploaded = true;
-    await exam.save();
-
-    // 5. Add to the Faculty's record
+    // 3. SECURITY & SMART DATA: Fetch the logged-in faculty member to get their college
     const faculty = await Faculty.findById(req.user.id);
-    faculty.questionPapersPrepared.push(questionPaper._id);
-    await faculty.save();
-
-    // 6. Notify the HOD
-    const hod = await Faculty.findOne({ 
-      collegeId: faculty.collegeId,
-      department: faculty.department, 
-      role: "hod" 
-    });
-
-    if (hod) {
-      await sendEmail(
-         hod.email,
-        "New Question Paper Awaiting Approval",
-        `${faculty.name} has uploaded the question paper for ${exam.subjectName} (${exam.subjectCode}).
-        Please log in to review and approve it.`
-      );
+    if (!faculty) {
+      return res.status(404).json({ success: false, message: "Faculty profile not found." });
     }
 
-    res.status(201).json({ message: "Question paper successfully uploaded and sent for review", questionPaper });
+    // 4. Save to database using the correct schema keys
+    const newPaper = await QuestionPaper.create({
+      subjectCode,
+      collegeId: faculty.collegeId, // 👈 Securely grabbed directly from the DB!
+      createdBy: req.user.id,       // 👈 Changed to match your schema
+      sections: formattedSections,
+      ...otherData 
+    });
+
+    res.status(201).json({ success: true, message: "Question paper uploaded!", newPaper });
   } catch (error) {
-    console.error("Error uploading question paper:", error);
-    res.status(500).json({ message: "Internal server error", error });
+    console.error("❌ Error uploading question paper:", error);
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 };
 

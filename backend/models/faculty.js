@@ -18,6 +18,10 @@ const facultySchema = new mongoose.Schema({
     required:true
   },
 
+  course: {
+    type: String
+  },
+
   email:{
     type:String,
     required:true,

@@ -19,6 +19,7 @@ import questionPaperRoutes from "./routes/questionPaperRoutes.js";
 import collegeRouter from "./routes/collegeRoutes.js";
 import studentRouter from "./routes/studentRoutes.js";
 import answerRoutes from "./routes/answerRoutes.js";
+import studentAuthRouter from "./routes/studentAuthRoutes.js";
 
 
 // You no longer need dotenv.config() down here.
@@ -68,6 +69,7 @@ app.use("/faculty/timetable", timetableRoutes);
 app.use("/faculty/question-paper", questionPaperRoutes);
 
 // Student Routes
+app.use("/student/auth", studentAuthRouter);
 app.use("/student", studentRouter);
 
 //answer Routes

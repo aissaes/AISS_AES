@@ -1,13 +1,10 @@
-import mongoose from "mongoose";
-import express from 'express';
+
 
 import Upload from "../models/uploadSession.js";
 import Answers from "../models/answer.js";
 
 //upload answer sheet
 import imagekit from "../configurations/imageKit.js";
-import generateSessionToken from "../utils/generateToken.js";
-import Exam from "../models/exam.js";
 
 
 
@@ -137,101 +134,24 @@ export const reuploadAnswer = async (req, res) => {
   }
 };
 
-
-//For HOD only
-export const generateToken = async (req, res) => {
+export const finalizeSubmission = async (req, res) => {
   try {
-    const { examId } = req.params;
+    const { token } = req.body;
+    const studentId = req.user.id; 
 
-    if (!examId) {
-      return res.status(400).json({
-        success: false,
-        message: "Exam ID is required",
-      });
-    }
-
-    // 1. Find exam
-    const exam = await Exam.findById(examId);
-
-    if (!exam) {
-      return res.status(404).json({
-        success: false,
-        message: "No such exam found",
-      });
-    }
-
-    // 2. Generate token
-    const token = generateSessionToken();
-
-    // 3. Save token in exam
-    exam.token = token;
-
-    await exam.save();
-
-    // 4. Send response
-    return res.status(200).json({
-      success: true,
-      message: "Token generated successfully"
+    // Find and delete the active session
+    const deletedSession = await Upload.findOneAndDelete({ 
+      token: token, 
+      student: studentId 
     });
 
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
+    if (!deletedSession) {
+      return res.status(400).json({ success: false, message: "No active upload session found. It may have already expired or been submitted." });
+    }
+
+    res.status(200).json({ success: true, message: "Exam submitted successfully! Upload window is now closed." });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Internal server error." });
   }
 };
-
-
-export const generateQRCode=async(req,res)=>{
-
-
-    try{
-
-    
-    const {examId}=req.params;
-
-  
-    if (!examId) {
-      return res.status(400).json({
-        success: false,
-        message: "Exam ID is required",
-      });
-    }
-
-      // 1. Find exam
-    const exam = await Exam.findById(examId);
-
-    if (!exam) {
-      return res.status(404).json({
-        success: false,
-        message: "No such exam found",
-      });
-    }
-
-    // 2. Generate QR
-    const qrUrl = generateQRCode(token);
-
-    // 3. Save url in exam
-    exam.qrCode = qrUrl;
-
-    await exam.save();
-
-    // 4. Send response
-    return res.status(200).json({
-      success: true,
-      message: "QR generated successfully"
-    });
-}
-catch(err) {
-     console.error(err);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
-}
-
-}
-
-
