@@ -677,3 +677,52 @@
   max-width: 1000px !important;
   width: 95vw !important;
 }
+/* Table */
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.865rem;
+}
+
+.table thead tr {
+  background: rgba(0,0,0,0.15);
+  border-bottom: 1px solid var(--border-base);
+}
+
+.table th {
+  padding: 11px 18px;
+  text-align: left;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 13px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  color: var(--text-2);
+  vertical-align: middle;
+}
+
+.table tbody tr:last-child td { border-bottom: none; }
+.table tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+.nameCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-1);
+  font-weight: 500;
+}
+
+.badgeSuccess { background: var(--success-bg);      border-color: var(--success-border); color: var(--success); }
+.badgeWarning { background: var(--warning-bg);      border-color: var(--warning-border); color: var(--warning); }
+.badgeDanger  { background: var(--danger-bg);       border-color: var(--danger-border);  color: var(--danger); }
+

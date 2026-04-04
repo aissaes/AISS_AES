@@ -267,3 +267,20 @@
 .deleteBtn:hover {
   background: rgba(239, 68, 68, 0.1);
 }
+
+.manageAccessBtn {
+  background: transparent;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.manageAccessBtn:hover {
+  background: var(--primary-dim, rgba(99, 102, 241, 0.1));
+}

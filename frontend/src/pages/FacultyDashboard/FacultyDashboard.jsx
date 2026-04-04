@@ -6,6 +6,7 @@ import { facultyAPI } from '../../api/client';
 import Settings from '../Settings/Settings';
 import Assignments from './Assignments';
 import FacultyTimetables from './Timetables';
+import ExamResults from './ExamResults';
 import styles from './FacultyDashboard.module.css';
 
 /* ── Stat Card ── */
@@ -104,12 +105,12 @@ const FacultyHome = () => {
   );
 };
 
-/* ── Dashboard shell ── */
 const FacultyDashboard = () => {
   const navItems = [
     { path: '/faculty',          label: 'My Overview',    icon: <Home      size={18} /> },
     { path: '/faculty/assignments',  label: 'Assignments', icon: <FileText  size={18} /> },
     { path: '/faculty/timetables',  label: 'Timetables',        icon: <BookOpen size={18} /> },
+    { path: '/faculty/results',  label: 'Results',        icon: <BarChart2 size={18} /> },
     { path: '/faculty/settings', label: 'Settings',       icon: <SettingsIcon size={18} /> },
   ];
 
@@ -120,6 +121,7 @@ const FacultyDashboard = () => {
         <Route path="/settings" element={<Settings />} />
         <Route path="/assignments"  element={<Assignments />} />
         <Route path="/timetables"  element={<FacultyTimetables />} />
+        <Route path="/results"  element={<ExamResults />} />
       </Routes>
     </DashboardLayout>
   );

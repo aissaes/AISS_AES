@@ -13,6 +13,8 @@ import FacultyDashboard    from '../pages/FacultyDashboard/FacultyDashboard';
 import HODDashboard        from '../pages/HODDashboard/HODDashboard';
 import CollegeAdminDashboard from '../pages/CollegeAdminDashboard/CollegeAdminDashboard';
 import OverallAdminDashboard from '../pages/OverallAdminDashboard/OverallAdminDashboard';
+import StudentLogin        from '../pages/StudentLogin/StudentLogin';
+import StudentDashboard    from '../pages/StudentDashboard/StudentDashboard';
 
 const AppRoutes = () => (
   <Routes>
@@ -25,6 +27,10 @@ const AppRoutes = () => (
     
     <Route path="/register" element={
       <PublicOnlyRoute><Register /></PublicOnlyRoute>
+    } />
+
+    <Route path="/student/login" element={
+      <PublicOnlyRoute><StudentLogin /></PublicOnlyRoute>
     } />
 
     <Route path="/admin/login" element={<AdminLogin />} />
@@ -54,6 +60,13 @@ const AppRoutes = () => (
     <Route path="/admin/*" element={
       <ProtectedRoute allowedRoles={['overallAdmin']}>
         <OverallAdminDashboard />
+      </ProtectedRoute>
+    } />
+
+    {/* Student Dashboard — accessible by students */}
+    <Route path="/student/*" element={
+      <ProtectedRoute allowedRoles={['student']}>
+        <StudentDashboard />
       </ProtectedRoute>
     } />
 

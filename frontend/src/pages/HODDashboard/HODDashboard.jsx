@@ -3,7 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import {
   Home, Settings as SettingsIcon, Users, BookOpen,
   CheckCircle2, Clock, XCircle, ArrowRightLeft,
-  UserCheck, AlertTriangle, RefreshCw, FileText
+  UserCheck, AlertTriangle, RefreshCw, FileText, Cpu
 } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout/DashboardLayout';
 import Modal from '../../components/Modal/Modal';
@@ -12,6 +12,8 @@ import { facultyAPI, hodAPI } from '../../api/client';
 import { useToast } from '../../components/Toast/Toast';
 import Timetables from './Timetables';
 import QuestionPapers from './QuestionPapers';
+import ManageStudents from './ManageStudents';
+import Evaluation from './Evaluation';
 import styles from './HODDashboard.module.css';
 
 /* ══════════════════════════════════════════════════════
@@ -266,8 +268,10 @@ const HODDashboard = () => {
   const navItems = [
     { path: '/hod',            label: 'Overview',        icon: <Home         size={18} />, badge: pendingCount },
     { path: '/hod/faculty',    label: 'Manage Faculty',  icon: <Users        size={18} /> },
+    { path: '/hod/students',   label: 'Manage Students', icon: <UserCheck    size={18} /> },
     { path: '/hod/timetables', label: 'Timetables',      icon: <BookOpen     size={18} /> },
     { path: '/hod/papers',     label: 'Question Papers', icon: <FileText     size={18} /> },
+    { path: '/hod/evaluation', label: 'Evaluation & KB', icon: <Cpu          size={18} /> },
     { path: '/hod/settings',   label: 'Settings',        icon: <SettingsIcon size={18} /> },
   ];
 
@@ -276,8 +280,10 @@ const HODDashboard = () => {
       <Routes>
         <Route path="/"           element={<HODHome />} />
         <Route path="/faculty"    element={<HODFaculty />} />
+        <Route path="/students"   element={<ManageStudents />} />
         <Route path="/timetables" element={<Timetables />} />
         <Route path="/papers"     element={<QuestionPapers />} />
+        <Route path="/evaluation" element={<Evaluation />} />
         <Route path="/settings"   element={<Settings />} />
       </Routes>
     </DashboardLayout>

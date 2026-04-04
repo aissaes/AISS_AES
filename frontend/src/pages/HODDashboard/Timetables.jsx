@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Calendar, Plus, RefreshCw } from 'lucide-react';
 import { timetableAPI, facultyAPI } from '../../api/client';
+import client from '../../api/client';
 import { useToast } from '../../components/Toast/Toast';
 import Modal from '../../components/Modal/Modal';
 import TimetableDisplay from '../../components/TimetableDisplay/TimetableDisplay';
@@ -31,6 +32,66 @@ const Timetables = () => {
   const [newExam, setNewExam] = useState({
     subjectName: '', subjectCode: '', date: '', startTime: '', endTime: '', maxMarks: 30, assignedFaculty: ''
   });
+
+  /* ── Manage Exam Access ── */
+  const [accessModal, setAccessModal] = useState({ open: false, examId: null, examName: '' });
+  const [isGeneratingToken, setIsGeneratingToken] = useState(false);
+  const [isGeneratingQR, setIsGeneratingQR] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState(null);
+  const [isTokenGenerated, setIsTokenGenerated] = useState(false);
+
+  const handleManageAccess = (exam) => {
+    setAccessModal({ open: true, examId: exam._id, examName: exam.subjectName });
+    // Initialize state from existing database values if the exam already has them
+    setQrCodeUrl(exam.qrCode || null);
+    setIsTokenGenerated(!!exam.token);
+  };
+
+  const handleGenerateToken = async () => {
+    setIsGeneratingToken(true);
+    try {
+      const token = localStorage.getItem('token') || '';
+      const res = await client.post(
+        `/faculty/hod/exams/${accessModal.examId}/generate-token`, 
+        {}, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.data.success) {
+        toast(res.data.message || 'Token generated successfully', 'success');
+        setIsTokenGenerated(true);
+        fetchData(); // refresh timetable data so next time we open, it persists
+      }
+    } catch (err) {
+      toast(err.response?.data?.message || 'Failed to generate token', 'error');
+    } finally {
+      setIsGeneratingToken(false);
+    }
+  };
+
+  const handleGenerateQR = async () => {
+    if (!isTokenGenerated) {
+      toast('Please generate the exam token first.', 'warning');
+      return;
+    }
+    setIsGeneratingQR(true);
+    try {
+      const token = localStorage.getItem('token') || '';
+      const res = await client.post(
+        `/faculty/hod/exams/${accessModal.examId}/generate-qr`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.data.success && res.data.qrCode) {
+        toast(res.data.message || 'QR generated successfully', 'success');
+        setQrCodeUrl(res.data.qrCode);
+        fetchData(); // refresh timetable data so the qr persist
+      }
+    } catch (err) {
+      toast(err.response?.data?.message || 'Failed to generate QR', 'error');
+    } finally {
+      setIsGeneratingQR(false);
+    }
+  };
 
   /* ── Fetch data ── */
   const fetchData = useCallback(async () => {
@@ -197,6 +258,7 @@ const Timetables = () => {
               role="HOD"
               onAddExam={handleAddExamClick}
               onDeleteExam={handleDeleteExam}
+              onManageAccess={handleManageAccess}
             />
           )}
         </div>
@@ -265,9 +327,63 @@ const Timetables = () => {
             index={0}
             onChange={(field, value) => setNewExam({ ...newExam, [field]: value })}
             onRemove={() => {}}
-            canRemove={false}
             facultyList={deptFaculty}
           />
+        </div>
+      </Modal>
+
+      {/* ── Manage Exam Access Modal ── */}
+      <Modal
+        isOpen={accessModal.open}
+        onClose={() => !isGeneratingToken && !isGeneratingQR && setAccessModal({ open: false, examId: null, examName: '' })}
+        title={`Access Controls: ${accessModal.examName}`}
+        footer={<button className={styles.cancelModalBtn} onClick={() => setAccessModal({ open: false, examId: null, examName: '' })}>Close</button>}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '16px 0' }}>
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+            <button
+              onClick={handleGenerateToken}
+              disabled={isGeneratingToken}
+              className={styles.primaryModalBtn}
+              style={{ minWidth: '180px', display: 'flex', justifyContent: 'center' }}
+            >
+              {isGeneratingToken ? "Generating..." : (isTokenGenerated ? "Regenerate Exam Token" : "Generate Exam Token")}
+            </button>
+            <button
+              onClick={handleGenerateQR}
+              disabled={!isTokenGenerated || isGeneratingQR}
+              className={styles.successModalBtn}
+              style={{ minWidth: '180px', display: 'flex', justifyContent: 'center' }}
+            >
+              {isGeneratingQR ? "Generating..." : (qrCodeUrl ? "Regenerate QR Code" : "Generate QR Code")}
+            </button>
+          </div>
+
+          {qrCodeUrl && (
+            <div style={{ 
+              marginTop: '8px', 
+              padding: '24px', 
+              border: '1px solid var(--border-base)', 
+              borderRadius: '12px', 
+              backgroundColor: 'var(--surface-1)', 
+              alignSelf: 'stretch',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.05)'
+            }}>
+              <p style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-1)', marginBottom: '16px' }}>
+                Scan to Access the Exam
+              </p>
+              <div style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                <img 
+                  src={qrCodeUrl} 
+                  alt="Exam Access QR Code" 
+                  style={{ width: '180px', height: '180px', display: 'block', objectFit: 'contain' }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </Modal>
     </div>

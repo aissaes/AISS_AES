@@ -85,6 +85,9 @@ export const facultyAPI = {
   approve: (id) => client.post('/faculty/approve', { facultyId: id }),
   reject: (id, reason) => client.post('/faculty/reject', { facultyId: id, rejectedReason: reason }),
   getDeptFaculty: (department) => client.get('/faculty', { params: department ? { department } : {} }),
+  getExamResults: (examId) => client.get(`/faculty/exams/${examId}/results`),
+  getDetailedAnswerSheet: (examId, studentId) => client.get(`/faculty/exams/${examId}/results/${studentId}`),
+  overrideQuestionMarks: (resultId, data) => client.put(`/faculty/results/${resultId}/override`, data),
 };
 
 /* ══════════════════════════════════════════════════════
@@ -93,6 +96,15 @@ export const facultyAPI = {
 ══════════════════════════════════════════════════════ */
 export const hodAPI = {
   transfer: (targetFacultyId) => client.post('/faculty/hod/transfer', { newHODId: targetFacultyId }),
+  getStudents: () => client.get('/faculty/hod/students'),
+  addStudent: (data) => client.post('/faculty/hod/students', data),
+  updateStudent: (id, data) => client.put(`/faculty/hod/students/${id}`, data),
+  deleteStudent: (id) => client.delete(`/faculty/hod/students/${id}`),
+  bulkUploadStudents: (data) => client.post('/faculty/hod/students/bulk-upload', data),
+  extractPDF: (formData) => client.post('/faculty/hod/exams/extract-pdf', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  uploadVectorText: (examId, data) => client.post(`/faculty/hod/exams/${examId}/upload-text`, data),
+  evaluateStudent: (examId, studentId) => client.post(`/faculty/hod/exams/${examId}/evaluate/${studentId}`),
+  evaluateAllStudents: (examId) => client.post(`/faculty/hod/exams/${examId}/evaluate-all`),
 };
 
 /* ══════════════════════════════════════════════════════
@@ -159,6 +171,37 @@ export const collegeAPI = {
   getList: () => client.get('/college/list'),
   getDepartments: (collegeId) => client.get(`/college/${collegeId}/departments`),
   registerRequest: (data) => client.post('/college/request', data),
+};
+
+/* ══════════════════════════════════════════════════════
+   Student Auth API
+   Routes: /student/auth/*
+══════════════════════════════════════════════════════ */
+export const studentAuthAPI = {
+  login: (data) => client.post('/student/auth/login', data),
+  logout: () => client.post('/student/auth/logout'),
+  getProfile: () => client.get('/student/auth/profile'),
+  changePassword: (data) => client.put('/student/auth/change-password', data),
+};
+
+/* ══════════════════════════════════════════════════════
+   Student API (Dashboard & taking exams)
+   Routes: /student/*
+══════════════════════════════════════════════════════ */
+export const studentAPI = {
+  getExamByToken: (data) => client.post('/student/get-exam', data), // expects { examToken }
+  startSession: (data) => client.post('/student/start-session', data), // expects { examId }
+  getMyResults: () => client.get('/student/my-results'),
+};
+
+/* ══════════════════════════════════════════════════════
+   Answer Submission API
+   Routes: /answer/*
+══════════════════════════════════════════════════════ */
+export const answerAPI = {
+  upload: (formData) => client.post('/answer/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }), // expects file
+  reupload: (formData) => client.post('/answer/reupload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }), // expects file
+  finalize: (data) => client.post('/answer/finalize', data), // expects { examId }
 };
 
 export default client;

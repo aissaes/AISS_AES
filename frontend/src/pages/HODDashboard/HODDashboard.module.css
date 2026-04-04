@@ -583,6 +583,29 @@
   transform: translateY(-1px);
 }
 
+.primaryModalBtn {
+  padding: 9px 20px;
+  background: linear-gradient(135deg, var(--accent), #6366f1);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.87rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.16s;
+  box-shadow: 0 3px 12px rgba(99,102,241,0.25);
+}
+
+.primaryModalBtn:hover:not(:disabled) {
+  box-shadow: 0 5px 18px rgba(99,102,241,0.4);
+  transform: translateY(-1px);
+}
+
+.primaryModalBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .successModalBtn:disabled {
   opacity: 0.5;
   cursor: not-allowed;

@@ -1,7 +1,6 @@
 import Faculty from "../../models/faculty.js";
 import bcrypt from "bcryptjs";
 import sendEmail from "../../configurations/nodemailer.js";
-
 // Fetch the complete profile of the currently logged-in user
 export const getMyProfile = async (req, res) => {
   try {
@@ -260,4 +259,3 @@ export const getDepartmentFaculty = async (req, res) => {
     res.status(500).json({ message: "Internal server error", error });
   }
 };
-

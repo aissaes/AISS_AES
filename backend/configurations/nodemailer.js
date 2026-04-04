@@ -1,20 +1,30 @@
-import nodemailer from 'nodemailer';
+import nodemailer from "nodemailer";
 
-const transporter=nodemailer.createTransport({
-    service:'gmail',
-    auth:{
-        user:process.env.EMAIL_USER,
-        pass:process.env.EMAIL_PASS
-    }
-});
+const sendEmail = async (to, subject, text) => {
+  try {
+    const transporter = nodemailer.createTransport({
+      host: "smtp-relay.brevo.com", // Brevo's official SMTP server
+      port: 587,
+      secure: false, 
+      auth: {
+        user: process.env.BREVO_SMTP_LOGIN, // Your Brevo login email
+        pass: process.env.BREVO_SMTP_KEY,   // The long password Brevo generated for you
+      },
+    });
 
-const sendEmail=async(to,subject,text)=>{
-    const mailOptions={
-        from:'aissaes0203@gmail.com',
-        to:to,
-        subject:subject,
-        text:text
-    }
-    await transporter.sendMail(mailOptions);
-}
+    const mailOptions = {
+      from: '"AISS Exam Portal" <pallevinayreddy18@gmail.com>', // Must be the email you used to sign up for Brevo
+      to: to,
+      subject: subject,
+      text: text,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log("✅ Email sent successfully:", info.messageId);
+
+  } catch (error) {
+    console.error("❌ Error sending email:", error);
+  }
+};
+
 export default sendEmail;

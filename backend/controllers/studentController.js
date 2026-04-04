@@ -1,6 +1,6 @@
-import Student from "../models/student.js";
 import Exam from "../models/exam.js";
 import Upload from "../models/uploadSession.js";
+import Result from "../models/result.js";
 
 export const getExamByIdByToken = async (req, res) => {
   try {
@@ -108,5 +108,20 @@ export const startUploadSession = async (req, res) => {
   } catch (error) {
     console.error("Error starting upload session:", error);
     res.status(500).json({ success: false, message: "Internal server error." });
+  }
+};
+
+export const getMyResults = async (req, res) => {
+  try {
+    const studentId = req.user.id;
+
+    // Fetch all results for this student, populate the exam info so they know which subject it is
+    const results = await Result.find({ student: studentId })
+      .populate("examId", "subjectName subjectCode date examType")
+      .sort({ date: -1 }); // Newest first
+
+    res.status(200).json({ success: true, count: results.length, results });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 };

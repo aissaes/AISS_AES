@@ -1,20 +1,32 @@
 import QuestionPaper from "../models/questionPapers.js";
 import Exam from "../models/exam.js";
 import Faculty from "../models/faculty.js";
-import College from "../models/college.js";
 import sendEmail from "../configurations/nodemailer.js";
 
 // 1. TEACHER: Upload the Question Paper
-
 export const uploadQuestionPaper = async (req, res) => {
   try {
     console.log("📥 Incoming Frontend Data:", JSON.stringify(req.body, null, 2));
 
-    const { subjectCode, sections, ...otherData } = req.body;
+    // Explicitly pull examId out of req.body so we can use it
+    const { subjectCode, examId, sections, ...otherData } = req.body;
+
+    if (!examId) {
+      return res.status(400).json({ success: false, message: "examId is missing from the request." });
+    }
 
     // 1. Protect against missing sections
     if (!sections || !Array.isArray(sections)) {
       return res.status(400).json({ success: false, message: "Sections data is missing or invalid." });
+    }
+
+    // 🚨 BUG FIX 1: PREVENT DUPLICATES
+    const existingPaper = await QuestionPaper.findOne({ examId: examId });
+    if (existingPaper) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "A question paper has already been submitted for this exam." 
+      });
     }
 
     // 2. Auto-fill the missing questionIds
@@ -27,20 +39,43 @@ export const uploadQuestionPaper = async (req, res) => {
       });
     });
 
-    // 3. SECURITY & SMART DATA: Fetch the logged-in faculty member to get their college
+    // 3. Fetch the logged-in faculty member to get their college and department
     const faculty = await Faculty.findById(req.user.id);
     if (!faculty) {
       return res.status(404).json({ success: false, message: "Faculty profile not found." });
     }
 
-    // 4. Save to database using the correct schema keys
+    // 4. Save to database
     const newPaper = await QuestionPaper.create({
       subjectCode,
-      collegeId: faculty.collegeId, // 👈 Securely grabbed directly from the DB!
-      createdBy: req.user.id,       // 👈 Changed to match your schema
+      examId,                       // 👈 Ensure examId is saved to the paper
+      collegeId: faculty.collegeId, 
+      createdBy: req.user.id,       
       sections: formattedSections,
       ...otherData 
     });
+
+    // We MUST tell the Exam document that this paper now exists!
+    const updatedExam = await Exam.findByIdAndUpdate(
+      examId, 
+      { questionPaper: newPaper._id, isPaperQuestionUploaded: true },
+      { new: true } // Returns the updated document so we can use its name in the email
+    );
+
+    // 5. EMAIL NOTIFICATION: Alert the HOD that a paper is ready for review
+    const hod = await Faculty.findOne({
+      collegeId: faculty.collegeId,
+      department: faculty.department,
+      role: "hod"
+    });
+
+    if (hod && updatedExam) {
+      await sendEmail(
+        hod.email,
+        "Action Required: New Question Paper Submitted",
+        `Dear ${hod.name},\n\nA new question paper for "${updatedExam.subjectName}" (${subjectCode}) has been submitted by ${faculty.name}.\n\nPlease log in to your HOD dashboard to review and approve or reject this submission.\n\nRegards,\nAISS Exam System`
+      );
+    }
 
     res.status(201).json({ success: true, message: "Question paper uploaded!", newPaper });
   } catch (error) {

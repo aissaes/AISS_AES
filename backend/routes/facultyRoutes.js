@@ -9,8 +9,15 @@ import {
   getFacultyApprovedList,
   approveFaculty,
   rejectFaculty,
-  getDepartmentFaculty
+  getDepartmentFaculty 
 } from "../controllers/faculty/facultyController.js";
+
+import { 
+  getExamResultsList, 
+  getDetailedAnswerSheet, 
+  overrideQuestionMarks,
+  getAllStudentsAppearedForExam
+} from "../controllers/examController.js";
 
 const facultyRouter = express.Router();
 
@@ -30,4 +37,13 @@ facultyRouter.post("/reject", verifyToken, isHODOrCollegeAdmin, rejectFaculty);
 
 // Both HOD and Super Admin might need to view a specific department's faculty list
 facultyRouter.get("/", verifyToken, isHODOrCollegeAdmin, getDepartmentFaculty);
+
+// ==========================================
+// RESULTS & GRADING OVERRIDES (Accessible to the assigned Faculty)
+// ==========================================
+facultyRouter.get("/exams/:examId/appeared-students", verifyToken, getAllStudentsAppearedForExam);
+facultyRouter.get("/exams/:examId/results", verifyToken, getExamResultsList);
+facultyRouter.get("/exams/:examId/results/:studentId", verifyToken, getDetailedAnswerSheet);
+facultyRouter.put("/results/:resultId/override", verifyToken, overrideQuestionMarks);
+
 export default facultyRouter;
