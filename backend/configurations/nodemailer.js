@@ -13,7 +13,7 @@ const sendEmail = async (to, subject, text) => {
     });
 
     const mailOptions = {
-      from: '"AISS Exam Portal" <pallevinayreddy18@gmail.com>', // Must be the email you used to sign up for Brevo
+      from: '"AISS Exam Portal" <aissaes0203@gmail.com>', // Must be the email you used to sign up for Brevo
       to: to,
       subject: subject,
       text: text,
