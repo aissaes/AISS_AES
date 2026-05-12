@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Calendar, Users, Eye, Plus, ChevronDown, ChevronUp, Trash2, Key } from 'lucide-react';
+import { Calendar, Users, Eye, Plus, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import styles from './TimetableDisplay.module.css';
 
-const TimetableDisplay = ({ timetables, role, onAddExam, onDeleteExam, onManageAccess }) => {
+const TimetableDisplay = ({ timetables, role, onAddExam, onDeleteExam }) => {
   const [expandedId, setExpandedId] = useState(null);
 
   if (!timetables || timetables.length === 0) {
@@ -104,18 +104,11 @@ const TimetableDisplay = ({ timetables, role, onAddExam, onDeleteExam, onManageA
                                 </span>
                               </td>
                               <td>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                  {onManageAccess && (
-                                    <button onClick={() => onManageAccess(e)} className={styles.manageAccessBtn} title="Manage Exam Access">
-                                      <Key size={16} />
-                                    </button>
-                                  )}
-                                  {onDeleteExam && (
-                                    <button onClick={() => onDeleteExam(e._id, e.subjectName)} className={styles.deleteBtn} title="Delete Course Exam">
-                                      <Trash2 size={16} />
-                                    </button>
-                                  )}
-                                </div>
+                                {onDeleteExam && (
+                                  <button onClick={() => onDeleteExam(e._id, e.subjectName)} className={styles.deleteBtn} title="Delete Course Exam">
+                                    <Trash2 size={16} />
+                                  </button>
+                                )}
                               </td>
                             </>
                           )}

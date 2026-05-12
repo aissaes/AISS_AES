@@ -138,8 +138,7 @@ export const loginFaculty = async(req,res)=>{
     faculty.otpExpires = Date.now() + 5*60*1000;
 
     await faculty.save();
-    console.log("🔍 Checking Email:", process.env.BREVO_SMTP_LOGIN);
-    console.log("🔍 Checking Key:", process.env.BREVO_SMTP_KEY ? "Key exists!" : "KEY IS UNDEFINED!");
+
     await sendEmail(email,"Login OTP",
         `Dear Faculty,
         Your One-Time Password (OTP) for login is: ${otp}
@@ -148,15 +147,9 @@ export const loginFaculty = async(req,res)=>{
         Regards,
         AI Exam Evaluation System`);
     res.json({message:"OTP sent to email"});
-    const token = jwt.sign(
-      { id: faculty._id, role: faculty.role, collegeId: faculty.collegeId }, 
-      process.env.JWT_SECRET, 
-      { expiresIn: '1d' }
-    );
 
-  } catch (err) {
-    console.error("LOGIN CRASH:", err); 
-    res.status(500).json({ message: "Server error", error: err.message });
+  }catch(err){
+    res.status(500).json(err);
   }
 };
 
