@@ -3,3 +3,11 @@ uvicorn[standard]
 requests
 pydantic
 python-dotenv
+
+# LangChain core + integrations
+langchain
+langchain-pinecone
+langchain-google-genai
+
+# Pinecone client (v3+)
+pinecone-client
