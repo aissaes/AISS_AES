@@ -12,7 +12,7 @@ Why RecursiveCharacterTextSplitter?
     which is critical when a rubric point spans two chunks.
 """
 
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # ---------------------------------------------------------------------------
 # Splitter configuration — tuned for rubric / marking-scheme documents

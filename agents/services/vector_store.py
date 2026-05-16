@@ -7,9 +7,10 @@ chunks using LangChain + Google Gemini Embeddings.
 Responsibilities:
   - Initialise the Gemini embedding model and the Pinecone vector store.
   - store_rubric_chunks() — embed text chunks and upsert them into Pinecone
-    with question_id and max_marks as metadata.
-  - retrieve_rubric()    — query Pinecone by metadata filter and return
-    the combined text of the top matching chunks.
+    with exam_id in metadata, so multiple exams can share one index.
+  - retrieve_rubric()    — filter by exam_id, then run a semantic similarity
+    search using the student's question text to surface the most relevant
+    rubric sections.
 
 Environment variables required in .env:
   PINECONE_API_KEY      — Your Pinecone project API key
@@ -52,13 +53,15 @@ if _missing:
 # ---------------------------------------------------------------------------
 # Initialise Gemini Embeddings
 #
-# "models/embedding-001" is Google's text embedding model optimised for
-# semantic similarity — ideal for rubric retrieval tasks.
-# Output dimensionality: 768.
+# "gemini-embedding-001" is Google's current stable text-embedding model,
+# optimised for semantic similarity tasks. We pin output_dimensionality=768
+# so that every vector written to Pinecone is exactly 768-dimensional —
+# matching our index configuration.
 # ---------------------------------------------------------------------------
 embeddings = GoogleGenerativeAIEmbeddings(
-    model="models/embedding-001",
+    model="gemini-embedding-001",
     google_api_key=GEMINI_API_KEY,
+    output_dimensionality=768,
 )
 
 # ---------------------------------------------------------------------------
@@ -74,7 +77,7 @@ if PINECONE_INDEX_NAME not in _existing_indexes:
     print(f"[vector_store] Index '{PINECONE_INDEX_NAME}' not found — creating it...")
     _pinecone_client.create_index(
         name=PINECONE_INDEX_NAME,
-        dimension=768,                        # Must match embedding-001 output
+        dimension=768,                        # Must match gemini-embedding-001 output
         metric="cosine",
         spec=ServerlessSpec(cloud="aws", region="us-east-1"),
     )
@@ -96,94 +99,96 @@ vector_store = PineconeVectorStore(
 
 def store_rubric_chunks(
     chunks: list[str],
-    question_id: str,
-    max_marks: int,
+    exam_id: str,
 ) -> None:
     """
     Embed and upsert rubric/marking-scheme text chunks into Pinecone.
 
-    Each chunk is stored as a separate vector document with the following
-    metadata so it can be filtered during retrieval:
-      - question_id : links the chunk to a specific exam question
-      - max_marks   : total marks available (useful for downstream grading)
-      - chunk_index : positional index within the original document
+    Each chunk is stored as a separate vector document. The ``exam_id``
+    is written into the Pinecone metadata so that retrieve_rubric() can
+    filter results to only the chunks belonging to a specific exam —
+    allowing multiple exams to share a single Pinecone index cleanly.
 
     Args:
-        chunks      : List of text strings produced by chunk_reference_material().
-        question_id : Unique question identifier, e.g. "Q1_2024_CS101".
-        max_marks   : Maximum marks available for this question.
+        chunks  : List of text strings produced by chunk_reference_material().
+        exam_id : Unique exam identifier, e.g. "bio_midterm_01".
 
     Returns:
         None. Raises RuntimeError on Pinecone or embedding failure.
 
     Example:
-        >>> store_rubric_chunks(chunks, question_id="Q1", max_marks=10)
+        >>> store_rubric_chunks(chunks, exam_id="bio_midterm_01")
     """
     if not chunks:
         raise ValueError("chunks list must not be empty.")
 
     metadatas = [
         {
-            "question_id": question_id,
-            "max_marks": max_marks,
-            "chunk_index": i,
+            "exam_id": exam_id,       # Primary filter key for retrieval
+            "chunk_index": i,         # Positional index for debugging / ordering
         }
         for i, _ in enumerate(chunks)
     ]
 
-    print(f"[vector_store] Upserting {len(chunks)} chunks for question_id='{question_id}'...")
+    print(f"[vector_store] Upserting {len(chunks)} chunks for exam_id='{exam_id}'...")
 
     vector_store.add_texts(texts=chunks, metadatas=metadatas)
 
     print(f"[vector_store] ✅ Successfully stored {len(chunks)} chunks.")
 
 
-def retrieve_rubric(question_id: str, top_k: int = 3) -> str:
+def retrieve_rubric(exam_id: str, question_text: str, top_k: int = 3) -> str:
     """
-    Retrieve the most relevant rubric chunks for a given question from Pinecone.
+    Retrieve the most relevant rubric chunks for a given exam question.
 
-    Uses a metadata filter on ``question_id`` so that only chunks belonging to
-    the requested question are considered, then returns the top_k results
-    ranked by cosine similarity to the question_id string itself (used here as
-    a proxy query — you can swap this for the student answer text to get the
-    most *relevant* rubric sections for semantic grading).
+    Strategy:
+      1. Filter by ``exam_id`` so we only search within the correct exam's
+         rubric — preventing cross-exam contamination.
+      2. Use ``question_text`` as the semantic search query so that the
+         cosine-similarity ranking surfaces the rubric sections most
+         topically relevant to what the student was asked.
 
     Args:
-        question_id : The identifier used when the chunks were stored.
-        top_k       : Number of top chunks to return (default 3).
+        exam_id       : The exam identifier used when the chunks were stored.
+        question_text : The full text of the exam question (used as the
+                        semantic query vector).
+        top_k         : Number of top chunks to return (default 3).
 
     Returns:
         A single string formed by joining the retrieved chunk texts with
         double newlines, ready to be passed to the grading LLM.
 
     Raises:
-        ValueError  : If no chunks are found for the given question_id.
+        ValueError  : If no chunks are found for the given exam_id.
         RuntimeError: If the Pinecone query fails.
 
     Example:
-        >>> rubric_text = retrieve_rubric("Q1_2024_CS101")
-        >>> print(rubric_text[:200])
+        >>> rubric = retrieve_rubric(
+        ...     exam_id="bio_midterm_01",
+        ...     question_text="Describe the process of photosynthesis."
+        ... )
     """
-    print(f"[vector_store] Querying Pinecone for question_id='{question_id}'...")
+    print(
+        f"[vector_store] Querying Pinecone — "
+        f"exam_id='{exam_id}', query='{question_text[:60]}...'"
+    )
 
-    # Use the question_id as the search query — this retrieves vectors whose
-    # embeddings are closest to the embedding of the question_id string.
-    # In production, replace this with the student's cleaned answer text for
-    # semantic rubric matching.
+    # Semantic search: embed question_text and find the closest rubric chunks,
+    # but only those tagged with the correct exam_id.
     results = vector_store.similarity_search(
-        query=question_id,
+        query=question_text,
         k=top_k,
-        filter={"question_id": {"$eq": question_id}},
+        filter={"exam_id": {"$eq": exam_id}},
     )
 
     if not results:
         raise ValueError(
-            f"No rubric chunks found in Pinecone for question_id='{question_id}'. "
+            f"No rubric chunks found in Pinecone for exam_id='{exam_id}'. "
             "Ensure store_rubric_chunks() was called before retrieval."
         )
 
-    # Combine the page_content of each returned Document
+    # Combine the page_content of each returned Document into a single string
     combined_text: str = "\n\n".join(doc.page_content for doc in results)
 
-    print(f"[vector_store] ✅ Retrieved {len(results)} chunks.")
+    print(f"[vector_store] ✅ Retrieved {len(results)} relevant chunk(s).")
     return combined_text
