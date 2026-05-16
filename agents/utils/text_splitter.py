@@ -1,64 +1,56 @@
 """
 utils/text_splitter.py
 
-Splits large reference documents (marking schemes, rubrics, textbook excerpts)
-into smaller, semantically coherent chunks suitable for vector embedding.
+Data-preparation service for the Chunking Agent.
 
-Why RecursiveCharacterTextSplitter?
-  - It tries progressively smaller separators: paragraph → sentence → word.
-  - This keeps semantically related sentences together much better than a
-    naive fixed-size character slice.
-  - chunk_overlap=100 ensures that context at chunk boundaries is not lost,
-    which is critical when a rubric point spans two chunks.
+This module splits large reference documents (marking schemes, rubrics, 
+textbook excerpts) into smaller, semantically coherent chunks suitable 
+for vector embedding and semantic retrieval.
+
+It utilizes LangChain's RecursiveCharacterTextSplitter to ensure semantic 
+boundaries (paragraphs, sentences) are respected, preventing context loss 
+across chunk overlaps.
 """
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # ---------------------------------------------------------------------------
-# Splitter configuration — tuned for rubric / marking-scheme documents
+# Splitter Configuration (Tuned for academic rubrics and marking schemes)
 # ---------------------------------------------------------------------------
 _SPLITTER = RecursiveCharacterTextSplitter(
     chunk_size=1000,       # Maximum characters per chunk
-    chunk_overlap=100,     # Overlap between consecutive chunks (preserves context)
-    length_function=len,   # Plain character count (not token count)
+    chunk_overlap=100,     # Overlap boundary to preserve contextual continuity
+    length_function=len,   # Standard character count validation
     separators=[
         "\n\n",   # Prefer splitting on paragraph breaks first
         "\n",     # Then on single newlines
         ". ",     # Then on sentence boundaries
         " ",      # Then on word boundaries
-        "",       # Last resort: mid-word split (rarely triggered)
+        "",       # Last resort: mid-word split
     ],
 )
 
 
 def chunk_reference_material(text: str) -> list[str]:
     """
-    Split a long reference-material string into a list of smaller chunks.
-
-    This should be called on cleaned text (run clean_ocr_text() first if the
-    source is OCR output) before the chunks are embedded and stored in Pinecone.
+    Split a comprehensive reference document into a list of processable chunks.
 
     Args:
-        text: The full text of a marking scheme, rubric, or reference document.
+        text (str): The full text of a marking scheme, rubric, or reference document.
 
     Returns:
-        A list of non-empty string chunks, each ≤ chunk_size characters
-        (with overlap at the boundaries).
+        list[str]: A list of non-empty string chunks, each bounded by the configured 
+                   chunk_size with specified overlap.
 
     Raises:
-        ValueError: If *text* is empty or contains only whitespace.
-
-    Example:
-        >>> chunks = chunk_reference_material(long_rubric_text)
-        >>> print(f"Split into {len(chunks)} chunks")
-        Split into 7 chunks
+        ValueError: If the input text is empty or contains only whitespace.
     """
     if not text or not text.strip():
         raise ValueError("Cannot split empty or whitespace-only text.")
 
     chunks: list[str] = _SPLITTER.split_text(text)
 
-    # Filter out any chunks that became empty after splitting
+    # Filter out any chunks that became empty post-split
     chunks = [c.strip() for c in chunks if c.strip()]
 
     return chunks
