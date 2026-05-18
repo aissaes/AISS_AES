@@ -1,13 +1,19 @@
-fastapi
-uvicorn[standard]
-requests
-pydantic
-python-dotenv
+requests==2.32.3
+python-dotenv==1.0.1
 
-# LangChain core + integrations
-langchain
-langchain-pinecone
-langchain-google-genai
+langchain==0.3.25
+langchain-core==0.3.59
+langchain-community==0.3.24
+langchain-text-splitters==0.3.8
 
-# Pinecone client (v3+)
-pinecone-client
+langchain-huggingface==0.1.2
+langchain-pinecone==0.2.6
+langchain-google-genai==2.1.4
+
+pinecone==6.0.2
+
+pymupdf==1.25.5
+
+sentence-transformers==4.1.0
+transformers==4.51.3
+huggingface-hub==0.31.1
