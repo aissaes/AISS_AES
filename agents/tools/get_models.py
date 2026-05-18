@@ -1,0 +1,32 @@
+from langchain_huggingface import HuggingFaceEndpoint,ChatHuggingFace 
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+import os
+from dotenv import load_dotenv
+
+load_dotenv()  
+
+def get_hf_model():
+    # use "mistralai/Mistral-7B-Instruct-v0.3" 
+    # or "meta-llama/Llama-3.1-8B-Instruct"
+    repo_id = "mistralai/Mistral-7B-Instruct-v0.3"
+
+    llm = HuggingFaceEndpoint(
+        repo_id=repo_id,
+        temperature=0.1,
+        max_new_tokens=512,
+        huggingfacehub_api_token=os.getenv("HUGGINGFACE_API_KEY")
+    )
+    
+    model_hf=ChatHuggingFace(llm=llm)
+    return model_hf
+
+
+
+def get_gemini():   
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-2.5-flash", # Or "gemini-2.5-pro" for complex grading
+        temperature=0.1,         # Low temperature for objective evaluation
+        google_api_key=os.getenv("GOOGLE_API_KEY")
+    )
+    return llm
