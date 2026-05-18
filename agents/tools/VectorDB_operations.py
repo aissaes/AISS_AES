@@ -73,5 +73,4 @@ def retrieve_relevant_chunks(question_text, namespace, exam_id, question_no, con
     )
 
     docs = retriever.invoke(question_text)
-    print(docs)
     return [doc.page_content for doc in docs]

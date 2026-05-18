@@ -81,7 +81,7 @@ def ocr_agent(state: AgentState):
         except Exception as e:
             print(f"Error reading PDF: {e}. Falling back to OCR.")
             extracted_text = OCR_image_to_text(url)
-    
+    print("extracted_text: \n",extracted_text)
     return {"extracted_text": extracted_text}
 
 
@@ -104,6 +104,7 @@ def preprocessing_agent(state: AgentState):
     print(f"Cleaned text length: {len(cleaned_text)}")
     print(f"Generated chunks: {len(chunks)}")
 
+    print("cleaned_text: \n", cleaned_text)
     return {
         "cleaned_text": cleaned_text,
         "student_answer": cleaned_text,
@@ -140,8 +141,9 @@ def vector_db_agent(state: AgentState):
 
     teacher_key = answer_key[0] if answer_key else ""
 
-    print(f"Retrieved {len(notes)} notes")
-    print(f"Retrieved teacher key: {'YES' if teacher_key else 'NO'}")
+    # print(f"Retrieved {len(notes)} notes")
+    # print(f"Retrieved teacher key: {'YES' if teacher_key else 'NO'}")
+    print("answer_key chunks: \n ",answer_key)
 
     return {
         "context_notes": notes,
@@ -173,7 +175,7 @@ def evaluation_agent(state: AgentState):
     }
 
     response = chain.invoke(prompt_inputs)
-
+    print("response content: \n ",response.content)
     return {
         "evaluation": response.content,
         "revision_count": state.get("revision_count", 0) + 1
@@ -267,9 +269,9 @@ if __name__ == "__main__":
     
     # This is the exact test data
     initial_state = {
-        "raw_input": "https://ik.imagekit.io/k3p6avtbf/answer_scripts/Screenshot_2026-05-16_190504_zTe5mfpeJT.png",
-        "question": "What is photosynthesis?",
-        "exam_id": "midterm_2025",
+        "raw_input": "https://ik.imagekit.io/k3p6avtbf/answer_scripts/Screenshot_2026-05-18_172458_rKz4KXVqR.png",
+        "question": "What is a Deadlock?",
+        "exam_id": "midterm_2026",
         "namespace": "NIT_Raipur",
         "question_no": 1,
     }

@@ -69,7 +69,7 @@ async def upload_teacher_data(request: TeacherUploadRequest):
         initial_state = request.dict()
         
         # Invoke the Teacher Upload Graph
-        final_state = teacher_upload_graph.invoke(initial_state)
+        final_state = teacher_upload.invoke(initial_state)
         
         return {
             "status": "success",

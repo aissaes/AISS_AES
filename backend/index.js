@@ -121,6 +121,41 @@ app.post('/upload-image', upload.single('answer_script'), async (req, res) => {
 });
 // --------------------------
 
+// --- PDF UPLOAD ROUTE ---
+app.post('/upload-pdf', upload.single('pdf_file'), async (req, res) => {
+  try {
+      if (!req.file) {
+          return res.status(400).json({ error: 'No file uploaded.' });
+      }
+
+      // Security Check: Ensure the uploaded file is actually a PDF
+      if (req.file.mimetype !== 'application/pdf') {
+          return res.status(400).json({ error: 'Invalid file format. Please upload a PDF.' });
+      }
+
+      const uploadResponse = await imagekit.upload({
+          file: req.file.buffer, 
+          fileName: req.file.originalname, 
+          folder: "/teacher_materials", // Changed the folder to keep things organized
+          useUniqueFileName: true 
+      });
+
+      return res.status(200).json({
+          success: true,
+          message: 'PDF uploaded successfully',
+          pdfUrl: uploadResponse.url, // Changed variable name to pdfUrl for clarity
+          fileId: uploadResponse.fileId
+      });
+
+  } catch (error) {
+      console.error('ImageKit PDF Upload Error:', error);
+      return res.status(500).json({ 
+          success: false, 
+          error: 'Failed to upload PDF to ImageKit' 
+      });
+  }
+});
+
 // Local dev server — Vercel uses the export below instead
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

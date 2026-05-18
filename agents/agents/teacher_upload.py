@@ -156,10 +156,10 @@ if __name__ == "__main__":
     
     # Example: Uploading a handwritten answer key image
     initial_state = {
-        "raw_input": "https://ik.imagekit.io/k3p6avtbf/answer_scripts/Screenshot_2026-05-18_151303_Qdxbnlmzm.png", 
+        "raw_input": "https://ik.imagekit.io/k3p6avtbf/teacher_materials/Unit_No_6_O.S_Notes_G4pmvRKzR.pdf", 
         "content_type": "answer_key",  
-        "subject": "biology",
-        "exam_id": "midterm_2025",  
+        "subject": "OS",
+        "exam_id": "midterm_2026",  
         "namespace": "NIT_Raipur",
         "question_no": 1,
     }

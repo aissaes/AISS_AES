@@ -34,7 +34,6 @@ def OCR_image_to_text(image_url):
 
     result = response.json()
 
-    print(result)
 
     if result.get("IsErroredOnProcessing"):
         raise Exception(result["ErrorMessage"])
