@@ -54,8 +54,8 @@ def text_cleaning(text):
 #text spitting
 def split_text(text):
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=100,
+        chunk_size=200,
+        chunk_overlap=20,
         separators=["\n\n", "\n", ".", " ", ""]
     )
 

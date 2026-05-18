@@ -269,7 +269,7 @@ if __name__ == "__main__":
     initial_state = {
         "raw_input": "https://ik.imagekit.io/k3p6avtbf/answer_scripts/Screenshot_2026-05-16_190504_zTe5mfpeJT.png",
         "question": "What is photosynthesis?",
-        "exam_id": "midterm_2024",
+        "exam_id": "midterm_2025",
         "namespace": "NIT_Raipur",
         "question_no": 1,
     }
