@@ -18,10 +18,15 @@ You are an expert academic evaluator. Your task is to grade a student's answer b
 3. Clarity: Is the explanation easy to understand?
 
 ### OUTPUT FORMAT:
-- Score: [0 to 10]
-- Strengths: [What they got right]
-- Weaknesses: [What was missing or incorrect]
-- Corrective Feedback: [How to improve]
+You MUST respond with ONLY a valid JSON object. 
+
+{{
+  "score": <number from 0 to {max_marks}>,
+  "reasoning": "<overall evaluation reasoning>",
+  "strengths": "<what the student got right>",
+  "weaknesses": "<what was missing, incorrect, or unclear>",
+  "feedback": "<corrective feedback and suggestions for improvement>"
+}}
 """)
 
 
@@ -42,6 +47,9 @@ Student Answer:
 
 Evaluation Given:
 {evaluation}
+                                                  
+Max Marks of the question :
+{max_marks}
 
 Check whether the evaluation is accurate and fair.
 

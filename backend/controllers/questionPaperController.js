@@ -5,24 +5,36 @@ import College from "../models/college.js";
 import sendEmail from "../configurations/nodemailer.js";
 
 // 1. TEACHER: Upload the Question Paper
-
 export const uploadQuestionPaper = async (req, res) => {
   try {
     console.log("📥 Incoming Frontend Data:", JSON.stringify(req.body, null, 2));
 
-    const { subjectCode, sections, ...otherData } = req.body;
+    const { subjectCode, examId, sections, ...otherData } = req.body;
 
     // 1. Protect against missing sections
     if (!sections || !Array.isArray(sections)) {
       return res.status(400).json({ success: false, message: "Sections data is missing or invalid." });
     }
 
-    // 2. Auto-fill the missing questionIds
+    // 2. Auto-fill the missing questionIds (Upgraded for Sub-questions!)
     const formattedSections = sections.map((section, sectionIndex) => {
       return section.map((question, questionIndex) => {
+        // Generate the main ID (e.g., "S1-Q1")
+        const mainQuestionId = question.questionId || `S${sectionIndex + 1}-Q${questionIndex + 1}`;
+
+        // Loop through children to generate sub-IDs (e.g., "S1-Q1a", "S1-Q1b")
+        const formattedChildren = (question.children || []).map((subQ, subIndex) => {
+          const subLetter = String.fromCharCode(97 + subIndex); // 97 is 'a' in ASCII
+          return {
+            ...subQ,
+            questionId: subQ.questionId || `${mainQuestionId}${subLetter}`
+          };
+        });
+
         return {
           ...question,
-          questionId: question.questionId || `S${sectionIndex + 1}-Q${questionIndex + 1}`
+          questionId: mainQuestionId,
+          children: formattedChildren
         };
       });
     });
@@ -35,13 +47,20 @@ export const uploadQuestionPaper = async (req, res) => {
 
     // 4. Save to database using the correct schema keys
     const newPaper = await QuestionPaper.create({
+      examId,
       subjectCode,
-      collegeId: faculty.collegeId, // 👈 Securely grabbed directly from the DB!
-      createdBy: req.user.id,       // 👈 Changed to match your schema
-      sections: formattedSections,
+      collegeId: faculty.collegeId, 
+      createdBy: req.user.id,       
+      sections: formattedSections, // Use the newly formatted sections!
       ...otherData 
     });
 
+    // Update the Exam Document
+    await Exam.findByIdAndUpdate(examId, {
+      questionPaper: newPaper._id,
+      isPaperQuestionUploaded: true
+    });
+    
     res.status(201).json({ success: true, message: "Question paper uploaded!", newPaper });
   } catch (error) {
     console.error("❌ Error uploading question paper:", error);
@@ -228,7 +247,7 @@ export const getQuestionPaperById = async (req, res) => {
   }
 };
 
-// 7.TEACHER: Fix a rejected paper and resubmit
+// 7. TEACHER: Fix a rejected paper and resubmit
 export const updateQuestionPaper = async (req, res) => {
   try {
     const { paperId } = req.params;
@@ -247,9 +266,30 @@ export const updateQuestionPaper = async (req, res) => {
       return res.status(400).json({ message: "Cannot edit an approved paper." });
     }
 
-    // 3. Apply the updates and reset the status
+    // 3. Auto-fill IDs for any BRAND NEW questions added during revision
+    const formattedSections = sections.map((section, sectionIndex) => {
+      return section.map((question, questionIndex) => {
+        const mainQuestionId = question.questionId || `S${sectionIndex + 1}-Q${questionIndex + 1}`;
+
+        const formattedChildren = (question.children || []).map((subQ, subIndex) => {
+          const subLetter = String.fromCharCode(97 + subIndex); 
+          return {
+            ...subQ,
+            questionId: subQ.questionId || `${mainQuestionId}${subLetter}`
+          };
+        });
+
+        return {
+          ...question,
+          questionId: mainQuestionId,
+          children: formattedChildren
+        };
+      });
+    });
+
+    // 4. Apply the updates and reset the status
     paper.instructions = instructions;
-    paper.sections = sections;
+    paper.sections = formattedSections; // Save the formatted sections here!
     paper.sectionChoices = sectionChoices;
     paper.status = "Pending"; // Send it back to the HOD's queue
     paper.feedback = ""; // Clear the old feedback

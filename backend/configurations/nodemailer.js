@@ -1,20 +1,30 @@
 import nodemailer from 'nodemailer';
 
-const transporter=nodemailer.createTransport({
-    service:'gmail',
-    auth:{
-        user:process.env.EMAIL_USER,
-        pass:process.env.EMAIL_PASS
+const transporter = nodemailer.createTransport({
+    host: 'smtp-relay.brevo.com',
+    port: 587,
+    secure: false,
+    auth: {
+        user: process.env.BREVO_SMTP_LOGIN,
+        pass: process.env.BREVO_SMTP_KEY
     }
 });
 
-const sendEmail=async(to,subject,text)=>{
-    const mailOptions={
-        from:'aissaes0203@gmail.com',
-        to:to,
-        subject:subject,
-        text:text
+const sendEmail = async (to, subject, text) => {
+    try {
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to,
+            subject,
+            text
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+
+        console.log('Email sent:', info.messageId);
+    } catch (error) {
+        console.error('Error sending email:', error);
     }
-    await transporter.sendMail(mailOptions);
-}
+};
+
 export default sendEmail;

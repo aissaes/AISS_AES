@@ -1,5 +1,6 @@
 from langchain_huggingface import HuggingFaceEndpoint,ChatHuggingFace,HuggingFaceEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 
 import os
 from dotenv import load_dotenv
@@ -37,4 +38,14 @@ def get_gemini():
         temperature=0.1,         # Low temperature for objective evaluation
         google_api_key=os.getenv("GOOGLE_API_KEY")
     )
+    return llm
+
+def get_groq():
+
+    llm = ChatGroq(
+        model="llama-3.3-70b-versatile",
+        temperature=0.1,
+        api_key=os.getenv("GROQ_API_KEY")
+    )
+
     return llm

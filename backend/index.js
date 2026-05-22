@@ -22,6 +22,8 @@ import collegeRouter from "./routes/collegeRoutes.js";
 import studentRouter from "./routes/studentRoutes.js";
 import answerRoutes from "./routes/answerRoutes.js";
 import studentAuthRouter from "./routes/studentAuthRoutes.js";
+import evaluationRouter from "./routes/evaluationRoutes.js";
+import resultRoutes from "./routes/resultRoutes.js";
 
 const app = express();
 
@@ -89,6 +91,12 @@ app.use("/student", studentRouter);
 
 //answer Routes
 app.use('/answer',answerRoutes);
+
+//exam routes
+app.use("/faculty/exam", evaluationRouter);
+
+//results routes
+app.use("/results", resultRoutes);
 
 // --- IMAGE UPLOAD ROUTE ---
 app.post('/upload-image', upload.single('answer_script'), async (req, res) => {

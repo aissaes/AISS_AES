@@ -11,13 +11,14 @@ from langgraph.graph import StateGraph, END,START
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import traceback
 
 import requests
 from io import BytesIO
 from tools.readers import OCR_image_to_text, load_pdf_text
 from tools.text_preprocessing import text_cleaning, split_text
 from tools.VectorDB_operations import retrieve_relevant_chunks,store_teacher_chunks
-from tools.get_models import get_gemini
+from tools.get_models import get_gemini,get_hf_model,get_groq
 from tools.prompt import eval_prompt,recheck_prompt
 
 from PyPDF2 import PdfReader
@@ -29,7 +30,8 @@ class AgentState(TypedDict):
     question: str               # question text
     exam_id: str                
     namespace: str              # college
-    question_no: int            
+    question_id: str  
+    max_marks: float          
     extracted_text: str         # Text from OCR
     cleaned_text: str           # Preprocessed text
     context_notes: List[str]    # Retrieved from Pinecone
@@ -46,13 +48,16 @@ def ocr_agent(state: AgentState):
     url = state["raw_input"]
     extracted_text = ""
 
-    # 1. Handle Images Directly
-    if url.lower().endswith(('.png', '.jpg', '.jpeg')):
-        print("Input is an image. Calling OCR...")
-        extracted_text = OCR_image_to_text(url)
+    # 1. Ask the server for the REAL file type (without downloading the whole file yet)
+    try:
+        head_response = requests.head(url, allow_redirects=True)
+        content_type = head_response.headers.get('Content-Type', '').lower()
+    except Exception as e:
+        print(f"Could not fetch headers: {e}")
+        content_type = "" # Fallback if the server blocks HEAD requests
 
-    # 2. Handle PDFs
-    elif url.lower().endswith('.pdf'):
+    # 2. Handle PDFs (Check the header, or the URL just to be safe)
+    if 'pdf' in content_type or '.pdf' in url.lower():
         print("Input is a PDF. Checking for digital text...")
         
         # Download PDF into memory
@@ -81,7 +86,13 @@ def ocr_agent(state: AgentState):
         except Exception as e:
             print(f"Error reading PDF: {e}. Falling back to OCR.")
             extracted_text = OCR_image_to_text(url)
-    print("extracted_text: \n",extracted_text)
+
+    # 3. Handle Images (or anything else we don't recognize)
+    else:
+        print("Input is an image. Calling OCR...")
+        extracted_text = OCR_image_to_text(url)
+
+    # print("extracted_text: \n",extracted_text)
     return {"extracted_text": extracted_text}
 
 
@@ -104,7 +115,7 @@ def preprocessing_agent(state: AgentState):
     print(f"Cleaned text length: {len(cleaned_text)}")
     print(f"Generated chunks: {len(chunks)}")
 
-    print("cleaned_text: \n", cleaned_text)
+    # print("cleaned_text: \n", cleaned_text)
     return {
         "cleaned_text": cleaned_text,
         "student_answer": cleaned_text,
@@ -117,14 +128,14 @@ def vector_db_agent(state: AgentState):
     question = state.get("question", "")
     exam_id = state.get("exam_id", "")
     namespace = state.get("namespace", "")
-    question_no = state.get("question_no", 1)
+    question_id = state.get("question_id", "")
 
     # Retrieve notes
     notes = retrieve_relevant_chunks(
         question_text=question,
         namespace=namespace,
         exam_id=exam_id,
-        question_no=question_no,
+        question_id=question_id,
         content_type="notes",
         top_k=3
     )
@@ -134,7 +145,7 @@ def vector_db_agent(state: AgentState):
         question_text=question,
         namespace=namespace,
         exam_id=exam_id,
-        question_no=question_no,
+        question_id=question_id,
         content_type="answer_key",
         top_k=1
     )
@@ -143,7 +154,7 @@ def vector_db_agent(state: AgentState):
 
     # print(f"Retrieved {len(notes)} notes")
     # print(f"Retrieved teacher key: {'YES' if teacher_key else 'NO'}")
-    print("answer_key chunks: \n ",answer_key)
+    # print("answer_key chunks: \n ",answer_key)
 
     return {
         "context_notes": notes,
@@ -160,10 +171,11 @@ def evaluation_agent(state: AgentState):
     context_notes = state.get("context_notes", [])
     teacher_key = state.get("teacher_key", "")
     recheck_feedback = state.get("recheck_feedback", "")
+    max_marks = state.get("max_marks", 10)
 
     context_str = "\n".join(context_notes)
 
-    llm = get_gemini()
+    llm = get_groq()
     chain = eval_prompt | llm
 
     prompt_inputs = {
@@ -171,11 +183,12 @@ def evaluation_agent(state: AgentState):
         "answer_key": teacher_key,
         "context_notes": context_str,
         "student_answer": student_answer,
-        "recheck_feedback": recheck_feedback
+        "recheck_feedback": recheck_feedback,
+        "max_marks": max_marks
     }
 
     response = chain.invoke(prompt_inputs)
-    print("response content: \n ",response.content)
+    # print("response content: \n ",response.content)
     return {
         "evaluation": response.content,
         "revision_count": state.get("revision_count", 0) + 1
@@ -185,28 +198,36 @@ def evaluation_agent(state: AgentState):
 
 def recheck_agent(state: AgentState):
     print("--- RECHECK AGENT ---")
+    try:
+        llm = get_groq()   # different model
 
-    llm = get_gemini()   # different model
+        chain = recheck_prompt | llm
 
-    chain = recheck_prompt | llm
+        response = chain.invoke({
+            "question": state["question"],
+            "teacher_key": state["teacher_key"],
+            "context_notes": "\n".join(state["context_notes"]),
+            "student_answer": state["student_answer"],
+            "evaluation": state["evaluation"],
+            "max_marks": state.get("max_marks")
+        })
 
-    response = chain.invoke({
-        "question": state["question"],
-        "teacher_key": state["teacher_key"],
-        "context_notes": "\n".join(state["context_notes"]),
-        "student_answer": state["student_answer"],
-        "evaluation": state["evaluation"]
-    })
+        result = response.content
 
-    result = response.content
+        print(result)
 
-    print(result)
-
-    if "STATUS: APPROVED" in result:
-        return {
-            "recheck_status": "Approved",
-            "recheck_feedback": ""
-        }
+        if "STATUS: APPROVED" in result:
+            return {
+                "recheck_status": "Approved",
+                "recheck_feedback": ""
+            }
+        
+    except Exception as e:
+            print("\n" + "="*50)
+            print("⚠️ RECHECK AGENT CRASHED ⚠️")
+            print("="*50)
+            traceback.print_exc() # Prints the raw API error from OpenAI
+            print("="*50 + "\n")
 
     return {
         "recheck_status": "Revision Needed",
@@ -273,7 +294,7 @@ if __name__ == "__main__":
         "question": "What is a Deadlock?",
         "exam_id": "midterm_2026",
         "namespace": "NIT_Raipur",
-        "question_no": 1,
+        "question_id": "1",
     }
     
     # Running the graph

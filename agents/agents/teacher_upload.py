@@ -31,7 +31,7 @@ class TeacherUploadState(TypedDict):
     subject: str                # e.g., "biology"
     exam_id: str                # e.g., "midterm_2024_v2"
     namespace: str              # e.g., "NIT_Raipur"
-    question_no: int            # e.g., 1
+    question_id: str            # e.g., "S1-Q1"
     extracted_text: str         # Text from OCR/PDF Loader
     cleaned_text: str           # Preprocessed text
     chunks: List[str]           # Split text chunks ready for Pinecone
@@ -118,7 +118,7 @@ def vector_db_agent(state: TeacherUploadState):
     # Push chunks to Pinecone using the tool
     store_teacher_chunks(
         chunks=chunks,
-        question_no=state["question_no"],
+        question_id=state["question_id"],
         content_type=state["content_type"],
         subject=state["subject"],
         exam_id=state["exam_id"],
@@ -161,7 +161,7 @@ if __name__ == "__main__":
         "subject": "OS",
         "exam_id": "midterm_2026",  
         "namespace": "NIT_Raipur",
-        "question_no": 1,
+        "question_id": "1",
     }
     
     # Run the graph
