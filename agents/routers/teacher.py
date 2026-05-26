@@ -1,9 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
-# Importing from the exact file name shown in your screenshot
 from schemas.teacher_key_upload import TeacherUploadRequest 
 
-# Importing the LangGraph logic (assuming your file is named teacher_upload_graph.py)
 from agents.teacher_upload import upload_app as teacher_upload
 
 router = APIRouter(

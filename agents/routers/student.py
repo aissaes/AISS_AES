@@ -1,10 +1,8 @@
 from fastapi import APIRouter, HTTPException
 import traceback
 
-# Importing from the exact file name shown in your screenshot
 from schemas.student_answer_evaluate import StudentEvaluateRequest
 
-# Importing the LangGraph logic
 from agents.agents import app as evaluation_graph
 
 router = APIRouter(
@@ -34,7 +32,6 @@ async def evaluate_student(request: StudentEvaluateRequest):
             "evaluation": evaluation_result
         }
     except Exception as e:
-        # raise HTTPException(status_code=500, detail=str(e))
         # 🚨 THE DEBUG TRAP 🚨
         print("\n" + "="*50)
         print("🚨 FATAL FASTAPI ERROR 🚨")
