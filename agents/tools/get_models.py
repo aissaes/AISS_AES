@@ -41,9 +41,9 @@ def get_gemini():
     return llm
 
 def get_gemini_embedding_model():
-    # This uses Google's API, which consumes 0MB of your local RAM!
+    # Updated to Google's active 2026 embedding model
     embedding_model = GoogleGenerativeAIEmbeddings(
-        model="models/embedding-001",
+        model="models/gemini-embedding-001", 
         google_api_key=os.getenv("GOOGLE_API_KEY")
     )
     return embedding_model
