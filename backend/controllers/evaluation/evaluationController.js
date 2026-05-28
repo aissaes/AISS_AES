@@ -4,6 +4,9 @@ import axios from "axios";
 import QuestionPaper from "../../models/questionPapers.js"; 
 import Result from "../../models/result.js";
 
+// Define the Base URL (Defaults to local if the .env variable is missing)
+const AI_BASE_URL = process.env.PYTHON_AGENT_URL || "http://127.0.0.1:10000";
+
 // 1. get all the students details who appeared for this exam
 
 export const getAllStudentsAppearedForExam = async (req, res) => {
@@ -135,7 +138,7 @@ export const triggerAIEvaluation = async (req, res) => {
           console.log(`\n🚀 Sending ${questionNoStr} for student ${submission.uploaded_student} to AI...`);
 
           // Hit Python API 
-          const aiResponse = await axios.post("http://127.0.0.1:8000/student/evaluate", {
+          const aiResponse = await axios.post(`${AI_BASE_URL}/student/evaluate`, {
             raw_input: imageUrl,
             question: questionText,
             exam_id: examId,
@@ -267,7 +270,7 @@ export const uploadTeacherMaterials = async (req, res) => {
     }
 
     const aiResponse = await axios.post(
-      "http://127.0.0.1:8000/teacher/upload",
+      `${AI_BASE_URL}/teacher/upload`,
       payload
     );
 
