@@ -68,12 +68,15 @@ export const getAllStudentsAppearedForExam = async (req, res) => {
 
 
 // ==========================================
-// 2. TRIGGER AI EVALUATION (STUDENTS)
+// 2. TRIGGER AI EVALUATION (SINGLE STUDENT - STRICT ERROR HANDLING)
 // ==========================================
 export const triggerAIEvaluation = async (req, res) => {
   try {
     const { examId } = req.params;
+    const { studentId } = req.body; 
     const facultyId = req.user.id; 
+
+    const AI_BASE_URL = process.env.PYTHON_AGENT_URL || "http://127.0.0.1:10000";
 
     // 1. Validate Exam & Permissions
     const exam = await Exam.findById(examId);
@@ -85,148 +88,141 @@ export const triggerAIEvaluation = async (req, res) => {
     const paper = await QuestionPaper.findById(exam.questionPaper);
     if (!paper) return res.status(404).json({ success: false, message: "Question paper data is missing." });
 
-    // 3. Fetch submissions
-    const allSubmissions = await Answers.find({ for_exam: examId });
-    if (allSubmissions.length === 0) return res.status(400).json({ success: false, message: "No submissions found." });
+    // 3. Fetch ONLY this specific student's submission
+    const submission = await Answers.findOne({ for_exam: examId, uploaded_student: studentId });
+    if (!submission) return res.status(400).json({ success: false, message: "No submission found for this student." });
 
-    // 4. Respond instantly to prevent frontend timeout
-    res.status(200).json({ success: true, message: `Evaluation started for ${allSubmissions.length} students. Running in background.` });
+    // 4. Initialize or fetch the Result document
+    let resultDoc = await Result.findOne({ student: studentId, exam: examId });
+    if (!resultDoc) {
+      resultDoc = await Result.create({
+        student: studentId,
+        exam: examId,
+        questionPaper: exam.questionPaper,
+        evaluations: [],
+        status: "Evaluating"
+      });
+    }
 
-    // 5. The Background Loop (Outer Loop: Per Student)
-    for (const submission of allSubmissions) {
-      
-      // Initialize or fetch the Result document ONCE per student
-      let resultDoc = await Result.findOne({ student: submission.uploaded_student, exam: examId });
-      if (!resultDoc) {
-        resultDoc = await Result.create({
-          student: submission.uploaded_student,
-          exam: examId,
-          questionPaper: exam.questionPaper,
-          evaluations: [],
-          status: "Evaluating"
-        });
-      }
-
-      // Inner Loop: Per Question
-      for (const [questionNoStr, imageUrl] of submission.answers.entries()) {
-        try {
-          // Extract text for the AI (Now searches Sub-questions!)
-          let questionText = "Question text missing"; 
-          let maxMarks = 10;
-          
-          for (const section of paper.sections) {
-            for (const q of section) {
-              // Check main question
-              if (q.questionId === questionNoStr) {
-                questionText = q.text;
-                maxMarks = q.marks;
+    // 5. Evaluate each question for this student
+    for (const [questionNoStr, imageUrl] of submission.answers.entries()) {
+      try {
+        let questionText = "Question text missing"; 
+        let maxMarks = 10;
+        
+        for (const section of paper.sections) {
+          for (const q of section) {
+            if (q.questionId === questionNoStr) {
+              questionText = q.text;
+              maxMarks = q.marks;
+              break;
+            }
+            if (q.children && q.children.length > 0) {
+              const foundSub = q.children.find(sub => sub.questionId === questionNoStr);
+              if (foundSub) {
+                questionText = foundSub.text;
+                maxMarks = foundSub.marks;
                 break;
               }
-              // Check sub-questions (children)
-              if (q.children && q.children.length > 0) {
-                const foundSub = q.children.find(sub => sub.questionId === questionNoStr);
-                if (foundSub) {
-                  questionText = foundSub.text;
-                  maxMarks = foundSub.marks;
-                  break;
-                }
-              }
-            }
-            if (questionText !== "Question text missing") break;
-          }
-
-          console.log(`\n🚀 Sending ${questionNoStr} for student ${submission.uploaded_student} to AI...`);
-
-          // Hit Python API 
-          const aiResponse = await axios.post(`${AI_BASE_URL}/student/evaluate`, {
-            raw_input: imageUrl,
-            question: questionText,
-            exam_id: examId,
-            namespace: exam.collegeId.toString(), 
-            question_id: questionNoStr ,
-            max_marks: maxMarks
-          });
-
-          // 🛑 ADD THESE TWO DEBUG LINES:
-          console.log("🔍 RAW AI RESPONSE:");
-          console.log(JSON.stringify(aiResponse.data, null, 2));
-
-          
-          let score = 0;
-          let reasoning = "Pending";
-          let strengths= "";
-          let weakness= "";
-          let feedback = "";
-          let aiOutput = aiResponse.data.evaluation;
-
-          // 1. If Python sent a string, aggressively clean and parse it
-          if (typeof aiOutput === 'string') {
-            try {
-              // Strip markdown ```json and ``` that Gemini likes to add
-              const cleanedText = aiOutput.replace(/```json/gi, '').replace(/```/g, '').trim();
-              aiOutput = JSON.parse(cleanedText); 
-            } catch (parseError) {
-              console.log("⚠️ AI did not return JSON. Treating as error message.");
             }
           }
-
-          // 2. Safely extract from the parsed object
-          if (typeof aiOutput === 'object' && aiOutput !== null && aiOutput.score !== undefined) {
-            score = Number(aiOutput.score) || 0;
-            reasoning = aiOutput.reasoning || "";
-            strengths=aiOutput.strengths || "";
-            weakness=aiOutput.weaknesses || "";
-            feedback = aiOutput.feedback || "";
-          } else {
-            // Fallback if the AI just apologized about missing data
-            score = 0; 
-            reasoning = typeof aiOutput === 'string' ? aiOutput : "Evaluation failed format.";
-          }
-          // ==========================================
-
-          // Update the specific question in the result array
-          const existingEvalIndex = resultDoc.evaluations.findIndex(e => e.questionId === questionNoStr);
-
-          if (existingEvalIndex >= 0) {
-            resultDoc.evaluations[existingEvalIndex].aiMarks = score;
-            resultDoc.evaluations[existingEvalIndex].aiReasoning = reasoning;
-            resultDoc.evaluations[existingEvalIndex].strengths = strengths; 
-            resultDoc.evaluations[existingEvalIndex].weakness = weakness;
-            resultDoc.evaluations[existingEvalIndex].aiFeedback = feedback;
-          } else {
-            resultDoc.evaluations.push({
-              questionId: questionNoStr,
-              aiMarks: score,
-              aiReasoning: reasoning,
-              strengths: strengths, 
-              weakness: weakness,
-              aiFeedback: feedback
-            });
-          }
-        } catch (aiError) {
-          console.error(`❌ AI failed for ${questionNoStr}:`, aiError.message);
+          if (questionText !== "Question text missing") break;
         }
-      } // End Inner Loop
 
-      // Recalculate Final Total & Save ONCE per student
-      let finalTotal = 0;
-      for (const ev of resultDoc.evaluations) {
-        finalTotal += (ev.overrideMarks !== null) ? ev.overrideMarks : ev.aiMarks;
+        console.log(`\n🚀 Sending ${questionNoStr} for student ${studentId} to AI...`);
+
+        // Hit Python API 
+        const aiResponse = await axios.post(`${AI_BASE_URL}/student/evaluate`, {
+          raw_input: imageUrl,
+          question: questionText,
+          exam_id: examId,
+          namespace: exam.collegeId.toString(), 
+          question_id: questionNoStr ,
+          max_marks: maxMarks
+        });
+
+        let score = 0, reasoning = "Pending", strengths = "", weakness = "", feedback = "";
+        let aiOutput = aiResponse.data.evaluation;
+
+        if (typeof aiOutput === 'string') {
+          try {
+            const cleanedText = aiOutput.replace(/```json/gi, '').replace(/```/g, '').trim();
+            aiOutput = JSON.parse(cleanedText); 
+          } catch (parseError) {
+            console.log("⚠️ AI did not return JSON. Treating as error message.");
+          }
+        }
+
+        if (typeof aiOutput === 'object' && aiOutput !== null && aiOutput.score !== undefined) {
+          score = Number(aiOutput.score) || 0;
+          reasoning = aiOutput.reasoning || "";
+          strengths = aiOutput.strengths || "";
+          weakness = aiOutput.weaknesses || "";
+          feedback = aiOutput.feedback || "";
+        } else {
+          reasoning = typeof aiOutput === 'string' ? aiOutput : "Evaluation failed format.";
+        }
+
+        const existingEvalIndex = resultDoc.evaluations.findIndex(e => e.questionId === questionNoStr);
+
+        if (existingEvalIndex >= 0) {
+          resultDoc.evaluations[existingEvalIndex].aiMarks = score;
+          resultDoc.evaluations[existingEvalIndex].aiReasoning = reasoning;
+          resultDoc.evaluations[existingEvalIndex].strengths = strengths; 
+          resultDoc.evaluations[existingEvalIndex].weakness = weakness;
+          resultDoc.evaluations[existingEvalIndex].aiFeedback = feedback;
+        } else {
+          resultDoc.evaluations.push({
+            questionId: questionNoStr,
+            aiMarks: score,
+            aiReasoning: reasoning,
+            strengths: strengths, 
+            weakness: weakness,
+            aiFeedback: feedback
+          });
+        }
+      } catch (aiError) {
+        // 🛑 STRICT ERROR CATCHING: Extract exact error from Python API
+        const exactReason = aiError.response?.data?.detail || aiError.response?.data?.message || aiError.message || "Unknown AI error";
+        console.error(`❌ AI failed for question ${questionNoStr}:`, exactReason);
+        
+        // Immediately abort and tell the frontend exactly what went wrong
+        return res.status(502).json({ 
+          success: false, 
+          message: `AI Error on Question ${questionNoStr}: ${exactReason}` 
+        });
       }
-      
-      resultDoc.totalMarksObtained = finalTotal;
-      resultDoc.status = "Completed"; 
+    } // End Question Loop
 
-      await resultDoc.save();
-      console.log(`✅ Student ${submission.uploaded_student} grading finalized! Total Marks: ${finalTotal}`);
-      
-    } // End Outer Loop
+    // 6. Recalculate Final Total & Save
+    let finalTotal = 0;
+    for (const ev of resultDoc.evaluations) {
+      finalTotal += (ev.overrideMarks !== null) ? ev.overrideMarks : ev.aiMarks;
+    }
+    
+    resultDoc.totalMarksObtained = finalTotal;
+    resultDoc.status = "Completed"; 
 
+    await resultDoc.save();
+    console.log(`✅ Student ${studentId} grading finalized! Total Marks: ${finalTotal}`);
+
+    // 7. SEND FINAL SUCCESS RESPONSE
+    return res.status(200).json({ 
+      success: true, 
+      message: `Student evaluated successfully.`,
+      totalMarks: finalTotal
+    });
+      
   } catch (error) {
-    console.error("Trigger Evaluation Error:", error);
+    // 🛑 STRICT ERROR CATCHING: Catch general Node/DB errors
+    const exactReason = error.message || "Unknown server error";
+    console.error("Trigger Evaluation Error:", exactReason);
+    return res.status(500).json({ 
+      success: false, 
+      message: `Server Error: ${exactReason}` 
+    });
   }
 };
-
 
 // ==========================================
 // 3. UPLOAD TEACHER MATERIALS (RUBRIC/NOTES)
