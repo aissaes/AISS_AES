@@ -184,8 +184,12 @@ export const transferCollegeAdmin = async (req, res) => {
     currentAdmin.department = newDepartment; 
     
     // 5. Promote the new Super Admin and move them to Administration
+    let adminDept = await Department.findOne({ collegeId: currentAdmin.collegeId, name: "Administration" });
+    if (!adminDept) {
+      adminDept = await Department.create({ collegeId: currentAdmin.collegeId, name: "Administration", code: "ADMIN" });
+    }
     futureAdmin.role = "collegeAdmin";
-    futureAdmin.department = "Administration"; 
+    futureAdmin.department = adminDept._id; 
 
     // 6. Save both user profiles
     await currentAdmin.save();

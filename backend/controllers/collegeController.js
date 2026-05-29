@@ -62,10 +62,21 @@ export const collegeRegisterRequest = async (req, res) => {
     const newCollege = await College.create({
       collegeName,
       location,
-      departments,
+      departments: [],
       collegeAdminId: null,
       status: "Pending"
     });
+
+    // 4. Create the Administration department
+    const adminDept = await Department.create({
+      collegeId: newCollege._id,
+      name: "Administration",
+      code: "ADMIN"
+    });
+    
+    // Add the new admin department to the college
+    newCollege.departments = [adminDept._id];
+    await newCollege.save();
 
     // 4. Create the Admin (isApproved: false)
     const newAdmin = await Faculty.create({
@@ -73,7 +84,7 @@ export const collegeRegisterRequest = async (req, res) => {
       email: adminEmail,
       password: hashedDummy,
       collegeId: newCollege._id,
-      department: "Administration",
+      department: adminDept._id,
       phone: adminPhone,
       role: "collegeAdmin",
       isApproved: false 
