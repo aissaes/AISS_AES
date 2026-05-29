@@ -88,16 +88,57 @@ class ProfileScreen extends ConsumerWidget {
     final String name = student['name'] ?? 'Student';
     final String email = student['email'] ?? 'N/A';
     final String rollNo = student['rollNumber'] ?? student['_id'] ?? 'N/A';
-    final String department = (student['departments'] is List && (student['departments'] as List).isNotEmpty)
-        ? (student['departments'] as List).join(', ')
-        : (student['department'] ?? 'N/A');
-    final String course = (student['courses'] is List && (student['courses'] as List).isNotEmpty)
-        ? (student['courses'] as List).map((c) => c is Map ? (c['courseCode'] ?? c['courseName'] ?? '') : c.toString()).where((s) => s.isNotEmpty).join(', ')
-        : (student['course'] ?? 'N/A');
-    final String semester = student['semester'] is Map
-        ? (student['semester']['semesterName'] ?? 'N/A')
-        : (student['semester']?.toString() ?? 'N/A');
-    final String cgpa = student['cgpa']?.toString() ?? 'N/A';
+    
+    // Robustly parse department
+    final deptRaw = student['department'];
+    final String department;
+    if (student['departments'] is List && (student['departments'] as List).isNotEmpty) {
+      department = (student['departments'] as List).join(', ');
+    } else if (deptRaw is Map) {
+      department = deptRaw['name'] ?? deptRaw['code'] ?? 'N/A';
+    } else if (deptRaw is String && deptRaw.length == 24 && RegExp(r'^[0-9a-fA-F]{24}$').hasMatch(deptRaw)) {
+      department = 'N/A';
+    } else {
+      department = deptRaw?.toString() ?? 'N/A';
+    }
+
+    // Robustly parse course
+    final courseRaw = student['course'];
+    final String course;
+    if (student['courses'] is List && (student['courses'] as List).isNotEmpty) {
+      course = (student['courses'] as List)
+          .map((c) => c is Map ? (c['courseCode'] ?? c['courseName'] ?? '') : c.toString())
+          .where((s) => s.isNotEmpty && !(s.length == 24 && RegExp(r'^[0-9a-fA-F]{24}$').hasMatch(s)))
+          .join(', ');
+    } else if (courseRaw is Map) {
+      course = courseRaw['courseName'] ?? courseRaw['courseCode'] ?? 'N/A';
+    } else if (courseRaw is String && courseRaw.length == 24 && RegExp(r'^[0-9a-fA-F]{24}$').hasMatch(courseRaw)) {
+      course = 'N/A';
+    } else {
+      course = courseRaw?.toString() ?? 'N/A';
+    }
+
+    // Combine course and department details
+    final String courseDeptDisplay;
+    if (course != 'N/A' && department != 'N/A') {
+      courseDeptDisplay = '$course • $department';
+    } else if (course != 'N/A') {
+      courseDeptDisplay = course;
+    } else {
+      courseDeptDisplay = department;
+    }
+
+    // Robustly parse semester
+    final semesterRaw = student['semester'];
+    final String semester;
+    if (semesterRaw is Map) {
+      semester = semesterRaw['semesterName'] ?? semesterRaw['semesterNumber']?.toString() ?? 'N/A';
+    } else if (semesterRaw is String && semesterRaw.length == 24 && RegExp(r'^[0-9a-fA-F]{24}$').hasMatch(semesterRaw)) {
+      semester = 'N/A';
+    } else {
+      semester = semesterRaw?.toString() ?? 'N/A';
+    }
+
     final String collegeName = student['collegeId'] is Map
         ? (student['collegeId']['collegeName'] ?? 'N/A')
         : 'N/A';
@@ -206,24 +247,18 @@ class ProfileScreen extends ConsumerWidget {
         _buildDetailCard(
           icon: Icons.school_outlined,
           title: 'Course & Department',
-          value: '$course • $department',
+          value: courseDeptDisplay,
           color: AppTheme.secondaryColor,
         ),
         const SizedBox(height: 12),
         _buildDetailCard(
           icon: Icons.calendar_month_outlined,
           title: 'Current Semester',
-          value: semester.toLowerCase().contains('semester') ? semester : 'Semester $semester',
+          value: semester == 'N/A'
+              ? 'N/A'
+              : (semester.toLowerCase().contains('semester') ? semester : 'Semester $semester'),
           color: Colors.orange,
         ),
-        const SizedBox(height: 12),
-        if (cgpa != 'N/A')
-          _buildDetailCard(
-            icon: Icons.stars_rounded,
-            title: 'Cumulative GPA (CGPA)',
-            value: cgpa,
-            color: AppTheme.successColor,
-          ),
       ],
     );
   }
@@ -263,6 +298,8 @@ class ProfileScreen extends ConsumerWidget {
                 const SizedBox(height: 2),
                 Text(
                   value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppTheme.textPrimary),
                 ),
               ],

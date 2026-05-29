@@ -36,6 +36,7 @@ export const createTimetable = async (req, res) => {
         collegeId: hod.collegeId,
         courseId: detail.courseId,
         semesterId: semesterDoc._id,
+        department: hod.department,
         subjectName: detail.subjectName,
         subjectCode: detail.subjectCode,
         examType,
@@ -74,6 +75,7 @@ export const createTimetable = async (req, res) => {
     const timetable = await Timetable.create({
       collegeId: hod.collegeId,
       semester: semesterDoc._id,
+      department: hod.department,
       examType,
       exams: examIds,
       createdBy: req.user.id 
@@ -145,6 +147,7 @@ export const addExamToTimetable = async (req, res) => {
       collegeId: timetable.collegeId,
       courseId: detail.courseId,
       semesterId: timetable.semester,
+      department: timetable.department,
       subjectName: detail.subjectName,
       subjectCode: detail.subjectCode,
       examType: timetable.examType,
@@ -195,7 +198,7 @@ export const updateExam = async (req, res) => {
     if (!exam) return res.status(404).json({ message: "Exam not found" });
 
     // 3. SECURITY CHECK: Does this exam belong to this HOD's department and college?
-    if (exam.collegeId.toString() !== hod.collegeId.toString() || exam.department !== hod.department) {
+    if (exam.collegeId.toString() !== hod.collegeId.toString() || exam.department?.toString() !== hod.department?.toString()) {
       return res.status(403).json({ message: "Unauthorized: You can only edit exams in your own department." });
     }
 
@@ -225,7 +228,7 @@ export const deleteExam = async (req, res) => {
     if (!exam) return res.status(404).json({ message: "Exam not found" });
 
     // 2. SECURITY CHECK
-    if (exam.collegeId.toString() !== hod.collegeId.toString() || exam.department !== hod.department) {
+    if (exam.collegeId.toString() !== hod.collegeId.toString() || exam.department?.toString() !== hod.department?.toString()) {
       return res.status(403).json({ message: "Unauthorized: You can only delete exams from your own department." });
     }
 
@@ -279,7 +282,7 @@ export const getTimetableById = async (req, res) => {
     }
 
     // 4. SECURITY CHECK: Restrict to their department (unless they are College Admin)
-    if (user.role !== "collegeAdmin" && timetable.department !== user.department) {
+    if (user.role !== "collegeAdmin" && timetable.department?.toString() !== user.department?.toString()) {
       return res.status(403).json({ message: "Unauthorized: You can only view timetables from your own department." });
     }
 
@@ -329,7 +332,7 @@ export const generateExamQR = async (req, res) => {
     if (!exam) return res.status(404).json({ message: "Exam not found" });
 
     const hod = await Faculty.findById(req.user.id);
-    if (exam.collegeId.toString() !== hod.collegeId.toString() || exam.department !== hod.department) {
+    if (exam.collegeId.toString() !== hod.collegeId.toString() || exam.department?.toString() !== hod.department?.toString()) {
       return res.status(403).json({ message: "Unauthorized: You can only manage exams in your own department." });
     }
 

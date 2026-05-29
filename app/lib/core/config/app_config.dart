@@ -4,7 +4,7 @@ class AppConfig {
   static const String appName = 'AISS AES';
   
   // Toggle to true to connect to your live Vercel production server, false for local loopbacks
-  static const bool isProduction = false;
+  static const bool isProduction = true;
   
   static String get apiBaseUrl {
     if (isProduction) {

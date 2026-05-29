@@ -19,6 +19,12 @@ const examSchema = new mongoose.Schema({
     required: true,
     index: true
   },
+  department: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Department",
+    required: false,
+    index: true
+  },
   subjectName: {
     type: String,
     required: true

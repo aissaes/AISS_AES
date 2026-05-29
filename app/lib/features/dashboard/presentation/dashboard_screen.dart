@@ -525,12 +525,30 @@ class DashboardScreen extends ConsumerWidget {
   Widget _buildAcademicCard(BuildContext context, Map<String, dynamic>? student) {
     if (student == null) return const SizedBox.shrink();
 
-    final String department = (student['departments'] is List && (student['departments'] as List).isNotEmpty)
-        ? (student['departments'] as List).join(', ')
-        : (student['department'] ?? 'N/A');
-    final String semester = student['semester'] is Map
-        ? (student['semester']['semesterName'] ?? 'N/A')
-        : (student['semester']?.toString() ?? 'N/A');
+    // Robustly parse department
+    final deptRaw = student['department'];
+    final String department;
+    if (student['departments'] is List && (student['departments'] as List).isNotEmpty) {
+      department = (student['departments'] as List).join(', ');
+    } else if (deptRaw is Map) {
+      department = deptRaw['name'] ?? deptRaw['code'] ?? 'N/A';
+    } else if (deptRaw is String && deptRaw.length == 24 && RegExp(r'^[0-9a-fA-F]{24}$').hasMatch(deptRaw)) {
+      department = 'N/A';
+    } else {
+      department = deptRaw?.toString() ?? 'N/A';
+    }
+
+    // Robustly parse semester
+    final semesterRaw = student['semester'];
+    final String semester;
+    if (semesterRaw is Map) {
+      semester = semesterRaw['semesterName'] ?? semesterRaw['semesterNumber']?.toString() ?? 'N/A';
+    } else if (semesterRaw is String && semesterRaw.length == 24 && RegExp(r'^[0-9a-fA-F]{24}$').hasMatch(semesterRaw)) {
+      semester = 'N/A';
+    } else {
+      semester = semesterRaw?.toString() ?? 'N/A';
+    }
+
     final String collegeName = student['collegeId'] is Map
         ? (student['collegeId']['collegeName'] ?? 'N/A')
         : 'N/A';
@@ -563,7 +581,9 @@ class DashboardScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                semester.toUpperCase(),
+                semester == 'N/A'
+                    ? 'N/A'
+                    : (semester.toLowerCase().contains('semester') ? semester : 'Semester $semester').toUpperCase(),
                 style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 11,
@@ -649,30 +669,6 @@ class DashboardScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              if (student['cgpa'] != null)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    const Text(
-                      'CURR. CGPA',
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      student['cgpa'].toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
-                ),
             ],
           ),
         ],

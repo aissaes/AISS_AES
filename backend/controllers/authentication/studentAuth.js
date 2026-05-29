@@ -2,6 +2,7 @@ import Student from "../../models/student.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import FacultyCourseAssignment from "../../models/facultyCourseAssignment.js";
+import StudentCourseEnrollment from "../../models/studentCourseEnrollment.js";
 
 // ==========================================
 // 1. LOGIN STUDENT
@@ -14,7 +15,10 @@ export const loginStudent = async (req, res) => {
       return res.status(400).json({ success: false, message: "Please provide email and password." });
     }
 
-    const student = await Student.findOne({ email }).populate("collegeId", "collegeName");
+    const student = await Student.findOne({ email })
+      .populate("collegeId", "collegeName")
+      .populate("department", "name code")
+      .populate("semester", "semesterNumber semesterName academicYear status");
     if (!student) {
       return res.status(401).json({ success: false, message: "Invalid credentials." });
     }
@@ -69,22 +73,32 @@ export const viewProfile = async (req, res) => {
     // req.user.id comes from your verifyToken middleware
     const studentId = req.user.id; 
 
-    // Fetch the student but EXCLUDE the password field and populate college name, semester, and courses
+    // Fetch the student but EXCLUDE the password field and populate college name, department, and semester
     const student = await Student.findById(studentId)
       .select("-password")
       .populate("collegeId", "collegeName")
-      .populate("semester", "semesterNumber semesterName academicYear status")
-      .populate({
-        path: "courses",
-        select: "courseCode courseName credits department status",
-      });
+      .populate("department", "name code")
+      .populate("semester", "semesterNumber semesterName academicYear status");
 
     if (!student) {
       return res.status(404).json({ success: false, message: "Student profile not found." });
     }
 
+    // Query enrolled courses for the student from StudentCourseEnrollment
+    const enrollments = await StudentCourseEnrollment.find({
+      student: studentId,
+      status: "Enrolled"
+    }).populate({
+      path: "course",
+      select: "courseCode courseName credits department status"
+    });
+
+    const courses = enrollments
+      .filter(enrollment => enrollment.course)
+      .map(enrollment => enrollment.course.toObject());
+
     // Resolve active faculty assignments for the enrolled courses
-    const courseIds = student.courses.map(c => c._id);
+    const courseIds = courses.map(c => c._id);
     const assignments = await FacultyCourseAssignment.find({
       course: { $in: courseIds },
       status: "Active"
@@ -96,7 +110,7 @@ export const viewProfile = async (req, res) => {
     });
 
     const studentObj = student.toObject();
-    studentObj.courses = (studentObj.courses || []).map(course => {
+    studentObj.courses = courses.map(course => {
       course.assignedFaculty = assignmentMap[course._id.toString()] || null;
       return course;
     });
