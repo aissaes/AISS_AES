@@ -19,17 +19,17 @@
   --surface-elevated: rgba(20, 20, 30, 0.85);
 
   /* ── Borders ── */
-  --border-1: rgba(255, 255, 255, 0.06);
-  --border-2: rgba(255, 255, 255, 0.1);
-  --border-3: rgba(255, 255, 255, 0.15);
-  --border-focus: rgba(99, 102, 241, 0.5);
+  --border-1: rgba(255, 255, 255, 0.12);
+  --border-2: rgba(255, 255, 255, 0.18);
+  --border-3: rgba(255, 255, 255, 0.25);
+  --border-focus: rgba(99, 102, 241, 0.6);
 
   /* ── Text ── */
   --text-0: #ffffff;
   --text-1: #e4e4ec;
-  --text-2: #9696a8;
-  --text-3: #6b6b80;
-  --text-4: #4a4a5e;
+  --text-2: #a8a8bd;
+  --text-3: #8a8a9e;
+  --text-4: #6a6a7e;
 
   /* ── Accent Colors ── */
   --primary: #6366f1;

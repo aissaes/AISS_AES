@@ -1,6 +1,7 @@
 import Student from "../../models/student.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import FacultyCourseAssignment from "../../models/facultyCourseAssignment.js";
 
 // ==========================================
 // 1. LOGIN STUDENT
@@ -68,16 +69,39 @@ export const viewProfile = async (req, res) => {
     // req.user.id comes from your verifyToken middleware
     const studentId = req.user.id; 
 
-    // Fetch the student but EXCLUDE the password field and populate college name
+    // Fetch the student but EXCLUDE the password field and populate college name, semester, and courses
     const student = await Student.findById(studentId)
       .select("-password")
-      .populate("collegeId", "collegeName");
+      .populate("collegeId", "collegeName")
+      .populate("semester", "semesterNumber semesterName academicYear status")
+      .populate({
+        path: "courses",
+        select: "courseCode courseName credits department status",
+      });
 
     if (!student) {
       return res.status(404).json({ success: false, message: "Student profile not found." });
     }
 
-    res.status(200).json({ success: true, student });
+    // Resolve active faculty assignments for the enrolled courses
+    const courseIds = student.courses.map(c => c._id);
+    const assignments = await FacultyCourseAssignment.find({
+      course: { $in: courseIds },
+      status: "Active"
+    }).populate("faculty", "name email");
+
+    const assignmentMap = {};
+    assignments.forEach(asg => {
+      assignmentMap[asg.course.toString()] = asg.faculty;
+    });
+
+    const studentObj = student.toObject();
+    studentObj.courses = (studentObj.courses || []).map(course => {
+      course.assignedFaculty = assignmentMap[course._id.toString()] || null;
+      return course;
+    });
+
+    res.status(200).json({ success: true, student: studentObj });
   } catch (error) {
     console.error("View profile error:", error);
     res.status(500).json({ success: false, message: "Internal server error." });

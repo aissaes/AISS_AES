@@ -1,10 +1,78 @@
 
+import mongoose from "mongoose";
 import Faculty from "../../models/faculty.js";
 import College from "../../models/college.js";
 import Student from "../../models/student.js";
 import bcrypt from "bcryptjs"; 
 import sendEmail from "../../configurations/nodemailer.js";
 import crypto from "crypto";
+import Semester from "../../models/semester.js";
+import Course from "../../models/course.js";
+import StudentCourseEnrollment from "../../models/studentCourseEnrollment.js";
+import Department from "../../models/department.js";
+
+const resolveRelationalSemesterAndCourse = async (collegeId, deptInput, semVal, courseVal) => {
+  let deptDoc;
+  if (deptInput && mongoose.Types.ObjectId.isValid(deptInput)) {
+    deptDoc = await Department.findById(deptInput);
+  }
+  if (!deptDoc) {
+    const deptName = deptInput || "General";
+    deptDoc = await Department.findOne({ collegeId, name: deptName });
+    if (!deptDoc) {
+      deptDoc = new Department({ collegeId, name: deptName, code: deptName.substring(0, 5).toUpperCase() });
+      await deptDoc.save();
+    }
+  }
+
+  const semesterNum = Number(semVal) || 1;
+
+  let semesterDoc = await Semester.findOne({
+    collegeId,
+    department: deptDoc._id,
+    semesterNumber: semesterNum,
+    status: "Active"
+  });
+
+  if (!semesterDoc) {
+    semesterDoc = new Semester({
+      collegeId,
+      department: deptDoc._id,
+      semesterNumber: semesterNum,
+      semesterName: `Semester ${semesterNum}`,
+      academicYear: "2026-2027",
+      status: "Active"
+    });
+    await semesterDoc.save();
+  }
+
+  let courseDoc = null;
+  if (courseVal) {
+    courseDoc = await Course.findOne({
+      collegeId,
+      department: deptDoc._id,
+      $or: [
+        { courseCode: courseVal },
+        { courseName: courseVal }
+      ]
+    });
+
+    if (!courseDoc) {
+      courseDoc = new Course({
+        collegeId,
+        courseCode: courseVal.split(' ').map(w => w[0]).join('').toUpperCase() + Math.floor(100 + Math.random() * 900),
+        courseName: courseVal,
+        department: deptDoc._id,
+        semester: semesterDoc._id,
+        credits: 3,
+        status: "Active"
+      });
+      await courseDoc.save();
+    }
+  }
+
+  return { semesterDoc, courseDoc, deptDoc };
+};
 
 // Get all faculty for the entire college (Strictly for Super Admin)
 export const getAllCollegeFaculty = async (req, res) => {
@@ -146,32 +214,44 @@ export const transferCollegeAdmin = async (req, res) => {
 
 export const updateCollegeDepartments = async (req, res) => {
   try {
-    const { departments } = req.body; // Expecting an array: ["CSE", "Mechanical", "AI"]
+    const { departments } = req.body; // Expecting array of strings or names
     const adminId = req.user.id;
 
-    if (!Array.isArray(departments) || departments.length === 0) {
+    if (!Array.isArray(departments)) {
       return res.status(400).json({ message: "Please provide a valid array of departments." });
     }
 
-    // 1. Find the admin to get their collegeId
     const adminUser = await Faculty.findById(adminId);
     if (!adminUser || adminUser.role !== "collegeAdmin") {
       return res.status(403).json({ message: "Only the College Admin can update departments." });
     }
 
-    // 2. Find their specific college
     const college = await College.findById(adminUser.collegeId);
     if (!college) {
       return res.status(404).json({ message: "College not found." });
     }
 
-    // 3. Update and save
-    college.departments = departments;
+    const departmentIds = [];
+    const populatedDepartments = [];
+    
+    for (const deptString of departments) {
+      let deptName = typeof deptString === "string" ? deptString : deptString.name;
+      let deptCode = deptName.substring(0, 5).toUpperCase();
+      let deptObj = await Department.findOne({ collegeId: adminUser.collegeId, name: deptName });
+      if (!deptObj) {
+        deptObj = new Department({ collegeId: adminUser.collegeId, name: deptName, code: deptCode });
+        await deptObj.save();
+      }
+      departmentIds.push(deptObj._id);
+      populatedDepartments.push(deptName); // Send back strings for UI compatibility
+    }
+
+    college.departments = departmentIds;
     await college.save();
 
     res.status(200).json({ 
       message: "Departments updated successfully", 
-      departments: college.departments 
+      departments: populatedDepartments 
     });
 
   } catch (error) {
@@ -217,16 +297,32 @@ export const addSingleStudent = async (req, res) => {
     const rawPassword = crypto.randomBytes(4).toString('hex'); 
     const hashedPassword = await bcrypt.hash(rawPassword, 10);
 
-    const depts = department ? [department] : [];
-    const crs = course ? [course] : [];
+    const { semesterDoc, courseDoc, deptDoc } = await resolveRelationalSemesterAndCourse(
+      adminUser.collegeId,
+      department,
+      semester,
+      course
+    );
 
     const newStudent = await Student.create({
-      name, rollNumber, email, password: hashedPassword,
+      name, 
+      rollNumber, 
+      email, 
+      password: hashedPassword,
       collegeId: adminUser.collegeId, 
-      departments: depts,
-      courses: crs,
-      semester: Number(semester),
+      department: deptDoc._id,
+      semester: semesterDoc._id,
     });
+
+    if (courseDoc) {
+      const enrollment = new StudentCourseEnrollment({
+        student: newStudent._id,
+        course: courseDoc._id,
+        semester: semesterDoc._id,
+        academicYear: "2026-2027"
+      });
+      await enrollment.save().catch(() => {});
+    }
 
     // Welcome & Password Delivery Email
     const subject = "Welcome to the AISS Exam Portal";
@@ -260,13 +356,13 @@ export const bulkUploadStudents = async (req, res) => {
       const rowNum = i + 1;
       
       try {
-        const { Name, RollNumber, Email, Course, Department, Semester } = studentData;
+        const { Name, RollNumber, Email, Course: CourseInput, Department: DepartmentInput, Semester: SemesterInput } = studentData;
         
         const missing = [];
         if (!Name) missing.push("Name");
         if (!RollNumber) missing.push("RollNumber");
         if (!Email) missing.push("Email");
-        if (!Semester) missing.push("Semester");
+        if (!SemesterInput) missing.push("Semester");
 
         if (missing.length > 0) {
           errors.push(`Row ${rowNum} (${Email || RollNumber || 'Unknown'}): Missing fields -> ${missing.join(", ")}`);
@@ -284,16 +380,32 @@ export const bulkUploadStudents = async (req, res) => {
         const rawPassword = crypto.randomBytes(4).toString('hex'); 
         const hashedPassword = await bcrypt.hash(rawPassword, 10);
 
-        const depts = Department ? [Department] : [];
-        const crs = Course ? [Course] : [];
+        const { semesterDoc, courseDoc, deptDoc } = await resolveRelationalSemesterAndCourse(
+          adminUser.collegeId,
+          DepartmentInput,
+          SemesterInput,
+          CourseInput
+        );
 
-        await Student.create({
-          name: Name, rollNumber: RollNumber, email: Email, password: hashedPassword,
+        const newStudent = await Student.create({
+          name: Name, 
+          rollNumber: RollNumber, 
+          email: Email, 
+          password: hashedPassword,
           collegeId: adminUser.collegeId, 
-          departments: depts,
-          courses: crs,
-          semester: Number(Semester),
+          department: deptDoc._id,
+          semester: semesterDoc._id,
         });
+
+        if (courseDoc) {
+          const enrollment = new StudentCourseEnrollment({
+            student: newStudent._id,
+            course: courseDoc._id,
+            semester: semesterDoc._id,
+            academicYear: "2026-2027"
+          });
+          await enrollment.save().catch(() => {});
+        }
 
         const subject = "Welcome to the AISS Exam Portal";
         const body = `Dear ${Name},\n\nYour student account has been created by your College Administrator.\n\nLogin: ${Email}\nPassword: ${rawPassword}\n\nPlease change your password upon logging in.`;
@@ -323,10 +435,23 @@ export const getAllCollegeStudents = async (req, res) => {
 
     const students = await Student.find({ collegeId: adminUser.collegeId })
       .select("-password")
+      .populate("semester", "semesterNumber semesterName academicYear status")
+      .populate("department", "name code")
       .sort({ name: 1 });
 
-    res.status(200).json({ count: students.length, students });
+    const formattedStudents = [];
+    for (const s of students) {
+      const studentObj = s.toObject();
+      const enrollments = await StudentCourseEnrollment.find({ student: s._id }).populate("course");
+      studentObj.courses = enrollments.map(e => e.course ? (e.course.courseName || e.course.courseCode) : "Unknown");
+      studentObj.semester = studentObj.semester ? (studentObj.semester.semesterNumber || studentObj.semester.semesterName) : "N/A";
+      studentObj.departmentName = studentObj.department ? studentObj.department.name : "N/A";
+      formattedStudents.push(studentObj);
+    }
+
+    res.status(200).json({ count: formattedStudents.length, students: formattedStudents });
   } catch (error) {
+    console.error("Error fetching college students:", error);
     res.status(500).json({ message: "Server error fetching college students." });
   }
 };
@@ -351,17 +476,34 @@ export const updateSingleStudent = async (req, res) => {
     if (name) oldStudent.name = name;
     if (rollNumber) oldStudent.rollNumber = rollNumber;
     if (email) oldStudent.email = email;
-    if (semester) oldStudent.semester = Number(semester);
     if (cgpa !== undefined) oldStudent.cgpa = Number(cgpa);
 
-    if (department) {
-      if (!oldStudent.departments.includes(department)) {
-        oldStudent.departments.push(department);
-      }
-    }
-    if (course) {
-      if (!oldStudent.courses.includes(course)) {
-        oldStudent.courses.push(course);
+    if (semester || department || course) {
+      const deptName = department || (oldStudent.department ? oldStudent.department.toString() : "General");
+      const { semesterDoc, courseDoc, deptDoc } = await resolveRelationalSemesterAndCourse(
+        adminUser.collegeId,
+        deptName,
+        semester || 1,
+        course
+      );
+      
+      if (semester) oldStudent.semester = semesterDoc._id;
+      if (department) oldStudent.department = deptDoc._id;
+      
+      if (courseDoc) {
+        const existingEnrollment = await StudentCourseEnrollment.findOne({
+          student: oldStudent._id,
+          course: courseDoc._id
+        });
+        if (!existingEnrollment) {
+          const enrollment = new StudentCourseEnrollment({
+            student: oldStudent._id,
+            course: courseDoc._id,
+            semester: semesterDoc._id,
+            academicYear: "2026-2027"
+          });
+          await enrollment.save().catch(() => {});
+        }
       }
     }
 

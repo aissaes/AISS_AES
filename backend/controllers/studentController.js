@@ -3,6 +3,7 @@ import Exam from "../models/exam.js";
 import Upload from "../models/uploadSession.js";
 import Answers from "../models/answer.js";
 import Timetable from "../models/timetable.js";
+import StudentCourseEnrollment from "../models/studentCourseEnrollment.js";
 
 export const getExamByIdByToken = async (req, res) => {
   try {
@@ -141,12 +142,11 @@ export const getStudentTimetableAndExams = async (req, res) => {
     }
 
     const { collegeId, semester } = student;
+    const enrollments = await StudentCourseEnrollment.find({ student: studentId }).select('course');
+    const crs = enrollments.map(e => e.course);
 
-    const depts = student.departments || [];
-    const crs = student.courses || [];
-
-    // Return empty results immediately if student is not yet assigned to any course/department
-    if (depts.length === 0 || crs.length === 0) {
+    // Return empty results immediately if student is not yet assigned to any course
+    if (!semester || crs.length === 0) {
       return res.status(200).json({
         success: true,
         timetables: [],
@@ -154,29 +154,30 @@ export const getStudentTimetableAndExams = async (req, res) => {
       });
     }
 
-    // 2. Fetch timetables matching college, courses, departments, and semester
+    // 2. Fetch timetables matching college and semester
     const timetables = await Timetable.find({
       collegeId,
-      course: { $in: crs },
-      department: { $in: depts },
       semester
     })
     .populate({
       path: 'exams',
       select: '-questionPaper', // Hide question paper for students!
-      populate: { path: 'assignedFaculty', select: 'name email' }
+      populate: [
+        { path: 'assignedFaculty', select: 'name email' },
+        { path: 'courseId' }
+      ]
     })
     .sort({ createdAt: -1 });
 
-    // 3. Fetch exams matching college, courses, departments, semester
+    // 3. Fetch exams matching college, courses, and semester
     const exams = await Exam.find({
       collegeId,
-      course: { $in: crs },
-      department: { $in: depts },
-      semester
+      semesterId: semester,
+      courseId: { $in: crs }
     })
     .select('-questionPaper') // Hide question paper for students!
     .populate('assignedFaculty', 'name email')
+    .populate('courseId')
     .sort({ date: 1 });
 
     res.status(200).json({

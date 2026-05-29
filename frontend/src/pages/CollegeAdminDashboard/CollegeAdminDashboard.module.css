@@ -173,8 +173,8 @@
   align-items: center;
   gap: 14px;
   padding: 16px 18px;
-  background: rgba(14, 22, 44, 0.7);
-  border: 1px solid var(--border-base);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
   border-radius: 13px;
   transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
 }
@@ -216,8 +216,8 @@
 
 /* Card */
 .card {
-  background: rgba(12, 18, 38, 0.75);
-  border: 1px solid var(--border-base);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
   border-radius: 15px;
   overflow: hidden;
 }
@@ -228,8 +228,8 @@
   justify-content: space-between;
   gap: 14px;
   padding: 18px 22px;
-  border-bottom: 1px solid var(--border-base);
-  background: rgba(0,0,0,0.12);
+  border-bottom: 1px solid var(--border-1);
+  background: rgba(255,255,255,0.02);
   flex-wrap: wrap;
 }
 
@@ -271,8 +271,8 @@
 
 .searchInput {
   width: 100%;
-  background: rgba(0,0,0,0.2);
-  border: 1px solid var(--border-base);
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
   border-radius: 8px;
   padding: 8px 12px 8px 33px;
   font-size: 0.83rem;
@@ -283,8 +283,8 @@
 }
 .searchInput::placeholder { color: var(--text-3); }
 .searchInput:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(99,102,241,0.12);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.25);
 }
 
 /* Tab bar */
@@ -354,8 +354,8 @@
 }
 
 .table thead tr {
-  background: rgba(0,0,0,0.15);
-  border-bottom: 1px solid var(--border-base);
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid var(--border-1);
 }
 
 .table th {
@@ -371,7 +371,7 @@
 
 .table td {
   padding: 12px 18px;
-  border-bottom: 1px solid rgba(255,255,255,0.03);
+  border-bottom: 1px solid var(--border-1);
   color: var(--text-2);
   vertical-align: middle;
 }
@@ -530,8 +530,8 @@
 
 .modalTextarea {
   width: 100%;
-  background: rgba(0,0,0,0.28);
-  border: 1px solid var(--border-base);
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
   border-radius: 8px;
   padding: 10px 13px;
   font-size: 0.9rem;
@@ -543,12 +543,12 @@
   transition: border-color 0.2s;
 }
 .modalTextarea::placeholder { color: var(--text-3); }
-.modalTextarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,102,241,0.13); }
+.modalTextarea:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(99,102,241,0.25); }
 
 .modalInput {
   width: 100%;
-  background: rgba(0,0,0,0.28);
-  border: 1px solid var(--border-base);
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
   border-radius: 8px;
   padding: 10px 13px;
   font-size: 0.9rem;
@@ -558,7 +558,7 @@
   transition: border-color 0.2s;
 }
 .modalInput::placeholder { color: var(--text-3); }
-.modalInput:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,102,241,0.13); }
+.modalInput:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(99,102,241,0.25); }
 
 /* Confirm box (make HOD) */
 .modalConfirmBox {
@@ -624,7 +624,7 @@
   box-shadow: 0 3px 12px rgba(239,68,68,0.25);
 }
 .dangerModalBtn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 5px 18px rgba(239,68,68,0.4); }
-.dangerModalBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+.dangerModalBtn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.5); }
 
 .successModalBtn {
   display: flex;
@@ -642,4 +642,4 @@
   box-shadow: 0 3px 12px var(--accent-glow);
 }
 .successModalBtn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 5px 18px rgba(99,102,241,0.4); }
-.successModalBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+.successModalBtn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.5); }

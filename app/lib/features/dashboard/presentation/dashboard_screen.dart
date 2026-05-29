@@ -34,6 +34,8 @@ class DashboardScreen extends ConsumerWidget {
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
                       _buildHeader(context, displayName),
+                      const SizedBox(height: 16),
+                      _buildAcademicCard(context, studentProfile),
                       const SizedBox(height: 32),
                       
                       // Dynamic Section: Unlocked Active Exam Script Checklist
@@ -54,6 +56,10 @@ class DashboardScreen extends ConsumerWidget {
                       const SizedBox(height: 20),
                       _buildQuickActionsGrid(context, activeExam != null),
                       const SizedBox(height: 32),
+                      if (studentProfile != null) ...[
+                        _buildEnrolledCoursesList(context, studentProfile),
+                        const SizedBox(height: 32),
+                      ],
 
                       // If no active exam, render timetable and upcoming exams overview
                       if (activeExam == null) ...[
@@ -512,6 +518,309 @@ class DashboardScreen extends ConsumerWidget {
         ),
         const SizedBox(width: 16),
         const Expanded(child: Divider(color: AppTheme.outlineColor, height: 1)),
+      ],
+    );
+  }
+
+  Widget _buildAcademicCard(BuildContext context, Map<String, dynamic>? student) {
+    if (student == null) return const SizedBox.shrink();
+
+    final String department = (student['departments'] is List && (student['departments'] as List).isNotEmpty)
+        ? (student['departments'] as List).join(', ')
+        : (student['department'] ?? 'N/A');
+    final String semester = student['semester'] is Map
+        ? (student['semester']['semesterName'] ?? 'N/A')
+        : (student['semester']?.toString() ?? 'N/A');
+    final String collegeName = student['collegeId'] is Map
+        ? (student['collegeId']['collegeName'] ?? 'N/A')
+        : 'N/A';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppTheme.primaryColor,
+            AppTheme.primaryContainer,
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                semester.toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.shield_rounded,
+                      color: Colors.white,
+                      size: 12,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      'VERIFIED STUDENT',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            department,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.5,
+            ),
+          ),
+          if (collegeName != 'N/A') ...[
+            const SizedBox(height: 6),
+            Text(
+              collegeName.toUpperCase(),
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'STUDENT ID',
+                      style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      student['rollNumber'] ?? student['_id'] ?? 'N/A',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (student['cgpa'] != null)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text(
+                      'CURR. CGPA',
+                      style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      student['cgpa'].toString(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEnrolledCoursesList(BuildContext context, Map<String, dynamic> student) {
+    final List<dynamic> courses = student['courses'] ?? [];
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionDivider('ENROLLED COURSES'),
+        const SizedBox(height: 20),
+        if (courses.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceColor,
+              borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
+              border: Border.all(color: AppTheme.outlineColor.withValues(alpha: 0.15)),
+            ),
+            child: const Center(
+              child: Text(
+                'No courses enrolled for this semester.',
+                style: TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: courses.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final course = courses[index];
+              final String courseName = course['courseName'] ?? 'Course';
+              final String courseCode = course['courseCode'] ?? 'CODE';
+              final int credits = course['credits'] ?? 3;
+              final faculty = course['assignedFaculty'];
+              final String facultyName = faculty != null ? faculty['name'] ?? 'Assigned Faculty' : 'No Instructor Assigned';
+
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceColor,
+                  borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
+                  border: Border.all(color: AppTheme.outlineColor.withValues(alpha: 0.15)),
+                  boxShadow: AppTheme.softShadow,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.book_outlined,
+                        color: AppTheme.primaryColor,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  courseCode,
+                                  style: const TextStyle(
+                                    color: AppTheme.primaryColor,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.teal.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  '$credits Credits',
+                                  style: const TextStyle(
+                                    color: Colors.teal,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            courseName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.person_outline_rounded,
+                                size: 13,
+                                color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  facultyName,
+                                  style: TextStyle(
+                                    color: AppTheme.textSecondary.withValues(alpha: 0.8),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
       ],
     );
   }

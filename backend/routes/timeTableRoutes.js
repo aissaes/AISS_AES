@@ -8,7 +8,8 @@ import {
   updateExam, 
   deleteExam,
   getTimetableById,
-  getExamById,      
+  getExamById,
+  generateExamQR,
 } from "../controllers/timetableController.js";
 
 const timeTableRouter = express.Router();
@@ -27,5 +28,6 @@ timeTableRouter.post("/:timetableId/add-exam", verifyToken, isHOD, addExamToTime
 
 timeTableRouter.put("/exam/:examId", verifyToken, isHOD, updateExam); 
 timeTableRouter.delete("/exam/:examId", verifyToken, isHOD, deleteExam); 
+timeTableRouter.post("/exam/:examId/generate-qr", verifyToken, isHOD, generateExamQR);
 
 export default timeTableRouter;

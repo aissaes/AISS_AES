@@ -23,12 +23,14 @@ export const getCollegeDepartments = async (req, res) => {
   try {
     const { collegeId } = req.params;
 
-    const college = await College.findById(collegeId).select('departments');
+    const college = await College.findById(collegeId).populate('departments');
     if (!college) {
       return res.status(404).json({ message: "College not found" });
     }
 
-    res.status(200).json({ departments: college.departments });
+    const deptNames = (college.departments || []).map(d => typeof d === 'object' && d.name ? d.name : d);
+
+    res.status(200).json({ departments: deptNames });
   } catch (error) {
     console.error("Error fetching departments:", error);
     res.status(500).json({ message: "Internal server error", error: error.message });

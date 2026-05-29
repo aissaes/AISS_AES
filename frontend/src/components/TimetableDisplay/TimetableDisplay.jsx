@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Calendar, Users, Eye, Plus, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { Calendar, Users, Eye, Plus, ChevronDown, ChevronUp, Trash2, QrCode } from 'lucide-react';
 import styles from './TimetableDisplay.module.css';
 
-const TimetableDisplay = ({ timetables, role, onAddExam, onDeleteExam }) => {
+const TimetableDisplay = ({ timetables, role, onAddExam, onDeleteExam, onGenerateQR, onViewQR }) => {
   const [expandedId, setExpandedId] = useState(null);
 
   if (!timetables || timetables.length === 0) {
@@ -34,7 +34,7 @@ const TimetableDisplay = ({ timetables, role, onAddExam, onDeleteExam }) => {
                     <span className={styles.ttBadge}>{t.exams?.length || 0} Exams</span>
                   </h4>
                   <p className={styles.ttSub}>
-                    {t.course} — Semester {t.semester}
+                    {t.semester?.department || 'Active Department'} — {t.semester?.semesterName || 'Semester'} ({t.semester?.academicYear || ''})
                   </p>
                 </div>
               </div>
@@ -71,6 +71,7 @@ const TimetableDisplay = ({ timetables, role, onAddExam, onDeleteExam }) => {
                         {role === 'HOD' && (
                           <>
                             <th>Paper Status</th>
+                            <th>Exam Token / QR</th>
                             <th>Actions</th>
                           </>
                         )}
@@ -102,6 +103,55 @@ const TimetableDisplay = ({ timetables, role, onAddExam, onDeleteExam }) => {
                                 <span className={`${styles.statusBadge} ${e.isPaperQuestionUploaded ? styles.successBadge : styles.pendingBadge}`}>
                                   {e.isPaperQuestionUploaded ? 'Uploaded' : 'Awaiting'}
                                 </span>
+                              </td>
+                              <td>
+                                {e.qrCode ? (
+                                  <button
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      onViewQR && onViewQR(e.qrCode, `${e.subjectCode} - ${e.subjectName}`, e.token);
+                                    }}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 4,
+                                      padding: '4px 8px',
+                                      backgroundColor: 'var(--primary-light, rgba(79, 70, 229, 0.1))',
+                                      color: 'var(--primary, #4f46e5)',
+                                      border: 'none',
+                                      borderRadius: 4,
+                                      fontSize: 12,
+                                      fontWeight: 'bold',
+                                      cursor: 'pointer'
+                                    }}
+                                    title="View Generated QR Code"
+                                  >
+                                    <QrCode size={13} /> View QR
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      onGenerateQR && onGenerateQR(e._id);
+                                    }}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 4,
+                                      padding: '4px 8px',
+                                      backgroundColor: 'var(--success-light, rgba(16, 185, 129, 0.1))',
+                                      color: 'var(--success, #10b981)',
+                                      border: 'none',
+                                      borderRadius: 4,
+                                      fontSize: 12,
+                                      fontWeight: 'bold',
+                                      cursor: 'pointer'
+                                    }}
+                                    title="Generate Exam Token & QR Code"
+                                  >
+                                    <Plus size={11} /> Generate QR
+                                  </button>
+                                )}
                               </td>
                               <td>
                                 {onDeleteExam && (

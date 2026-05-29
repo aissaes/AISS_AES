@@ -92,9 +92,11 @@ class ProfileScreen extends ConsumerWidget {
         ? (student['departments'] as List).join(', ')
         : (student['department'] ?? 'N/A');
     final String course = (student['courses'] is List && (student['courses'] as List).isNotEmpty)
-        ? (student['courses'] as List).join(', ')
+        ? (student['courses'] as List).map((c) => c is Map ? (c['courseCode'] ?? c['courseName'] ?? '') : c.toString()).where((s) => s.isNotEmpty).join(', ')
         : (student['course'] ?? 'N/A');
-    final String semester = student['semester']?.toString() ?? 'N/A';
+    final String semester = student['semester'] is Map
+        ? (student['semester']['semesterName'] ?? 'N/A')
+        : (student['semester']?.toString() ?? 'N/A');
     final String cgpa = student['cgpa']?.toString() ?? 'N/A';
     final String collegeName = student['collegeId'] is Map
         ? (student['collegeId']['collegeName'] ?? 'N/A')
@@ -211,7 +213,7 @@ class ProfileScreen extends ConsumerWidget {
         _buildDetailCard(
           icon: Icons.calendar_month_outlined,
           title: 'Current Semester',
-          value: 'Semester $semester',
+          value: semester.toLowerCase().contains('semester') ? semester : 'Semester $semester',
           color: Colors.orange,
         ),
         const SizedBox(height: 12),

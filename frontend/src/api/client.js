@@ -94,8 +94,26 @@ export const facultyAPI = {
 export const hodAPI = {
   transfer: (targetFacultyId) => client.post('/faculty/hod/transfer', { newHODId: targetFacultyId }),
   getStudents: (params) => client.get('/faculty/hod/students', { params }),
-  assignStudents: (studentIds) => client.post('/faculty/hod/students/assign', { studentIds }),
-  unassignStudents: (studentIds) => client.post('/faculty/hod/students/unassign', { studentIds }),
+  assignStudents: (data) => client.post('/faculty/hod/students/assign', data),
+  unassignStudents: (studentIds, courseIds) => client.post('/faculty/hod/students/unassign', { studentIds, courseIds }),
+  updateStudentAcademics: (data) => client.put('/faculty/hod/students/edit', data),
+
+  // Semester Management
+  getSemesters: () => client.get('/faculty/hod/semesters'),
+  createSemester: (data) => client.post('/faculty/hod/semesters', data),
+  updateSemester: (semesterId, data) => client.put(`/faculty/hod/semesters/${semesterId}`, data),
+  toggleSemester: (semesterId, status) => client.put(`/faculty/hod/semesters/${semesterId}/toggle`, { status }),
+
+  // Course Management
+  getCourses: (params) => client.get('/faculty/hod/courses', { params }),
+  createCourse: (data) => client.post('/faculty/hod/courses', data),
+  updateCourse: (courseId, data) => client.put(`/faculty/hod/courses/${courseId}`, data),
+  deleteCourse: (courseId) => client.delete(`/faculty/hod/courses/${courseId}`),
+  assignFacultyToCourse: (data) => client.post('/faculty/hod/courses/assign-faculty', data),
+
+  // Token and QR Code Management
+  generateToken: (examId) => client.post(`/faculty/hod/exams/${examId}/generate-token`),
+  generateQRCode: (examId) => client.post(`/faculty/hod/exams/${examId}/generate-qr`),
 };
 
 /* ══════════════════════════════════════════════════════
@@ -143,6 +161,7 @@ export const timetableAPI = {
   getExamById: (examId) => client.get(`/faculty/timetable/exam/${examId}`),
   updateExam: (examId, data) => client.put(`/faculty/timetable/exam/${examId}`, data),
   deleteExam: (examId) => client.delete(`/faculty/timetable/exam/${examId}`),
+  generateExamQR: (examId) => client.post(`/faculty/timetable/exam/${examId}/generate-qr`),
 };
 
 /* ══════════════════════════════════════════════════════

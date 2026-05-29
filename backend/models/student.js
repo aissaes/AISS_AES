@@ -12,8 +12,9 @@ const studentSchema = new mongoose.Schema({
         required: true
     },
     semester:{
-        type:Number,
-        required:true
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Semester",
+        required: false
     },
     rollNumber:{
         type:String,
@@ -29,9 +30,9 @@ const studentSchema = new mongoose.Schema({
         ref:"QuestionPaper"
     }],
 
-    departments: {
-        type: [String],
-        default: []
+    department: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Department"
     },
     email:{
         type:String,
@@ -41,10 +42,6 @@ const studentSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true
-    },
-    courses: {
-        type: [String],
-        default: []
     },
     role: {
         type: String,

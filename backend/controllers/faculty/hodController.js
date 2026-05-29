@@ -52,52 +52,87 @@ export const transferHOD = async (req, res) => {
 };
 
 // ==========================================
-// ==========================================
 // COURSE ENROLLMENT & ASSIGNMENT (HOD Only)
 // ==========================================
+import Semester from "../../models/semester.js";
+import Course from "../../models/course.js";
+import StudentCourseEnrollment from "../../models/studentCourseEnrollment.js";
 
 export const assignStudentsToCourse = async (req, res) => {
   try {
-    const { studentIds } = req.body;
+    const { studentIds, semesterId, courseIds } = req.body;
     if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
       return res.status(400).json({ message: "Please provide a valid array of student IDs to assign." });
     }
+    if (!semesterId) {
+      return res.status(400).json({ message: "Please select a target semester." });
+    }
+    if (!courseIds || !Array.isArray(courseIds) || courseIds.length === 0) {
+      return res.status(400).json({ message: "Please select at least one course for enrollment." });
+    }
 
-    // 1. Fetch HOD details
     const hod = await Faculty.findById(req.user.id);
     if (!hod || hod.role !== "hod") {
       return res.status(403).json({ message: "Only HODs can assign students to courses." });
     }
 
-    // 2. Query students in same college
+    // Verify semester exists
+    const semesterDoc = await Semester.findOne({
+      _id: semesterId,
+      collegeId: hod.collegeId,
+      department: hod.department
+    });
+    if (!semesterDoc) {
+      return res.status(404).json({ message: "Selected semester not found in your department." });
+    }
+
+    // Verify courses exist
+    const courses = await Course.find({
+      _id: { $in: courseIds },
+      collegeId: hod.collegeId,
+      department: hod.department
+    });
+    if (courses.length === 0) {
+      return res.status(404).json({ message: "No matching courses found in your department." });
+    }
+
+    // Query students
     const students = await Student.find({ _id: { $in: studentIds }, collegeId: hod.collegeId });
-    
     if (students.length === 0) {
       return res.status(404).json({ message: "No matching student accounts found in your college." });
     }
 
-    // 3. Update each student with HOD's department and course
     let count = 0;
     for (const student of students) {
       let isUpdated = false;
-      
-      if (!student.departments.includes(hod.department)) {
-        student.departments.push(hod.department);
+
+      if (!student.department || student.department.toString() !== hod.department.toString()) {
+        student.department = hod.department;
         isUpdated = true;
       }
-      if (!student.courses.includes(hod.course)) {
-        student.courses.push(hod.course);
+
+      if (student.semester?.toString() !== semesterId.toString()) {
+        student.semester = semesterId;
         isUpdated = true;
       }
-      
+
+      for (const courseDoc of courses) {
+        // Save join table enrollment record
+        await StudentCourseEnrollment.findOneAndUpdate(
+          { student: student._id, course: courseDoc._id },
+          { semester: semesterId, academicYear: semesterDoc.academicYear, status: "Enrolled" },
+          { upsert: true, new: true }
+        );
+      }
+
       if (isUpdated) {
         await student.save();
-        count++;
       }
+      count++;
     }
 
-    res.status(200).json({ 
-      message: `Successfully assigned ${count} students to course ${hod.course} in department ${hod.department}.` 
+    res.status(200).json({
+      message: `Successfully enrolled ${count} students into ${courses.length} courses for ${semesterDoc.semesterName}.`
     });
   } catch (error) {
     console.error("Error assigning students:", error);
@@ -107,47 +142,50 @@ export const assignStudentsToCourse = async (req, res) => {
 
 export const unassignStudentsFromCourse = async (req, res) => {
   try {
-    const { studentIds } = req.body;
+    const { studentIds, courseId } = req.body;
     if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
       return res.status(400).json({ message: "Please provide a valid array of student IDs to unassign." });
     }
 
-    // 1. Fetch HOD details
     const hod = await Faculty.findById(req.user.id);
     if (!hod || hod.role !== "hod") {
       return res.status(403).json({ message: "Only HODs can unassign students from courses." });
     }
 
-    // 2. Query students in same college
     const students = await Student.find({ _id: { $in: studentIds }, collegeId: hod.collegeId });
-    
     if (students.length === 0) {
       return res.status(404).json({ message: "No matching student accounts found in your college." });
     }
 
-    // 3. Pull department and course
     let count = 0;
     for (const student of students) {
       let isUpdated = false;
-      
-      const prevDeptLen = student.departments.length;
-      student.departments = student.departments.filter(d => d !== hod.department);
-      if (student.departments.length !== prevDeptLen) isUpdated = true;
 
-      const prevCrsLen = student.courses.length;
-      student.courses = student.courses.filter(c => c !== hod.course);
-      if (student.courses.length !== prevCrsLen) isUpdated = true;
+      if (courseId) {
+        // Unenroll from specific course
+        const delResult = await StudentCourseEnrollment.deleteMany({
+          student: student._id,
+          course: courseId
+        });
+        if (delResult.deletedCount > 0) isUpdated = true;
+      } else {
+        // Unenroll from all courses in HOD's department
+        const courses = await Course.find({ collegeId: hod.collegeId, department: hod.department });
 
-
+        const delResult = await StudentCourseEnrollment.deleteMany({
+          student: student._id,
+          course: { $in: courses.map(c => c._id) }
+        });
+        if (delResult.deletedCount > 0) isUpdated = true;
+      }
 
       if (isUpdated) {
-        await student.save();
         count++;
       }
     }
 
-    res.status(200).json({ 
-      message: `Successfully unassigned ${count} students from course ${hod.course} in department ${hod.department}.` 
+    res.status(200).json({
+      message: `Successfully unassigned ${count} students.`
     });
   } catch (error) {
     console.error("Error unassigning students:", error);
@@ -159,24 +197,40 @@ export const getDepartmentStudents = async (req, res) => {
   try {
     const hod = await Faculty.findById(req.user.id);
     if (!hod) return res.status(404).json({ message: "HOD profile not found." });
-    
-    let filter = {};
-    if (req.query.unassigned === "true") {
-      filter = {
-        collegeId: hod.collegeId,
-        courses: { $ne: hod.course }
-      };
-    } else {
-      filter = { 
-        collegeId: hod.collegeId, 
-        departments: hod.department, 
-        courses: hod.course 
-      };
-    }
-    if (req.query.semester) filter.semester = Number(req.query.semester);
 
-    const students = await Student.find(filter).select("-password").sort({ semester: 1, rollNumber: 1 });
-    res.status(200).json({ count: students.length, students });
+    let filter = {
+      collegeId: hod.collegeId,
+      department: hod.department
+    };
+
+    if (req.query.semesterId) {
+      filter.semester = req.query.semesterId;
+    }
+
+    if (req.query.courseId) {
+      if (req.query.unassigned === "true") {
+        const enrollments = await StudentCourseEnrollment.find({ course: req.query.courseId }).select('student');
+        filter._id = { $nin: enrollments.map(e => e.student) };
+      } else {
+        const enrollments = await StudentCourseEnrollment.find({ course: req.query.courseId }).select('student');
+        filter._id = { $in: enrollments.map(e => e.student) };
+      }
+    }
+
+    const students = await Student.find(filter)
+      .select("-password")
+      .populate("semester", "semesterNumber semesterName academicYear status")
+      .sort({ rollNumber: 1 });
+
+    const formattedStudents = [];
+    for (const student of students) {
+        const studentObj = student.toObject();
+        const enrollments = await StudentCourseEnrollment.find({ student: student._id }).populate("course", "courseCode courseName credits department status");
+        studentObj.courses = enrollments.map(e => e.course).filter(c => c != null);
+        formattedStudents.push(studentObj);
+    }
+
+    res.status(200).json({ count: formattedStudents.length, students: formattedStudents });
   } catch (error) {
     console.error("Error fetching HOD department students:", error);
     res.status(500).json({ message: "Server error fetching department students." });
@@ -198,7 +252,7 @@ export const generateToken = async (req, res) => {
     }
 
     // 1. Find exam
-    const exam = await Exam.findById(examId);
+    const exam = await Exam.findById(examId).populate("courseId");
 
     if (!exam) {
       return res.status(404).json({
@@ -209,7 +263,7 @@ export const generateToken = async (req, res) => {
 
     const hod = await Faculty.findById(req.user.id);
     // 2. SECURITY CHECK: Does this HOD own this exam?
-    if (exam.collegeId.toString() !== hod.collegeId.toString() || exam.department !== hod.department) {
+    if (exam.collegeId.toString() !== hod.collegeId.toString() || exam.courseId.department.toString() !== hod.department.toString()) {
       return res.status(403).json({ success: false, message: "Unauthorized: You do not have permission to manage this exam." });
     }
 
@@ -249,7 +303,7 @@ export const generateQRCode = async (req, res) => {
     }
 
     // 1. Find exam
-    const exam = await Exam.findById(examId);
+    const exam = await Exam.findById(examId).populate("courseId");
 
     if (!exam) {
       return res.status(404).json({
@@ -260,7 +314,7 @@ export const generateQRCode = async (req, res) => {
     
     const hod = await Faculty.findById(req.user.id);
     // 2. SECURITY CHECK: Does this HOD own this exam?
-    if (exam.collegeId.toString() !== hod.collegeId.toString() || exam.department !== hod.department) {
+    if (exam.collegeId.toString() !== hod.collegeId.toString() || exam.courseId.department.toString() !== hod.department.toString()) {
       return res.status(403).json({ success: false, message: "Unauthorized: You do not have permission to manage this exam." });
     }
     
@@ -288,4 +342,76 @@ export const generateQRCode = async (req, res) => {
       message: "Internal server error",
     });
   }
-}
+};
+
+export const updateStudentAcademics = async (req, res) => {
+  try {
+    const { studentId, semesterId, courseIds, academicYear } = req.body;
+    if (!studentId) {
+      return res.status(400).json({ message: "Student ID is required." });
+    }
+
+    const hod = await Faculty.findById(req.user.id);
+    if (!hod || hod.role !== "hod") {
+      return res.status(403).json({ message: "Only HODs can edit student academic details." });
+    }
+
+    const student = await Student.findOne({ _id: studentId, collegeId: hod.collegeId, department: hod.department });
+    if (!student) {
+      return res.status(404).json({ message: "Student not found in your department." });
+    }
+
+    // Verify semester exists
+    let semesterDoc = null;
+    if (semesterId) {
+      semesterDoc = await Semester.findOne({ _id: semesterId, collegeId: hod.collegeId, department: hod.department });
+      if (!semesterDoc) {
+        return res.status(404).json({ message: "Selected semester not found." });
+      }
+      student.semester = semesterId;
+    }
+
+    // Course assignments mapping
+    if (courseIds && Array.isArray(courseIds)) {
+      const departmentCourses = await Course.find({ collegeId: hod.collegeId, department: hod.department });
+      const deptCourseIdsStr = departmentCourses.map(c => c._id.toString());
+
+      // Get new active courses
+      const newCourses = departmentCourses.filter(c => courseIds.includes(c._id.toString()));
+      
+      for (const newCourse of newCourses) {
+        const yr = academicYear || semesterDoc?.academicYear || "2026-2027";
+        await StudentCourseEnrollment.findOneAndUpdate(
+          { student: student._id, course: newCourse._id },
+          { semester: student.semester || semesterId, academicYear: yr, status: "Enrolled" },
+          { upsert: true, new: true }
+        );
+      }
+
+      // Mark dropped courses in join table
+      const newCourseIdsStr = newCourses.map(c => c._id.toString());
+      const droppedCourseIds = deptCourseIdsStr.filter(cId => !newCourseIdsStr.includes(cId));
+      if (droppedCourseIds.length > 0) {
+        await StudentCourseEnrollment.updateMany(
+          { student: student._id, course: { $in: droppedCourseIds }, status: "Enrolled" },
+          { status: "Dropped" }
+        );
+      }
+    }
+
+    await student.save();
+
+    const updatedStudent = await Student.findById(studentId).populate("semester");
+    const enrollments = await StudentCourseEnrollment.find({ student: studentId }).populate("course");
+    const updatedStudentObj = updatedStudent.toObject();
+    updatedStudentObj.courses = enrollments.map(e => e.course).filter(c => c != null);
+
+    res.status(200).json({
+      message: "Student academic details updated successfully.",
+      student: updatedStudentObj
+    });
+  } catch (error) {
+    console.error("Error updating student academics:", error);
+    res.status(500).json({ message: "Internal server error updating student academics.", error: error.message });
+  }
+};

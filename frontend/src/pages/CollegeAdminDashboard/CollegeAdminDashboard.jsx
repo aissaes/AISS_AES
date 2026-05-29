@@ -790,7 +790,7 @@ const CollegeAdminStudents = () => {
                     <td className={styles.mutedCell}>{student.email}</td>
                     <td>
                       <span className={`${styles.badge} ${styles.badgeWarning}`}>
-                        Sem {student.semester}
+                        Sem {typeof student.semester === 'object' && student.semester !== null ? (student.semester.semesterNumber || student.semester.semesterName || 'N/A') : (student.semester || 'N/A')}
                       </span>
                     </td>
                     <td className={styles.mutedCell}>
@@ -800,7 +800,7 @@ const CollegeAdminStudents = () => {
                     </td>
                     <td className={styles.mutedCell}>
                       {Array.isArray(student.courses) && student.courses.length > 0
-                        ? student.courses.join(', ')
+                        ? student.courses.map(c => typeof c === 'object' && c !== null ? (c.courseCode || c.courseName) : c).join(', ')
                         : '—'}
                     </td>
                     <td>

@@ -1,10 +1,11 @@
 import Timetable from "../models/timetable.js";
 import Exam from "../models/exam.js";
 import Faculty from "../models/faculty.js";
-import College from "../models/college.js";
 import sendEmail from "../configurations/nodemailer.js";
 import QuestionPaper from "../models/questionPapers.js";
 import generateQR from "../configurations/qrcode.js";
+import Semester from "../models/semester.js";
+import generateSessionToken from "../utils/generateToken.js";
 
 // 1. Create a new Timetable and its associated Exams
 export const createTimetable = async (req, res) => {
@@ -20,18 +21,23 @@ export const createTimetable = async (req, res) => {
       return res.status(400).json({ message: "Please provide exam details to create a timetable." });
     }
 
+    // Resolve structural Semester
+    const semesterDoc = await Semester.findById(semester);
+    if (!semesterDoc) {
+      return res.status(404).json({ message: "Selected Semester not found." });
+    }
+
     const createdExams = [];
     const examIds = [];
 
     // Loop through and create individual Exam documents
     for (const detail of examDetails) {
       const newExam = new Exam({
-        collegeId: hod.collegeId, // Secured
-        department: hod.department, // Secured
+        collegeId: hod.collegeId,
+        courseId: detail.courseId,
+        semesterId: semesterDoc._id,
         subjectName: detail.subjectName,
         subjectCode: detail.subjectCode,
-        course,
-        semester,
         examType,
         date: detail.date,
         maxMarks: detail.maxMarks, 
@@ -67,9 +73,7 @@ export const createTimetable = async (req, res) => {
     // Create the parent Timetable document
     const timetable = await Timetable.create({
       collegeId: hod.collegeId,
-      course,
-      department: hod.department,
-      semester,
+      semester: semesterDoc._id,
       examType,
       exams: examIds,
       createdBy: req.user.id 
@@ -101,12 +105,16 @@ export const getTimetables = async (req, res) => {
 
     // 2. Fetch the timetables
     const timetables = await Timetable.find(query)
+      .populate("semester", "semesterNumber semesterName academicYear status")
       .populate({
         path: 'exams',
         // removed the questionPaper ID from the payload 
         // so no one can even attempt to fetch it without permission.
         select: '-questionPaper', 
-        populate: { path: 'assignedFaculty', select: 'name email' } 
+        populate: [
+          { path: 'assignedFaculty', select: 'name email' },
+          { path: 'courseId' }
+        ]
       })
       .sort({ createdAt: -1 });
 
@@ -132,13 +140,13 @@ export const addExamToTimetable = async (req, res) => {
     }
 
     // Create the new Exam
+    const semesterDoc = await Semester.findById(timetable.semester);
     const newExam = new Exam({
       collegeId: timetable.collegeId,
-      department: timetable.department,
+      courseId: detail.courseId,
+      semesterId: timetable.semester,
       subjectName: detail.subjectName,
       subjectCode: detail.subjectCode,
-      course: timetable.course,
-      semester: timetable.semester,
       examType: timetable.examType,
       date: detail.date,
       maxMarks: detail.maxMarks,
@@ -253,10 +261,14 @@ export const getTimetableById = async (req, res) => {
 
     // 2. Fetch the timetable
     const timetable = await Timetable.findById(timetableId)
+      .populate("semester", "semesterNumber semesterName academicYear status")
       .populate({
         path: 'exams',
         select: '-questionPaper', // Hide the paper ID for security
-        populate: { path: 'assignedFaculty', select: 'name email' }
+        populate: [
+          { path: 'assignedFaculty', select: 'name email' },
+          { path: 'courseId' }
+        ]
       });
 
     if (!timetable) return res.status(404).json({ message: "Timetable not found" });
@@ -305,6 +317,40 @@ export const getExamById = async (req, res) => {
     res.status(200).json({ exam });
   } catch (error) {
     console.error("Error fetching exam details:", error);
+    res.status(500).json({ message: "Internal server error", error });
+  }
+};
+
+// 8. Generate Token & QR Code for an Exam (integrated in timetable management)
+export const generateExamQR = async (req, res) => {
+  try {
+    const { examId } = req.params;
+    const exam = await Exam.findById(examId);
+    if (!exam) return res.status(404).json({ message: "Exam not found" });
+
+    const hod = await Faculty.findById(req.user.id);
+    if (exam.collegeId.toString() !== hod.collegeId.toString() || exam.department !== hod.department) {
+      return res.status(403).json({ message: "Unauthorized: You can only manage exams in your own department." });
+    }
+
+    // Generate token if not already exists or if set to default placeholder
+    if (!exam.token || exam.token === "Not generated") {
+      exam.token = generateSessionToken();
+    }
+
+    // Generate QR
+    const qrUrl = await generateQR(exam.token);
+    exam.qrCode = qrUrl;
+    await exam.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Token and QR generated successfully",
+      token: exam.token,
+      qrCode: qrUrl
+    });
+  } catch (error) {
+    console.error("Error generating exam QR:", error);
     res.status(500).json({ message: "Internal server error", error });
   }
 };

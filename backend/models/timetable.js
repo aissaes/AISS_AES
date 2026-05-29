@@ -1,55 +1,41 @@
 import mongoose from "mongoose";
 
 const timetableSchema = new mongoose.Schema({
-  
   collegeId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "College",
     required: true,
     index: true
   },
-  course:{
-    type:String,
-    required:true
+  semester: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Semester",
+    required: true,
+    index: true
   },
-
-  department:{
-    type:String,
-    required:true
-  },
-
-  semester:{
-    type:Number,
-    required:true
-  },
-
-  examType:{
-    type:String,
-    enum:[
+  examType: {
+    type: String,
+    enum: [
       "Mid Semester Examination",
       "End Semester Examination",
       "Special Mid Semester Examination",
       "Special End Semester Examination"
     ],
-    required:true
+    required: true
   },
-
-  exams:[
+  exams: [
     {
-      type:mongoose.Schema.Types.ObjectId,
-      ref:"Exam"
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Exam"
     }
   ],
-
-  createdBy:{
-    type:mongoose.Schema.Types.ObjectId,
-    ref:"Faculty",
-    required:true
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Faculty",
+    required: true
   }
+}, { timestamps: true });
 
-},{timestamps:true});
-
-
-const Timetable = mongoose.model("Timetable",timetableSchema);
+const Timetable = mongoose.model("Timetable", timetableSchema);
 
 export default Timetable;
