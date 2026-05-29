@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/repositories/exam_repository.dart';
 import '../providers/exam_provider.dart';
@@ -341,6 +342,15 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> {
                                     if (startTime != null && endTime != null) {
                                       isLive = now.isAfter(startTime) && now.isBefore(endTime);
                                     }
+
+                                    String timingsStr = 'N/A';
+                                    if (startTime != null && endTime != null) {
+                                      try {
+                                        final startFormatted = DateFormat('hh:mm a').format(startTime.toLocal());
+                                        final endFormatted = DateFormat('hh:mm a').format(endTime.toLocal());
+                                        timingsStr = '$startFormatted - $endFormatted';
+                                      } catch (_) {}
+                                    }
                                     
                                     return Container(
                                       padding: const EdgeInsets.all(18),
@@ -430,15 +440,23 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> {
                                               ),
                                             ],
                                           ),
+                                          const SizedBox(height: 8),
+                                          Row(
+                                            children: [
+                                              const Icon(Icons.access_time_rounded, size: 14, color: AppTheme.textSecondary),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                timingsStr,
+                                                style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
+                                              ),
+                                            ],
+                                          ),
                                           if (isLive) ...[
                                             const SizedBox(height: 16),
                                             ElevatedButton.icon(
                                               onPressed: () {
-                                                if (exam['token'] != null && exam['token'] != 'Not generated') {
-                                                  _unlockExamWithToken(exam['token']);
-                                                } else {
-                                                  _showUnlockDialog(context, exam);
-                                                }
+                                                // Always require QR scan or manual token entry
+                                                _showUnlockDialog(context, exam);
                                               },
                                               icon: const Icon(Icons.lock_open_rounded, size: 16),
                                               label: const Text('Unlock script upload'),

@@ -161,7 +161,7 @@ export const getStudentTimetableAndExams = async (req, res) => {
     })
     .populate({
       path: 'exams',
-      select: '-questionPaper', // Hide question paper for students!
+      select: '-questionPaper -token -qrCode', // Hide sensitive fields from students!
       populate: [
         { path: 'assignedFaculty', select: 'name email' },
         { path: 'courseId' }
@@ -175,7 +175,7 @@ export const getStudentTimetableAndExams = async (req, res) => {
       semesterId: semester,
       courseId: { $in: crs }
     })
-    .select('-questionPaper') // Hide question paper for students!
+    .select('-questionPaper -token -qrCode') // Hide sensitive fields from students!
     .populate('assignedFaculty', 'name email')
     .populate('courseId')
     .sort({ date: 1 });
