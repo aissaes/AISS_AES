@@ -29,9 +29,9 @@ const studentSchema = new mongoose.Schema({
         ref:"QuestionPaper"
     }],
 
-    department:{
-        type:String,
-        required:true
+    departments: {
+        type: [String],
+        default: []
     },
     email:{
         type:String,
@@ -42,9 +42,9 @@ const studentSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    course: {
-        type: String,
-        required: true
+    courses: {
+        type: [String],
+        default: []
     },
     role: {
         type: String,

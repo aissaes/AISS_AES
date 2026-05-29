@@ -1,6 +1,8 @@
 import Student from "../models/student.js";
 import Exam from "../models/exam.js";
 import Upload from "../models/uploadSession.js";
+import Answers from "../models/answer.js";
+import Timetable from "../models/timetable.js";
 
 export const getExamByIdByToken = async (req, res) => {
   try {
@@ -15,7 +17,7 @@ export const getExamByIdByToken = async (req, res) => {
     }
 
     // 2. Find exam using token
-    const exam = await Exam.findOne({ token });
+    const exam = await Exam.findOne({ token }).populate("questionPaper");
 
     if (!exam) {
       return res.status(404).json({
@@ -108,5 +110,83 @@ export const startUploadSession = async (req, res) => {
   } catch (error) {
     console.error("Error starting upload session:", error);
     res.status(500).json({ success: false, message: "Internal server error." });
+  }
+};
+
+export const getStudentSubmissions = async (req, res) => {
+  try {
+    const { examId } = req.params;
+    const studentId = req.user.id;
+
+    const submission = await Answers.findOne({ for_exam: examId, uploaded_student: studentId });
+
+    return res.status(200).json({
+      success: true,
+      answers: submission ? submission.answers : {},
+    });
+  } catch (err) {
+    console.error("Error fetching student submissions:", err);
+    return res.status(500).json({ success: false, message: "Internal server error." });
+  }
+};
+
+export const getStudentTimetableAndExams = async (req, res) => {
+  try {
+    const studentId = req.user.id;
+
+    // 1. Fetch student profile to get filter properties
+    const student = await Student.findById(studentId);
+    if (!student) {
+      return res.status(404).json({ success: false, message: "Student profile not found." });
+    }
+
+    const { collegeId, semester } = student;
+
+    const depts = student.departments || [];
+    const crs = student.courses || [];
+
+    // Return empty results immediately if student is not yet assigned to any course/department
+    if (depts.length === 0 || crs.length === 0) {
+      return res.status(200).json({
+        success: true,
+        timetables: [],
+        exams: []
+      });
+    }
+
+    // 2. Fetch timetables matching college, courses, departments, and semester
+    const timetables = await Timetable.find({
+      collegeId,
+      course: { $in: crs },
+      department: { $in: depts },
+      semester
+    })
+    .populate({
+      path: 'exams',
+      select: '-questionPaper', // Hide question paper for students!
+      populate: { path: 'assignedFaculty', select: 'name email' }
+    })
+    .sort({ createdAt: -1 });
+
+    // 3. Fetch exams matching college, courses, departments, semester
+    const exams = await Exam.find({
+      collegeId,
+      course: { $in: crs },
+      department: { $in: depts },
+      semester
+    })
+    .select('-questionPaper') // Hide question paper for students!
+    .populate('assignedFaculty', 'name email')
+    .sort({ date: 1 });
+
+    res.status(200).json({
+      success: true,
+      timetables,
+      exams
+    });
+
+  } catch (error) {
+    console.error("Error fetching student timetable and exams:", error);
+    res.status(500).json({ success: false, message: "Server error." });
   }
 };

@@ -62,7 +62,8 @@ def ocr_agent(state: AgentState):
         
         # Download PDF into memory
         response = requests.get(url)
-        pdf_file = BytesIO(response.content)
+        pdf_bytes = response.content
+        pdf_file = BytesIO(pdf_bytes)
         
         try:
             reader = PdfReader(pdf_file)

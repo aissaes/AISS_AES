@@ -13,7 +13,7 @@ export const loginStudent = async (req, res) => {
       return res.status(400).json({ success: false, message: "Please provide email and password." });
     }
 
-    const student = await Student.findOne({ email });
+    const student = await Student.findOne({ email }).populate("collegeId", "collegeName");
     if (!student) {
       return res.status(401).json({ success: false, message: "Invalid credentials." });
     }
@@ -68,8 +68,10 @@ export const viewProfile = async (req, res) => {
     // req.user.id comes from your verifyToken middleware
     const studentId = req.user.id; 
 
-    // Fetch the student but EXCLUDE the password field
-    const student = await Student.findById(studentId).select("-password");
+    // Fetch the student but EXCLUDE the password field and populate college name
+    const student = await Student.findById(studentId)
+      .select("-password")
+      .populate("collegeId", "collegeName");
 
     if (!student) {
       return res.status(404).json({ success: false, message: "Student profile not found." });

@@ -18,7 +18,7 @@ evaluationRouter.post("/:examId/upload-materials", verifyToken, uploadTeacherMat
 // 3. Trigger AI evaluation for the exam
 evaluationRouter.post("/:examId/evaluate", verifyToken, triggerAIEvaluation);
 
-// 3. OVERRIDE: Manually change a student's score for a specific question
+// 4. OVERRIDE: Manually change a student's score for a specific question
 evaluationRouter.put("/:examId/student/:studentId/override", verifyToken, overrideAIGrade);
 
 export default evaluationRouter;

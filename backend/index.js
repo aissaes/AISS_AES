@@ -28,12 +28,14 @@ import resultRoutes from "./routes/resultRoutes.js";
 const app = express();
 
 // updated CORS array for local & Vercel
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "https://aiss-aes-8ju1.vercel.app",
-  "https://aiss-aes-frontend.vercel.app"
-];
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(",") 
+  : [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "https://aiss-aes-8ju1.vercel.app",
+      "https://aiss-aes-frontend.vercel.app"
+    ];
 
 app.use(cors({
   origin: allowedOrigins,

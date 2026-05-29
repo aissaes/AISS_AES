@@ -52,12 +52,13 @@
 import express from "express";
 import { verifyToken } from "../middlewares/authMiddleware.js";
 import { isStudent } from "../middlewares/roleMiddleware.js";
-import { getExamByIdByToken , startUploadSession } from "../controllers/studentController.js";
+import { getExamByIdByToken , startUploadSession, getStudentSubmissions, getStudentTimetableAndExams } from "../controllers/studentController.js";
 
 const studentRouter = express.Router();
 
 studentRouter.post("/get-exam", verifyToken, isStudent, getExamByIdByToken);
-
 studentRouter.post("/start-session", verifyToken, isStudent, startUploadSession);
+studentRouter.get("/exam-submissions/:examId/answers", verifyToken, isStudent, getStudentSubmissions);
+studentRouter.get("/timetable-exams", verifyToken, isStudent, getStudentTimetableAndExams);
 
 export default studentRouter;

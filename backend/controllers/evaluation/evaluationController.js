@@ -3,6 +3,7 @@ import Exam from "../../models/exam.js"
 import axios from "axios";
 import QuestionPaper from "../../models/questionPapers.js"; 
 import Result from "../../models/result.js";
+import Student from "../../models/student.js";
 
 // Define the Base URL (Defaults to local if the .env variable is missing)
 const AI_BASE_URL = process.env.PYTHON_AGENT_URL || "http://127.0.0.1:10000";
@@ -307,4 +308,4 @@ export const overrideAIGrade = async (req, res) => {
     console.error("Override Error:", error);
     res.status(500).json({ success: false, message: "Server error during grade override." });
   }
-};
+};

@@ -2,9 +2,12 @@ import express from "express";
 import { verifyToken } from "../middlewares/authMiddleware.js";
 import { isHOD } from "../middlewares/roleMiddleware.js"; 
 import { 
-  transferHOD, addSingleStudent, bulkUploadStudents, getDepartmentStudents, 
-  updateSingleStudent, bulkUpdateStudents, 
-  deleteSingleStudent, bulkDeleteStudents,generateToken, generateQRCode
+  transferHOD, 
+  assignStudentsToCourse, 
+  unassignStudentsFromCourse, 
+  getDepartmentStudents, 
+  generateToken, 
+  generateQRCode
 } from "../controllers/faculty/hodController.js";
 
 const hodRouter = express.Router();
@@ -14,22 +17,12 @@ hodRouter.use(verifyToken, isHOD);
 
 hodRouter.post("/transfer", transferHOD);
 
+// Student Assignment/Unassignment (Course Registration)
+hodRouter.post("/students/assign", assignStudentsToCourse);
+hodRouter.post("/students/unassign", unassignStudentsFromCourse);
 
-// POST
-hodRouter.post("/students", addSingleStudent);
-hodRouter.post("/students/bulk-upload", bulkUploadStudents);
-
-// GET
+// GET Enrolled Students in HOD's Department & Course
 hodRouter.get("/students", getDepartmentStudents);
-
-// PUT - BULK MUST GO BEFORE :studentId
-hodRouter.put("/students/bulk-update", bulkUpdateStudents);
-hodRouter.put("/students/:studentId", updateSingleStudent);
-
-// DELETE - BULK MUST GO BEFORE :studentId
-hodRouter.delete("/students/bulk-delete", bulkDeleteStudents);
-hodRouter.delete("/students/:studentId", deleteSingleStudent);
-
 
 hodRouter.post("/exams/:examId/generate-token", generateToken);
 hodRouter.post("/exams/:examId/generate-qr", generateQRCode);

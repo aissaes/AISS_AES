@@ -93,6 +93,9 @@ export const facultyAPI = {
 ══════════════════════════════════════════════════════ */
 export const hodAPI = {
   transfer: (targetFacultyId) => client.post('/faculty/hod/transfer', { newHODId: targetFacultyId }),
+  getStudents: (params) => client.get('/faculty/hod/students', { params }),
+  assignStudents: (studentIds) => client.post('/faculty/hod/students/assign', { studentIds }),
+  unassignStudents: (studentIds) => client.post('/faculty/hod/students/unassign', { studentIds }),
 };
 
 /* ══════════════════════════════════════════════════════
@@ -104,6 +107,14 @@ export const collegeAdminAPI = {
   updateDepartments: (departments) => client.put('/faculty/collegeadmin/update-departments', { departments }),
   makeHOD: (facultyId) => client.post('/faculty/collegeadmin/make-hod', { facultyId }),
   transfer: (facultyId, newDepartment) => client.post('/faculty/collegeadmin/transfer', { facultyId, newDepartment }),
+  
+  // Student CRUD (College Admin only)
+  getStudents: () => client.get('/faculty/collegeadmin/students'),
+  addStudent: (data) => client.post('/faculty/collegeadmin/students', data),
+  bulkUpload: (students) => client.post('/faculty/collegeadmin/students/bulk-upload', { students }),
+  updateStudent: (studentId, data) => client.put(`/faculty/collegeadmin/students/${studentId}`, data),
+  deleteStudent: (studentId) => client.delete(`/faculty/collegeadmin/students/${studentId}`),
+  bulkDelete: (studentIds) => client.delete('/faculty/collegeadmin/students/bulk-delete', { data: { studentIds } }),
 };
 
 // Backward compat alias
@@ -159,6 +170,18 @@ export const collegeAPI = {
   getList: () => client.get('/college/list'),
   getDepartments: (collegeId) => client.get(`/college/${collegeId}/departments`),
   registerRequest: (data) => client.post('/college/request', data),
+};
+
+/* ══════════════════════════════════════════════════════
+   Evaluation API
+   Routes: /faculty/exam/*, /results/*
+══════════════════════════════════════════════════════ */
+export const evaluationAPI = {
+  getAppearedStudents: (examId) => client.get(`/faculty/exam/${examId}/students`),
+  getResultOverview: (examId) => client.get(`/results/faculty/exam/${examId}`),
+  getDetailedResult: (examId, studentId) => client.get(`/results/faculty/exam/${examId}/student/${studentId}`),
+  triggerAIEvaluation: (examId, studentId) => client.post(`/faculty/exam/${examId}/evaluate`, { studentId }),
+  overrideGrade: (examId, studentId, data) => client.put(`/faculty/exam/${examId}/student/${studentId}/override`, data),
 };
 
 export default client;
