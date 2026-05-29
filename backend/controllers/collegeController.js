@@ -4,6 +4,7 @@ import Faculty from "../models/faculty.js";
 import bcrypt from "bcryptjs";
 import OverallAdmin from "../models/overallAdmin.js";
 import sendEmail from "../configurations/nodemailer.js";
+import Department from "../models/department.js";
 
 export const getAllCollegesList = async (req, res) => {
   try {
