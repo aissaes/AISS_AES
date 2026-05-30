@@ -117,13 +117,13 @@ const StudentGradingDetail = () => {
     <div className={styles.pageWrap} style={{ display: 'flex', flexDirection: 'column', height: '100vh', padding: '16px' }}>
       
       {/* Header Panel */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '16px 24px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface-1)', border: '1px solid var(--border-1)', padding: '16px 24px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', marginBottom: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <button 
             onClick={() => navigate(`/faculty/evaluations/${examId}`)}
             style={{
-              background: '#f1f5f9',
-              border: 'none',
+              background: 'var(--surface-3)',
+              border: '1px solid var(--border-2)',
               width: 36,
               height: 36,
               borderRadius: '50%',
@@ -131,25 +131,25 @@ const StudentGradingDetail = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#475569',
+              color: 'var(--text-1)',
             }}
           >
             <ArrowLeft size={18} />
           </button>
           {student && (
             <div>
-              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>{student.name}</h2>
-              <p style={{ margin: '2px 0 0 0', fontSize: '13px', color: '#64748b', fontWeight: 500 }}>Roll Number: {student.rollNumber || 'N/A'} · {student.email}</p>
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--text-1)' }}>{student.name}</h2>
+              <p style={{ margin: '2px 0 0 0', fontSize: '13px', color: 'var(--text-3)', fontWeight: 500 }}>Roll Number: {student.rollNumber || 'N/A'} · {student.email}</p>
             </div>
           )}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>STATUS:</span>
+          <span style={{ fontSize: '13px', color: 'var(--text-3)', fontWeight: 600 }}>STATUS:</span>
           <span 
             style={{
-              background: status === 'Completed' ? '#dcfce7' : '#fef3c7',
-              color: status === 'Completed' ? '#15803d' : '#d97706',
+              background: status === 'Completed' ? 'var(--success-dim)' : 'var(--warning-dim)',
+              color: status === 'Completed' ? 'var(--success)' : 'var(--warning)',
               padding: '4px 12px',
               borderRadius: '20px',
               fontSize: '12px',
@@ -158,9 +158,9 @@ const StudentGradingDetail = () => {
           >
             {status}
           </span>
-          <div style={{ borderLeft: '1px solid #e2e8f0', height: 28, marginLeft: 8 }} />
+          <div style={{ borderLeft: '1px solid var(--border-2)', height: 28, marginLeft: 8 }} />
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-            <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700 }}>TOTAL SCORE</span>
+            <span style={{ fontSize: '11px', color: 'var(--text-3)', fontWeight: 700 }}>TOTAL SCORE</span>
             <span style={{ fontSize: '20px', fontWeight: 900, color: 'var(--primary)' }}>{totalMarks} Marks</span>
           </div>
         </div>
@@ -169,14 +169,14 @@ const StudentGradingDetail = () => {
       {/* Split Workspace */}
       <div style={{ display: 'flex', gap: '20px', flex: 1, overflow: 'hidden', height: 'calc(100vh - 120px)' }}>
         
-        {/* Left Side: Images Scroll */}
-        <div style={{ flex: 1, background: '#1e293b', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', overflowY: 'auto', gap: 16 }}>
-          <h3 style={{ margin: '0 0 12px 0', color: '#f8fafc', fontSize: '15px', display: 'flex', alignItems: 'center', gap: 6 }}>
+        {/* Left Side: Answer Script Scroll */}
+        <div style={{ flex: 1, background: 'var(--surface-2)', border: '1px solid var(--border-2)', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', overflowY: 'auto', gap: 16 }}>
+          <h3 style={{ margin: '0 0 12px 0', color: 'var(--text-1)', fontSize: '15px', display: 'flex', alignItems: 'center', gap: 6 }}>
             <Eye size={16} /> Student Answer Script
           </h3>
           
           {evaluations.length === 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, color: '#94a3b8' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, color: 'var(--text-3)' }}>
               <HelpCircle size={40} />
               <p style={{ marginTop: 8 }}>No uploaded images found.</p>
             </div>
@@ -188,8 +188,8 @@ const StudentGradingDetail = () => {
                   position: 'relative', 
                   borderRadius: '8px', 
                   overflow: 'hidden', 
-                  border: '1px solid #334155',
-                  background: '#0f172a',
+                  border: '1px solid var(--border-2)',
+                  background: 'var(--bg-3)',
                   minHeight: '280px',
                   display: 'flex',
                   alignItems: 'center',
@@ -208,13 +208,13 @@ const StudentGradingDetail = () => {
                     </div>
                     <button 
                       onClick={() => setActiveImage(ev.imageUrl)}
-                      style={{ position: 'absolute', bottom: 12, right: 12, background: 'var(--primary)', color: 'white', border: 'none', width: 36, height: 36, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContainer: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
+                      style={{ position: 'absolute', bottom: 12, right: 12, background: 'var(--primary)', color: 'white', border: 'none', width: 36, height: 36, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
                     >
                       <ZoomIn size={16} />
                     </button>
                   </>
                 ) : (
-                  <div style={{ color: '#64748b', fontSize: '13px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ color: 'var(--text-3)', fontSize: '13px', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <Info size={16} /> Image missing for {ev.questionId}
                   </div>
                 )}
@@ -234,10 +234,10 @@ const StudentGradingDetail = () => {
               <div 
                 key={ev.questionId} 
                 style={{
-                  background: 'white',
+                  background: 'var(--surface-1)',
                   borderRadius: '12px',
                   boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-                  border: isOverridden ? '2px solid #22c55e' : '1px solid #e2e8f0',
+                  border: isOverridden ? '2px solid var(--success)' : '1px solid var(--border-1)',
                   padding: '20px',
                   display: 'flex',
                   flexDirection: 'column',
@@ -247,11 +247,11 @@ const StudentGradingDetail = () => {
                 {/* Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>Question {ev.questionId}</h3>
+                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--text-1)' }}>Question {ev.questionId}</h3>
                     <span 
                       style={{
-                        background: isOverridden ? '#dcfce7' : '#eff6ff',
-                        color: isOverridden ? '#166534' : '#1e40af',
+                        background: isOverridden ? 'var(--success-dim)' : 'rgba(99, 102, 241, 0.12)',
+                        color: isOverridden ? 'var(--success)' : 'var(--primary-light)',
                         padding: '3px 8px',
                         borderRadius: '4px',
                         fontSize: '11px',
@@ -265,11 +265,11 @@ const StudentGradingDetail = () => {
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                    <span style={{ fontSize: '18px', fontWeight: 800, color: isOverridden ? '#22c55e' : 'var(--primary)' }}>
+                    <span style={{ fontSize: '18px', fontWeight: 800, color: isOverridden ? 'var(--success)' : 'var(--primary)' }}>
                       {isOverridden ? ev.overrideMarks : ev.aiMarks} Marks
                     </span>
                     {isOverridden && (
-                      <span style={{ fontSize: '11px', color: '#64748b', textDecoration: 'line-through' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-3)', textDecoration: 'line-through' }}>
                         AI Score: {ev.aiMarks}
                       </span>
                     )}
@@ -277,11 +277,11 @@ const StudentGradingDetail = () => {
                 </div>
 
                 {/* AI Reasoning */}
-                <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', borderLeft: '3px solid #3b82f6' }}>
-                  <p style={{ margin: '0 0 6px 0', fontSize: '12px', fontWeight: 700, color: '#3b82f6', letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ background: 'var(--surface-2)', padding: '12px 16px', borderRadius: '8px', borderLeft: '3px solid var(--primary)' }}>
+                  <p style={{ margin: '0 0 6px 0', fontSize: '12px', fontWeight: 700, color: 'var(--primary-light)', letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 4 }}>
                     <Info size={13} /> AI FEEDBACK & REASONING
                   </p>
-                  <p style={{ margin: 0, fontSize: '13px', color: '#334155', lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>
+                  <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-1)', lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>
                     {ev.aiReasoning || 'AI feedback details pending.'}
                   </p>
                 </div>
@@ -295,10 +295,10 @@ const StudentGradingDetail = () => {
                       alignItems: 'center',
                       gap: 6,
                       background: 'none',
-                      border: '1px solid #cbd5e1',
+                      border: '1px solid var(--border-2)',
                       padding: '8px 12px',
                       borderRadius: '6px',
-                      color: '#475569',
+                      color: 'var(--text-2)',
                       fontSize: '13px',
                       fontWeight: 600,
                       cursor: 'pointer',
@@ -309,12 +309,12 @@ const StudentGradingDetail = () => {
                     <Edit3 size={14} /> Override AI Score
                   </button>
                 ) : (
-                  <div style={{ background: '#f0fdf4', padding: '16px', borderRadius: '8px', border: '1px dashed #22c55e', display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
-                    <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#166534' }}>Override Question {ev.questionId} Grade</h4>
+                  <div style={{ background: 'var(--success-dim)', padding: '16px', borderRadius: '8px', border: '1px dashed var(--success)', display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
+                    <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: 'var(--success)' }}>Override Question {ev.questionId} Grade</h4>
                     
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <label style={{ fontSize: '11px', color: '#166534', fontWeight: 700 }}>NEW SCORE</label>
+                        <label style={{ fontSize: '11px', color: 'var(--success)', fontWeight: 700 }}>NEW SCORE</label>
                         <input 
                           type="number" 
                           value={currentOverride.marks} 
@@ -323,17 +323,18 @@ const StudentGradingDetail = () => {
                             width: '80px',
                             height: '36px',
                             borderRadius: '6px',
-                            border: '1px solid #22c55e',
+                            border: '1px solid var(--success)',
+                            background: 'var(--surface-1)',
                             padding: '0 8px',
                             fontSize: '14px',
                             fontWeight: 700,
-                            color: '#166534',
+                            color: 'var(--success)',
                           }}
                         />
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
-                        <label style={{ fontSize: '11px', color: '#166534', fontWeight: 700 }}>REASON FOR CHANGE</label>
+                        <label style={{ fontSize: '11px', color: 'var(--success)', fontWeight: 700 }}>REASON FOR CHANGE</label>
                         <input 
                           type="text" 
                           placeholder="e.g. Correct step derivation overlooked by AI."
@@ -342,7 +343,9 @@ const StudentGradingDetail = () => {
                           style={{
                             height: '36px',
                             borderRadius: '6px',
-                            border: '1px solid #bbf7d0',
+                            border: '1px solid var(--border-2)',
+                            background: 'var(--surface-1)',
+                            color: 'var(--text-1)',
                             padding: '0 12px',
                             fontSize: '13px',
                           }}
@@ -350,14 +353,14 @@ const StudentGradingDetail = () => {
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
+                    <div style={{ display: 'flex', gap: 8, justifyContainer: 'flex-end', display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
                       <button 
                         onClick={() => handleToggleEdit(ev.questionId)}
                         disabled={isSaving}
                         style={{
                           background: 'none',
                           border: 'none',
-                          color: '#475569',
+                          color: 'var(--text-3)',
                           fontSize: '13px',
                           fontWeight: 600,
                           cursor: 'pointer',
@@ -370,7 +373,7 @@ const StudentGradingDetail = () => {
                         onClick={() => handleSaveOverride(ev.questionId)}
                         disabled={isSaving}
                         style={{
-                          background: '#22c55e',
+                          background: 'var(--success)',
                           color: 'white',
                           border: 'none',
                           borderRadius: '6px',

@@ -90,7 +90,11 @@ const examSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Student'
     }
-  ]
+  ],
+  resultsPublished: {
+    type: Boolean,
+    default: false
+  }
 }, { timestamps: true });
 
 const Exam = mongoose.model("Exam", examSchema);

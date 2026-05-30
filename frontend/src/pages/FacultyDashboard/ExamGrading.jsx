@@ -84,6 +84,30 @@ const ExamGrading = () => {
     }
   };
 
+  const handleTogglePublishResults = async () => {
+    if (!exam) return;
+    const isCurrentlyPublished = exam.resultsPublished === true;
+    const action = isCurrentlyPublished ? "unpublish" : "publish";
+    
+    if (!window.confirm(`Are you sure you want to ${action} the results for this exam? Students will ${isCurrentlyPublished ? 'no longer' : 'now'} be able to view their scores and feedback.`)) {
+      return;
+    }
+
+    try {
+      toast(`${isCurrentlyPublished ? 'Unpublishing' : 'Publishing'} results...`, 'info');
+      const res = await evaluationAPI.publishResults(examId, !isCurrentlyPublished);
+      if (res.data.success) {
+        toast(res.data.message || `Results ${isCurrentlyPublished ? 'unpublished' : 'published'} successfully!`, 'success');
+        setExam(prev => ({
+          ...prev,
+          resultsPublished: res.data.resultsPublished
+        }));
+      }
+    } catch (err) {
+      toast(err.response?.data?.message || `Failed to ${action} results.`, 'error');
+    }
+  };
+
 
 
   const handleUploadMaterials = async (e) => {
@@ -188,7 +212,7 @@ const ExamGrading = () => {
           style={{
             background: 'none',
             border: 'none',
-            color: '#64748b',
+            color: 'var(--text-2)',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -209,7 +233,22 @@ const ExamGrading = () => {
               <p className={styles.bannerRole}>{exam.subjectCode} · Semester {exam.semester} · Max Marks: {exam.maxMarks}</p>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <button 
+              className={styles.primaryBtn} 
+              onClick={handleTogglePublishResults}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                background: exam.resultsPublished ? 'var(--success)' : 'var(--primary)',
+                border: 'none',
+              }}
+            >
+              <FileCheck2 size={14} /> 
+              {exam.resultsPublished ? 'Results Published' : 'Publish Results'}
+            </button>
+
             <button 
               className={styles.primaryBtn} 
               onClick={() => setIsMaterialsModalOpen(true)}
@@ -287,7 +326,7 @@ const ExamGrading = () => {
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
-                <tr style={{ borderBottom: '2px solid #f1f5f9', color: '#475569', fontSize: '13px', fontWeight: 600 }}>
+                <tr style={{ borderBottom: '2px solid var(--border-1)', color: 'var(--text-3)', fontSize: '13px', fontWeight: 600 }}>
                   <th style={{ padding: '12px 8px' }}>Student Name</th>
                   <th style={{ padding: '12px 8px' }}>Roll Number</th>
                   <th style={{ padding: '12px 8px' }}>Status</th>
@@ -302,24 +341,24 @@ const ExamGrading = () => {
                   const isCompleted = result?.status === 'Completed';
                   
                   let statusLabel = 'Not Evaluated';
-                  let statusBg = '#e2e8f0';
-                  let statusColor = '#475569';
+                  let statusBg = 'var(--surface-3)';
+                  let statusColor = 'var(--text-3)';
                   
                   if (isEvaluating) {
                     statusLabel = 'Evaluating';
-                    statusBg = '#fef3c7';
-                    statusColor = '#d97706';
+                    statusBg = 'var(--warning-bg)';
+                    statusColor = 'var(--warning)';
                   } else if (isCompleted) {
                     statusLabel = 'Completed';
-                    statusBg = '#dcfce7';
-                    statusColor = '#15803d';
+                    statusBg = 'var(--success-bg)';
+                    statusColor = 'var(--success)';
                   }
 
-                  const marks = isCompleted ? result.totalMarksObtained : '—';
+                  const marks = isCompleted ? `${result.totalMarksObtained} / ${exam?.maxMarks || 30}` : '—';
                   const isPendingAI = actionLoading[student._id];
 
                   return (
-                    <tr key={student._id} style={{ borderBottom: '1px solid #f1f5f9', fontSize: '14px', color: '#1e293b' }}>
+                    <tr key={student._id} style={{ borderBottom: '1px solid var(--border-2)', fontSize: '14px', color: 'var(--text-1)' }}>
                       <td style={{ padding: '16px 8px', fontWeight: 600 }}>{student.name}</td>
                       <td style={{ padding: '16px 8px' }}>{student.rollNumber || 'N/A'}</td>
                       <td style={{ padding: '16px 8px' }}>
@@ -344,9 +383,9 @@ const ExamGrading = () => {
                             onClick={() => handleTriggerAI(student._id)}
                             disabled={isPendingAI}
                             style={{
-                              background: isCompleted ? '#f1f5f9' : 'var(--primary)',
-                              color: isCompleted ? '#334155' : 'white',
-                              border: isCompleted ? '1px solid #cbd5e1' : 'none',
+                              background: isCompleted ? 'var(--surface-3)' : 'var(--accent)',
+                              color: isCompleted ? 'var(--text-2)' : 'white',
+                              border: isCompleted ? '1px solid var(--border-2)' : 'none',
                               fontSize: '13px',
                               display: 'flex',
                               alignItems: 'center',
@@ -386,7 +425,7 @@ const ExamGrading = () => {
         title="Upload Teaching Materials"
       >
         <form onSubmit={handleUploadMaterials} style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '10px 5px' }}>
-          <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0, lineHeight: 1.5 }}>
+          <p style={{ color: 'var(--text-2)', fontSize: '0.85rem', margin: 0, lineHeight: 1.5 }}>
             Upload course notes, syllabi, rubrics, or specific answer keys. The AI agent will automatically chunk and vectorize the document to use as reference material when grading.
           </p>
 
@@ -407,7 +446,7 @@ const ExamGrading = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', animation: 'fadeIn 0.2s ease' }}>
               <label className={styles.modalLabel}>Select Question ID</label>
               {availableQuestionIds.length === 0 ? (
-                <div style={{ color: '#d97706', fontSize: '0.85rem', padding: '8px 12px', background: 'rgba(245, 158, 11, 0.08)', borderRadius: '6px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+                <div style={{ color: 'var(--warning)', fontSize: '0.85rem', padding: '8px 12px', background: 'var(--warning-dim)', borderRadius: '6px', border: '1px solid var(--warning-border)' }}>
                   No questions found. Make sure the question paper has been approved.
                 </div>
               ) : (
@@ -428,7 +467,7 @@ const ExamGrading = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <label className={styles.modalLabel}>Upload Document (PDF)</label>
             <div style={{
-              border: '2px dashed #cbd5e1',
+              border: '2px dashed var(--border-2)',
               borderRadius: '12px',
               padding: '24px 16px',
               textAlign: 'center',
@@ -469,10 +508,10 @@ const ExamGrading = () => {
                   <Upload size={18} />
                 </div>
                 <div>
-                  <span style={{ fontWeight: 600, fontSize: '0.85rem', color: '#1e293b' }}>
+                  <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-1)' }}>
                     {materialsFile ? materialsFile.name : 'Choose a file or drag it here'}
                   </span>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: '#64748b' }}>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: 'var(--text-3)' }}>
                     {materialsFile ? `Size: ${(materialsFile.size / 1024 / 1024).toFixed(2)} MB` : 'PDF files up to 10MB'}
                   </p>
                 </div>

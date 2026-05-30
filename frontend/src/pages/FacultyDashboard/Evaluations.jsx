@@ -76,9 +76,8 @@ const Evaluations = () => {
                     key={exam._id} 
                     className={styles.examItem}
                     style={{
-                      borderLeft: status.canEvaluate ? '4px solid var(--primary)' : '4px solid #cbd5e1',
+                      borderLeft: status.canEvaluate ? '4px solid var(--primary)' : '4px solid var(--border-2)',
                       padding: '16px 20px',
-                      background: '#f8fafc',
                       borderRadius: '8px',
                       display: 'flex',
                       alignItems: 'center',
@@ -87,10 +86,10 @@ const Evaluations = () => {
                     }}
                   >
                     <div style={{ flex: 1 }}>
-                      <h4 className={styles.examTitle} style={{ margin: '0 0 6px 0', fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                        {exam.subjectName} <span className={styles.examCode} style={{ background: '#e2e8f0', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 600, color: '#475569', marginLeft: '6px' }}>{exam.subjectCode}</span>
+                      <h4 className={styles.examTitle} style={{ margin: '0 0 6px 0', fontSize: '17px', fontWeight: 700, color: 'var(--text-1)' }}>
+                        {exam.subjectName} <span className={styles.examCode} style={{ background: 'var(--bg-3)', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 600, color: 'var(--text-2)', marginLeft: '6px' }}>{exam.subjectCode}</span>
                       </h4>
-                      <div className={styles.examMeta} style={{ display: 'flex', gap: '16px', color: '#64748b', fontSize: '13px' }}>
+                      <div className={styles.examMeta} style={{ display: 'flex', gap: '16px', color: 'var(--text-3)', fontSize: '13px' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={13} /> {new Date(exam.date).toLocaleDateString()}</span>
                         <span>Max Marks: <strong>{exam.maxMarks}</strong></span>
                         <span>Semester: <strong>{exam.semester}</strong></span>
@@ -119,8 +118,8 @@ const Evaluations = () => {
                           className={styles.primaryBtn} 
                           disabled
                           style={{
-                            background: '#cbd5e1',
-                            color: '#94a3b8',
+                            background: 'var(--surface-3)',
+                            color: 'var(--text-3)',
                             border: 'none',
                             display: 'flex',
                             alignItems: 'center',

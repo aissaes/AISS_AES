@@ -309,4 +309,37 @@ export const overrideAIGrade = async (req, res) => {
     console.error("Override Error:", error);
     res.status(500).json({ success: false, message: "Server error during grade override." });
   }
+};
+
+
+// ==========================================
+// 5. FACULTY: PUBLISH / UNPUBLISH EXAM RESULTS
+// ==========================================
+export const publishExamResults = async (req, res) => {
+  try {
+    const { examId } = req.params;
+    const { publish } = req.body; // boolean
+    const facultyId = req.user.id;
+
+    const exam = await Exam.findById(examId);
+    if (!exam) {
+      return res.status(404).json({ success: false, message: "Exam not found." });
+    }
+
+    if (exam.assignedFaculty.toString() !== facultyId) {
+      return res.status(403).json({ success: false, message: "Unauthorized to publish results for this exam." });
+    }
+
+    exam.resultsPublished = publish === true;
+    await exam.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Results ${exam.resultsPublished ? 'published successfully' : 'unpublished successfully'}.`,
+      resultsPublished: exam.resultsPublished
+    });
+  } catch (error) {
+    console.error("Error publishing results:", error);
+    res.status(500).json({ success: false, message: "Server error during results publication." });
+  }
 };

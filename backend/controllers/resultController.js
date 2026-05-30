@@ -100,22 +100,25 @@ export const getMyExamsList = async (req, res) => {
     // Find every result document belonging to this student
     // Populate the exam details so the frontend can show titles, codes, and dates
     const myResults = await Result.find({ student: studentId })
-      .populate("exam", "subjectName subjectCode examType date maxMarks")
+      .populate("exam", "subjectName subjectCode examType date maxMarks resultsPublished")
       .select("exam totalMarksObtained status updatedAt") // Keep payload lightweight
       .sort({ updatedAt: -1 }); // Show most recently graded exams first
 
     if (!myResults || myResults.length === 0) {
       return res.status(200).json({ 
         success: true, 
-        message: "You haven't attempted any exams yet, or they haven't been graded.",
+        message: "You haven't attempted any exams yet, or they haven't been released.",
         exams: [] 
       });
     }
 
+    // Only return exam results where the results are published by the faculty
+    const publishedResults = myResults.filter(r => r.exam && r.exam.resultsPublished === true);
+
     res.status(200).json({
       success: true,
-      count: myResults.length,
-      exams: myResults
+      count: publishedResults.length,
+      exams: publishedResults
     });
 
   } catch (error) {
@@ -135,12 +138,20 @@ export const getMyResult = async (req, res) => {
 
     // 1. Fetch the Result Document
     const resultDoc = await Result.findOne({ exam: examId, student: studentId })
-      .populate("exam", "subjectName subjectCode examType maxMarks"); // Bring in exam details
+      .populate("exam", "subjectName subjectCode examType maxMarks resultsPublished"); // Bring in exam details
 
     if (!resultDoc) {
       return res.status(404).json({ 
         success: false, 
         message: "Result not found. Your exam might still be under evaluation." 
+      });
+    }
+
+    // Ensure results are explicitly published by the faculty
+    if (!resultDoc.exam || resultDoc.exam.resultsPublished !== true) {
+      return res.status(403).json({
+        success: false,
+        message: "Results for this exam have not been published yet by the course instructor."
       });
     }
 

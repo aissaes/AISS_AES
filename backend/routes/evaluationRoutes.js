@@ -4,7 +4,8 @@ import {
   getAllStudentsAppearedForExam,
   triggerAIEvaluation,
   uploadTeacherMaterials,
-  overrideAIGrade
+  overrideAIGrade,
+  publishExamResults
 } from "../controllers/evaluation/evaluationController.js";
 
 const evaluationRouter = express.Router();
@@ -20,5 +21,8 @@ evaluationRouter.post("/:examId/evaluate", verifyToken, triggerAIEvaluation);
 
 // 4. OVERRIDE: Manually change a student's score for a specific question
 evaluationRouter.put("/:examId/student/:studentId/override", verifyToken, overrideAIGrade);
+
+// 5. PUBLISH RESULTS: Faculty-controlled results publishing
+evaluationRouter.put("/:examId/publish-results", verifyToken, publishExamResults);
 
 export default evaluationRouter;
