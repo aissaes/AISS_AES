@@ -134,6 +134,11 @@ select {
   font-family: var(--font-sans);
 }
 
+select option {
+  background-color: #111118 !important; /* solid dark background */
+  color: #e4e4ec !important; /* light high-contrast text */
+}
+
 /* ── Scrollbar ── */
 ::-webkit-scrollbar {
   width: 6px;

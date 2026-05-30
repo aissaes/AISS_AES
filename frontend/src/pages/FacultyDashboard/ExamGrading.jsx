@@ -339,19 +339,24 @@ const ExamGrading = () => {
                   const result = results.find(r => r.student?._id === student._id);
                   const isEvaluating = result?.status === 'Evaluating';
                   const isCompleted = result?.status === 'Completed';
+                  const isFailed = result?.status === 'Failed';
                   
                   let statusLabel = 'Not Evaluated';
                   let statusBg = 'var(--surface-3)';
-                  let statusColor = 'var(--text-3)';
+                  let statusColor = 'var(--text-2)';
                   
                   if (isEvaluating) {
                     statusLabel = 'Evaluating';
-                    statusBg = 'var(--warning-bg)';
+                    statusBg = 'var(--warning-dim)';
                     statusColor = 'var(--warning)';
                   } else if (isCompleted) {
                     statusLabel = 'Completed';
-                    statusBg = 'var(--success-bg)';
+                    statusBg = 'var(--success-dim)';
                     statusColor = 'var(--success)';
+                  } else if (isFailed) {
+                    statusLabel = 'Evaluation Failed';
+                    statusBg = 'var(--danger-dim)';
+                    statusColor = 'var(--danger)';
                   }
 
                   const marks = isCompleted ? `${result.totalMarksObtained} / ${exam?.maxMarks || 30}` : '—';
@@ -381,9 +386,9 @@ const ExamGrading = () => {
                           <button
                             className={styles.primaryBtn}
                             onClick={() => handleTriggerAI(student._id)}
-                            disabled={isPendingAI}
+                            disabled={isPendingAI || isEvaluating}
                             style={{
-                              background: isCompleted ? 'var(--surface-3)' : 'var(--accent)',
+                              background: isCompleted ? 'var(--surface-3)' : 'var(--primary)',
                               color: isCompleted ? 'var(--text-2)' : 'white',
                               border: isCompleted ? '1px solid var(--border-2)' : 'none',
                               fontSize: '13px',
@@ -393,10 +398,10 @@ const ExamGrading = () => {
                             }}
                           >
                             <Cpu size={14} /> 
-                            {isPendingAI ? 'Processing...' : isCompleted ? 'Re-evaluate' : 'AI Grade'}
+                            {isPendingAI || isEvaluating ? 'Evaluating...' : isCompleted ? 'Re-evaluate' : isFailed ? 'Retry AI' : 'AI Grade'}
                           </button>
                           
-                          {isCompleted && (
+                          {(isCompleted || isFailed) && (
                             <button
                               className={styles.primaryBtn}
                               onClick={() => navigate(`/faculty/evaluations/${examId}/student/${student._id}`)}

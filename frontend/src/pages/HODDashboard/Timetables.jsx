@@ -328,7 +328,7 @@ const Timetables = () => {
           <ExamForm
             exam={newExam}
             index={0}
-            onChange={(field, value) => setNewExam({ ...newExam, [field]: value })}
+            onChange={(field, value) => setNewExam(prev => ({ ...prev, [field]: value }))}
             onRemove={() => {}}
             canRemove={false}
             facultyList={deptFaculty}

@@ -1,6 +1,7 @@
 import sendEmail from "../../configurations/nodemailer.js";
 import Faculty from "../../models/faculty.js";
 import College from "../../models/college.js";
+import Department from "../../models/department.js";
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
@@ -22,12 +23,24 @@ export const registerFaculty = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Dynamically resolve department name string to an ObjectId
+    let deptId = department;
+    if (department && !mongoose.Types.ObjectId.isValid(department)) {
+      let deptDoc = await Department.findOne({ collegeId, name: department });
+      if (!deptDoc) {
+        const deptCode = department.substring(0, 5).toUpperCase();
+        deptDoc = new Department({ collegeId, name: department, code: deptCode });
+        await deptDoc.save();
+      }
+      deptId = deptDoc._id;
+    }
+
     const faculty = await Faculty.create({
       name,
       email,
       password: hashedPassword,
       collegeId: new mongoose.Types.ObjectId(collegeId),
-      department,
+      department: deptId,
       course,
       phone
     });

@@ -78,6 +78,10 @@ export const triggerAIEvaluation = async (req, res) => {
 
     // 4. Initialize or fetch the Result document
     let resultDoc = await Result.findOne({ student: studentId, exam: examId });
+    if (resultDoc && resultDoc.status === "Evaluating") {
+      return res.status(400).json({ success: false, message: "AI evaluation is already in progress for this student." });
+    }
+
     if (!resultDoc) {
       resultDoc = await Result.create({
         student: studentId,
@@ -86,6 +90,9 @@ export const triggerAIEvaluation = async (req, res) => {
         evaluations: [],
         status: "Evaluating"
       });
+    } else {
+      resultDoc.status = "Evaluating";
+      await resultDoc.save();
     }
 
     // ==========================================
@@ -189,21 +196,37 @@ export const triggerAIEvaluation = async (req, res) => {
     }
     
     resultDoc.totalMarksObtained = finalTotal;
-    resultDoc.status = "Completed"; 
+
+    // Set status to Failed if any individual question failed to evaluate
+    const hasFailedQuestion = aiResults.some(r => r.reasoning && r.reasoning.startsWith("AI Error:"));
+    resultDoc.status = hasFailedQuestion ? "Failed" : "Completed"; 
 
     await resultDoc.save();
-    console.log(`✅ Student ${studentId} grading finalized! Total Marks: ${finalTotal}`);
+    console.log(`✅ Student ${studentId} grading finalized with status ${resultDoc.status}! Total Marks: ${finalTotal}`);
 
     // 7. SEND FINAL SUCCESS RESPONSE
     return res.status(200).json({ 
       success: true, 
-      message: `Student evaluated successfully.`,
+      message: hasFailedQuestion ? `Student evaluation finished with some failures.` : `Student evaluated successfully.`,
+      status: resultDoc.status,
       totalMarks: finalTotal
     });
       
   } catch (error) {
     const exactReason = error.message || "Unknown server error";
     console.error("Trigger Evaluation Error:", exactReason);
+    
+    // Set result document status to Failed on uncaught exceptions
+    try {
+      const resultDoc = await Result.findOne({ student: studentId, exam: examId });
+      if (resultDoc) {
+        resultDoc.status = "Failed";
+        await resultDoc.save();
+      }
+    } catch (saveErr) {
+      console.error("Failed to save error status to Result doc:", saveErr);
+    }
+
     return res.status(500).json({ success: false, message: `Server Error: ${exactReason}` });
   }
 };

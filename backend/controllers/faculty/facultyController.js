@@ -1,4 +1,6 @@
 import Faculty from "../../models/faculty.js";
+import College from "../../models/college.js";
+import Department from "../../models/department.js";
 import bcrypt from "bcryptjs";
 import sendEmail from "../../configurations/nodemailer.js";
 
@@ -8,7 +10,8 @@ export const getMyProfile = async (req, res) => {
     // req.user.id is securely extracted from the HTTP-Only cookie by the verifyToken middleware
     const faculty = await Faculty.findById(req.user.id)
                                  .select("-password -otp -otpExpires")
-                                 .populate("collegeId", "collegeName location"); 
+                                 .populate("collegeId", "collegeName location")
+                                 .populate("department", "name"); 
 
     if (!faculty) {
       return res.status(404).json({ message: "User not found" });
@@ -57,7 +60,9 @@ export const updateProfile = async (req, res) => {
       req.user.id, 
       updates, 
       { new: true }
-    ).select("-password -otp -otpExpires"); // Don't send sensitive data back
+    ).select("-password -otp -otpExpires")
+     .populate("collegeId", "collegeName location")
+     .populate("department", "name"); // Populate references for frontend visual parity
 
     res.status(200).json({ 
       message: "Profile updated successfully", 

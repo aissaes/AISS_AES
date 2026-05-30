@@ -66,7 +66,7 @@ const resultSchema = new mongoose.Schema({
   // To let the frontend know if it's safe to view
   status: {
     type: String,
-    enum: ["Evaluating", "Completed"],
+    enum: ["Evaluating", "Completed", "Failed"],
     default: "Evaluating"
   }
 }, { timestamps: true });

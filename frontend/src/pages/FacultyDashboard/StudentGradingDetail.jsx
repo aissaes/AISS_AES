@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, Edit3, Eye, ZoomIn, Info, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Check, Edit3, Eye, ZoomIn, Info, HelpCircle, ExternalLink } from 'lucide-react';
 import { evaluationAPI } from '../../api/client';
 import { useToast } from '../../components/Toast/Toast';
 import Modal from '../../components/Modal/Modal';
@@ -23,6 +23,38 @@ const StudentGradingDetail = () => {
   // Edit / Override states
   const [overrideState, setOverrideState] = useState({}); // { [questionId]: { marks, reason, isEditing } }
   const [savingOverride, setSavingOverride] = useState({});
+
+  const [fileTypes, setFileTypes] = useState({});
+
+  useEffect(() => {
+    evaluations.forEach(ev => {
+      if (ev.imageUrl) {
+        if (ev.imageUrl.toLowerCase().includes('.pdf')) {
+          setFileTypes(prev => ({ ...prev, [ev.imageUrl]: 'pdf' }));
+        } else {
+          // Asynchronously query the resource to identify MIME type
+          fetch(ev.imageUrl, { method: 'GET', headers: { Range: 'bytes=0-0' } })
+            .then(res => {
+              const contentType = res.headers.get('content-type');
+              if (contentType && contentType.includes('pdf')) {
+                setFileTypes(prev => ({ ...prev, [ev.imageUrl]: 'pdf' }));
+              } else {
+                setFileTypes(prev => ({ ...prev, [ev.imageUrl]: 'image' }));
+              }
+            })
+            .catch(() => {
+              // Heuristic fallback: if it has no standard image extension, assume PDF
+              const hasImageExt = /\.(png|jpg|jpeg|gif|webp|bmp)/i.test(ev.imageUrl);
+              if (!hasImageExt) {
+                setFileTypes(prev => ({ ...prev, [ev.imageUrl]: 'pdf' }));
+              } else {
+                setFileTypes(prev => ({ ...prev, [ev.imageUrl]: 'image' }));
+              }
+            });
+        }
+      }
+    });
+  }, [evaluations]);
 
   useEffect(() => {
     fetchDetailedResult();
@@ -198,13 +230,43 @@ const StudentGradingDetail = () => {
               >
                 {ev.imageUrl ? (
                   <>
-                    <img 
-                      src={ev.imageUrl} 
-                      alt={`Question ${ev.questionId}`}
-                      style={{ maxWidth: '100%', maxHeight: '420px', objectFit: 'contain' }}
-                    />
+                    {fileTypes[ev.imageUrl] === 'pdf' ? (
+                      <iframe 
+                        src={ev.imageUrl} 
+                        title={`Question ${ev.questionId}`}
+                        style={{ width: '100%', height: '420px', border: 'none', background: 'white' }}
+                      />
+                    ) : (
+                      <img 
+                        src={ev.imageUrl} 
+                        alt={`Question ${ev.questionId}`}
+                        style={{ maxWidth: '100%', maxHeight: '420px', objectFit: 'contain' }}
+                      />
+                    )}
                     <div style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(15,23,42,0.85)', color: 'white', padding: '4px 10px', borderRadius: '4px', fontSize: '12px', fontWeight: 700, border: '1px solid rgba(255,255,255,0.1)' }}>
                       Question {ev.questionId}
+                    </div>
+                    <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 8 }}>
+                      <a 
+                        href={ev.imageUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{ 
+                          background: 'rgba(15, 23, 42, 0.85)', 
+                          color: 'white', 
+                          padding: '4px 10px', 
+                          borderRadius: '4px', 
+                          fontSize: '12px', 
+                          fontWeight: 700, 
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          textDecoration: 'none'
+                        }}
+                      >
+                        <ExternalLink size={12} /> Open PDF
+                      </a>
                     </div>
                     <button 
                       onClick={() => setActiveImage(ev.imageUrl)}
@@ -404,12 +466,20 @@ const StudentGradingDetail = () => {
         title="HD Script Viewer"
         className={styles.wideModal}
       >
-        <div style={{ display: 'flex', justifyContent: 'center', background: '#0f172a', padding: 20, borderRadius: 8, overflow: 'auto', maxHeight: '80vh' }}>
-          <img 
-            src={activeImage} 
-            alt="HD Script Page" 
-            style={{ maxWidth: '100%', height: 'auto', objectFit: 'contain' }}
-          />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#0f172a', padding: 20, borderRadius: 8, overflow: 'auto', maxHeight: '80vh', width: '100%', height: '70vh' }}>
+          {fileTypes[activeImage] === 'pdf' ? (
+            <iframe 
+              src={activeImage} 
+              title="HD Script Page" 
+              style={{ width: '100%', height: '100%', border: 'none', background: 'white', borderRadius: '4px' }}
+            />
+          ) : (
+            <img 
+              src={activeImage} 
+              alt="HD Script Page" 
+              style={{ maxWidth: '100%', height: 'auto', objectFit: 'contain' }}
+            />
+          )}
         </div>
       </Modal>
     </div>
