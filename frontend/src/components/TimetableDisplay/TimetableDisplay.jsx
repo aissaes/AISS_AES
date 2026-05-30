@@ -8,7 +8,7 @@ const TimetableDisplay = ({ timetables, role, onAddExam, onDeleteExam, onGenerat
   if (!timetables || timetables.length === 0) {
     return (
       <div className={styles.emptyCenter}>
-        <span className={styles.emptyIcon}>📅</span>
+        <Calendar size={36} style={{ color: 'var(--text-3)', display: 'block', margin: '0 auto 12px auto' }} />
         <p className={styles.emptyText}>No timetables available yet.</p>
       </div>
     );

@@ -1,9 +1,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 
-class MainShell extends StatelessWidget {
+class MainShell extends StatefulWidget {
   const MainShell({
     required this.navigationShell,
     super.key,
@@ -12,13 +13,88 @@ class MainShell extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
   @override
+  State<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends State<MainShell> {
+  // Navigation tab stack (history)
+  final List<int> _tabHistory = [0];
+
+  void _onTabTapped(int index) {
+    if (index == widget.navigationShell.currentIndex) return;
+    
+    setState(() {
+      // Remove index if it already exists to move it to the end of history
+      _tabHistory.remove(index);
+      _tabHistory.add(index);
+    });
+    
+    widget.navigationShell.goBranch(index);
+  }
+
+  Future<bool> _showExitConfirmationDialog(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.exit_to_app_rounded, color: AppTheme.errorColor),
+            SizedBox(width: 12),
+            Text('Exit App', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+          ],
+        ),
+        content: const Text(
+          'Are you sure you want to close AISS Exam Portal?',
+          style: TextStyle(color: AppTheme.textSecondary, fontSize: 14, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.errorColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Exit', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true, // Allows the body to flow behind the navigation bar
-      body: navigationShell,
-      bottomNavigationBar: _ModernBottomNav(
-        currentIndex: navigationShell.currentIndex,
-        onTap: (index) => navigationShell.goBranch(index),
+    return PopScope(
+      canPop: false, // Prevent standard exit to handle tab history first
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        
+        if (_tabHistory.length > 1) {
+          setState(() {
+            _tabHistory.removeLast();
+            final prevIndex = _tabHistory.last;
+            widget.navigationShell.goBranch(prevIndex);
+          });
+        } else {
+          final shouldExit = await _showExitConfirmationDialog(context);
+          if (shouldExit == true && mounted) {
+            SystemNavigator.pop(); // Clean native exit
+          }
+        }
+      },
+      child: Scaffold(
+        extendBody: true, // Allows the body to flow behind the navigation bar
+        body: widget.navigationShell,
+        bottomNavigationBar: _ModernBottomNav(
+          currentIndex: widget.navigationShell.currentIndex,
+          onTap: _onTabTapped,
+        ),
       ),
     );
   }

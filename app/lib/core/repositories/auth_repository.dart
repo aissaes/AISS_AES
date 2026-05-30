@@ -10,6 +10,9 @@ abstract class AuthRepository {
   bool isLoggedIn();
   Future<String?> getToken();
   String? getUserName();
+  Future<void> changePassword(String oldPassword, String newPassword);
+  Future<void> forgotPassword(String email);
+  Future<void> resetForgottenPassword(String email, String otp, String newPassword);
 }
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -53,6 +56,21 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   String? getUserName() => _storageService.getUserName();
+
+  @override
+  Future<void> changePassword(String oldPassword, String newPassword) async {
+    await _apiService.changePassword(oldPassword, newPassword);
+  }
+
+  @override
+  Future<void> forgotPassword(String email) async {
+    await _apiService.forgotPassword(email);
+  }
+
+  @override
+  Future<void> resetForgottenPassword(String email, String otp, String newPassword) async {
+    await _apiService.resetForgottenPassword(email, otp, newPassword);
+  }
 }
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {

@@ -46,6 +46,12 @@ const studentSchema = new mongoose.Schema({
     role: {
         type: String,
         default: 'Student'
+    },
+    otp: {
+        type: String
+    },
+    otpExpires: {
+        type: Date
     }
 
 });

@@ -131,7 +131,7 @@ const Semesters = () => {
             <div className={styles.tableLoader}><div className={styles.spinner} /></div>
           ) : semesters.length === 0 ? (
             <div className={styles.empty}>
-              <span className={styles.emptyIcon}>📅</span>
+              <Calendar size={36} style={{ color: 'var(--text-3)', display: 'block', margin: '0 auto 12px auto' }} />
               <p className={styles.emptyText}>No semesters configured yet. Create one to begin course mapping.</p>
             </div>
           ) : (

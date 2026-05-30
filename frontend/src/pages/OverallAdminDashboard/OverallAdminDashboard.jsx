@@ -18,7 +18,9 @@ const AdminHome = () => {
   const [activeColleges, setActiveColleges]   = useState([]);
   const [loading, setLoading]                 = useState(true);
   const [approvingId, setApprovingId]         = useState(null);
+  const [rejectingId, setRejectingId]         = useState(null);
   const [selectedCollege, setSelectedCollege] = useState(null);
+  const [rejectModal, setRejectModal]         = useState({ open: false, collegeId: null, collegeName: '', reason: '' });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -68,6 +70,30 @@ const AdminHome = () => {
     }
   };
 
+  const handleRejectClick = (college) => {
+    setRejectModal({ open: true, collegeId: college._id, collegeName: college.collegeName, reason: '' });
+  };
+
+  const handleRejectConfirm = async () => {
+    const { collegeId, collegeName, reason } = rejectModal;
+    if (!reason.trim()) {
+      toast('Please enter a rejection reason.', 'warning');
+      return;
+    }
+    setRejectingId(collegeId);
+    setRejectModal(p => ({ ...p, open: false }));
+    try {
+      await overallAdminAPI.rejectCollege(collegeId, reason);
+      setPendingColleges(c => c.filter(col => col._id !== collegeId));
+      fetchData();
+      toast(`Declined request for ${collegeName}. Notification sent.`, 'info');
+    } catch (err) {
+      toast(err.response?.data?.message || 'Rejection failed.', 'error');
+    } finally {
+      setRejectingId(null);
+    }
+  };
+
   return (
     <div className={styles.pageWrap}>
       <div className={styles.pageHead}>
@@ -111,7 +137,7 @@ const AdminHome = () => {
         {loading ? <div className={styles.tableLoader}><div className={styles.spinner} /></div> :
         pendingColleges.length === 0 ? (
           <div className={styles.empty}>
-            <span className={styles.emptyIcon}>✅</span>
+            <CheckCircle2 size={36} style={{ color: 'var(--success)', display: 'block', margin: '0 auto 12px auto' }} />
             <p className={styles.emptyText}>No pending college registrations</p>
           </div>
         ) : (
@@ -145,9 +171,14 @@ const AdminHome = () => {
                     </div>
                   )}
 
-                  <button className={`${styles.approveCollegeBtn} ${isApproving ? styles.approving : ''}`} onClick={() => handleApprove(college._id, college.collegeName)} disabled={!!approvingId}>
-                    {isApproving ? <><span className={styles.btnSpinner} /> Approving…</> : <><CheckCircle2 size={14} /> Approve College</>}
-                  </button>
+                  <div className={styles.collegeActions}>
+                    <button className={`${styles.approveCollegeBtn} ${isApproving ? styles.approving : ''}`} onClick={() => handleApprove(college._id, college.collegeName)} disabled={!!approvingId || !!rejectingId}>
+                      {isApproving ? <><span className={styles.btnSpinner} /> Approving…</> : <><CheckCircle2 size={14} /> Approve</>}
+                    </button>
+                    <button className={`${styles.rejectCollegeBtn} ${rejectingId === college._id ? styles.approving : ''}`} onClick={() => handleRejectClick(college)} disabled={!!approvingId || !!rejectingId}>
+                      <AlertTriangle size={14} /> Reject
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -170,7 +201,7 @@ const AdminHome = () => {
         {loading ? <div className={styles.tableLoader}><div className={styles.spinner} /></div> :
         activeColleges.length === 0 ? (
           <div className={styles.empty}>
-            <span className={styles.emptyIcon}>🏫</span>
+            <Building2 size={36} style={{ color: 'var(--text-3)', display: 'block', margin: '0 auto 12px auto' }} />
             <p className={styles.emptyText}>No active colleges yet.</p>
           </div>
         ) : (
@@ -252,6 +283,36 @@ const AdminHome = () => {
             )}
           </div>
         )}
+      </Modal>
+
+      {/* Rejection Reason Modal */}
+      <Modal
+        isOpen={rejectModal.open}
+        onClose={() => setRejectModal({ open: false, collegeId: null, collegeName: '', reason: '' })}
+        title={`Reject Request — ${rejectModal.collegeName}`}
+        footer={
+          <>
+            <button className={styles.cancelBtn} onClick={() => setRejectModal({ open: false, collegeId: null, collegeName: '', reason: '' })}>Cancel</button>
+            <button className={styles.dangerModalBtn} onClick={handleRejectConfirm}>Confirm Reject</button>
+          </>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <p style={{ color: 'var(--text-2)', fontSize: 13.5 }}>
+            Please state the reason for declining <strong>{rejectModal.collegeName}</strong>'s request. An email notification will be dispatched to their administrator.
+          </p>
+          <div className={styles.formRow}>
+            <label style={{ fontSize: 12, fontWeight: '600', color: 'var(--text-3)' }}>Reason for Rejection</label>
+            <textarea
+              className={styles.formInput}
+              style={{ minHeight: 80, resize: 'vertical' }}
+              value={rejectModal.reason}
+              onChange={e => setRejectModal(p => ({ ...p, reason: e.target.value }))}
+              placeholder="e.g. Invalid domain, duplicate request, details could not be verified."
+              required
+            />
+          </div>
+        </div>
       </Modal>
     </div>
   );

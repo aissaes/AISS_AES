@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import FacultyCourseAssignment from "../../models/facultyCourseAssignment.js";
 import StudentCourseEnrollment from "../../models/studentCourseEnrollment.js";
+import sendEmail from "../../configurations/nodemailer.js";
 
 // ==========================================
 // 1. LOGIN STUDENT
@@ -157,5 +158,90 @@ export const resetPassword = async (req, res) => {
   } catch (error) {
     console.error("Change password error:", error);
     res.status(500).json({ success: false, message: "Internal server error." });
+  }
+};
+
+// ==========================================
+// 5. SEND PASSWORD RESET OTP (Forgot Password)
+// ==========================================
+export const forgotPasswordStudent = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required." });
+    }
+
+    const student = await Student.findOne({ email });
+    if (!student) {
+      return res.status(404).json({ success: false, message: "No student account found with this email." });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    student.otp = otp;
+    student.otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+    await student.save();
+
+    // Send reset OTP via email
+    await sendEmail(
+      email,
+      "Password Reset Verification OTP - AISS",
+      `Dear ${student.name},
+
+      We received a request to reset your student account password on the AISS Exam Portal.
+      
+      Your One-Time Password (OTP) for password reset is: ${otp}
+      This code is valid for 10 minutes. Please do not share this OTP with anyone.
+
+      If you did not request this, please ignore this email.
+
+      Best Regards,
+      The AISS Team`
+    );
+
+    res.status(200).json({ success: true, message: "Verification OTP sent to your email address." });
+
+  } catch (error) {
+    console.error("Forgot password OTP send error:", error);
+    res.status(500).json({ success: false, message: "Failed to send verification email.", error: error.message });
+  }
+};
+
+// ==========================================
+// 6. VERIFY OTP & RESET FORGOTTEN PASSWORD
+// ==========================================
+export const resetForgottenPasswordStudent = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ success: false, message: "All fields (email, otp, newPassword) are required." });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ success: false, message: "New password must be at least 6 characters." });
+    }
+
+    const student = await Student.findOne({ email });
+    if (!student) {
+      return res.status(404).json({ success: false, message: "Student account not found." });
+    }
+
+    // Verify OTP matching and expiration
+    if (!student.otp || student.otp !== otp || !student.otpExpires || student.otpExpires < Date.now()) {
+      return res.status(400).json({ success: false, message: "Invalid or expired verification OTP." });
+    }
+
+    // Update password, clear OTP fields
+    student.password = await bcrypt.hash(newPassword, 10);
+    student.otp = null;
+    student.otpExpires = null;
+    await student.save();
+
+    res.status(200).json({ success: true, message: "Your password has been successfully reset! You can now log in." });
+
+  } catch (error) {
+    console.error("Forgot password reset error:", error);
+    res.status(500).json({ success: false, message: "Internal server error.", error: error.message });
   }
 };

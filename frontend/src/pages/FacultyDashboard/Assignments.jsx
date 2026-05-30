@@ -120,7 +120,7 @@ const Assignments = () => {
         <div style={{ padding: 20 }}>
           {loading ? <div className={styles.spinner} style={{ margin: 'auto' }} /> : exams.length === 0 ? (
             <div className={styles.emptyCenter}>
-              <span className={styles.emptyIcon}>📋</span>
+              <FileText size={36} style={{ color: 'var(--text-3)', display: 'block', margin: '0 auto 12px auto' }} />
               <p className={styles.emptyText}>You have no assigned exams yet.</p>
             </div>
           ) : (

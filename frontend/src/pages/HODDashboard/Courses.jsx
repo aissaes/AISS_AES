@@ -158,7 +158,7 @@ const Courses = () => {
             <div className={styles.tableLoader}><div className={styles.spinner} /></div>
           ) : courses.length === 0 ? (
             <div className={styles.empty}>
-              <span className={styles.emptyIcon}>📖</span>
+              <BookOpen size={36} style={{ color: 'var(--text-3)', display: 'block', margin: '0 auto 12px auto' }} />
               <p className={styles.emptyText}>No courses configured yet. Active semesters are required first.</p>
             </div>
           ) : (

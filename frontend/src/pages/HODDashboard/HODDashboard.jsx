@@ -4,7 +4,7 @@ import {
   Home, Settings as SettingsIcon, Users, BookOpen,
   CheckCircle2, Clock, XCircle, ArrowRightLeft,
   UserCheck, AlertTriangle, RefreshCw, FileText,
-  UserPlus, Upload, Trash2, Search, FileSpreadsheet, AlertCircle, Calendar, Edit
+  UserPlus, Upload, Trash2, Search, FileSpreadsheet, AlertCircle, Calendar, Edit, Inbox
 } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout/DashboardLayout';
 import Modal from '../../components/Modal/Modal';
@@ -1154,7 +1154,7 @@ const HODStudents = () => {
 /* ── Empty state ── */
 const Empty = ({ text }) => (
   <div className={styles.empty}>
-    <span className={styles.emptyIcon}>📭</span>
+    <Inbox size={36} style={{ color: 'var(--text-3)', display: 'block', margin: '0 auto 12px auto' }} />
     <p className={styles.emptyText}>{text}</p>
   </div>
 );

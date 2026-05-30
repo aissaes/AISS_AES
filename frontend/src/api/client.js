@@ -146,6 +146,7 @@ export const overallAdminAPI = {
   changePassword: (data) => client.put('/overallAdmin/change-password', data),
   getPendingColleges: () => client.get('/overallAdmin/pending-colleges'),
   approveCollege: (collegeId) => client.put(`/overallAdmin/approve-college/${collegeId}`),
+  rejectCollege: (collegeId, reason) => client.delete(`/overallAdmin/reject-college/${collegeId}`, { data: { reason } }),
   transfer: (data) => client.post('/overallAdmin/transfer-overalladmin', data),
 };
 

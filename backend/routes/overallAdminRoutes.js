@@ -1,7 +1,7 @@
 import express from "express";
 import { verifyToken } from "../middlewares/authMiddleware.js";
 import { isOverallAdmin } from "../middlewares/roleMiddleware.js";
-import { changeOverallAdminPassword, getPendingColleges, approveCollege, transferOverallAdmin } from "../controllers/overallAdminController.js"; // Direct import
+import { changeOverallAdminPassword, getPendingColleges, approveCollege, rejectCollege, transferOverallAdmin } from "../controllers/overallAdminController.js"; // Direct import
 
 const overallAdminRouter = express.Router();
 
@@ -9,6 +9,7 @@ const overallAdminRouter = express.Router();
 overallAdminRouter.put("/change-password", verifyToken, isOverallAdmin, changeOverallAdminPassword);
 overallAdminRouter.get("/pending-colleges", verifyToken, isOverallAdmin, getPendingColleges);
 overallAdminRouter.put("/approve-college/:collegeId", verifyToken, isOverallAdmin, approveCollege);
+overallAdminRouter.delete("/reject-college/:collegeId", verifyToken, isOverallAdmin, rejectCollege);
 overallAdminRouter.post("/transfer-overalladmin", verifyToken, isOverallAdmin, transferOverallAdmin);
 
 export default overallAdminRouter;

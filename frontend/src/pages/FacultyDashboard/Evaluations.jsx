@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Clock, RefreshCw, Award, ChevronRight } from 'lucide-react';
+import { BookOpen, Clock, RefreshCw, Award, ChevronRight, GraduationCap } from 'lucide-react';
 import { questionPaperAPI } from '../../api/client';
 import { useToast } from '../../components/Toast/Toast';
 import styles from './FacultyDashboard.module.css';
@@ -64,7 +64,7 @@ const Evaluations = () => {
             <div className={styles.spinner} style={{ margin: 'auto' }} />
           ) : exams.length === 0 ? (
             <div className={styles.emptyCenter}>
-              <span className={styles.emptyIcon}>🎓</span>
+              <GraduationCap size={36} style={{ color: 'var(--text-3)', display: 'block', margin: '0 auto 12px auto' }} />
               <p className={styles.emptyText}>You are not assigned to evaluate any exams yet.</p>
             </div>
           ) : (

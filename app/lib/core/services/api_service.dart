@@ -73,6 +73,15 @@ class ApiService {
     }
   }
 
+  Future<Response> put(String path, {dynamic data, Options? options}) async {
+    try {
+      return await _dio.put(path, data: data, options: options);
+    } on DioException catch (e) {
+      _handleDioException(e);
+      rethrow;
+    }
+  }
+
   void _handleDioException(DioException e) {
     if (e.error is OfflineException) {
       throw e.error as OfflineException;
@@ -123,6 +132,25 @@ class ApiService {
     } catch (_) {
       // Even if network fails, we want to clear local storage
     }
+  }
+
+  Future<void> changePassword(String oldPassword, String newPassword) async {
+    await put('/student/auth/change-password', data: {
+      'oldPassword': oldPassword,
+      'newPassword': newPassword,
+    });
+  }
+
+  Future<void> forgotPassword(String email) async {
+    await post('/student/auth/forgot-password', data: {'email': email});
+  }
+
+  Future<void> resetForgottenPassword(String email, String otp, String newPassword) async {
+    await post('/student/auth/reset-forgotten-password', data: {
+      'email': email,
+      'otp': otp,
+      'newPassword': newPassword,
+    });
   }
 
   // --- Exam & Upload APIs ---

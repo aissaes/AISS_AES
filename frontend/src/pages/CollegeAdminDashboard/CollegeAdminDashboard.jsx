@@ -3,7 +3,7 @@ import { Routes, Route, useNavigate } from 'react-router-dom';
 import {
   Home, Settings as SettingsIcon, Users, Database, Shield,
   CheckCircle2, Clock, XCircle, Crown, ArrowRightLeft,
-  RefreshCw, AlertTriangle, UserCheck, Search, Building2, Plus, GripVertical
+  RefreshCw, AlertTriangle, UserCheck, Search, Building2, Plus, GripVertical, Inbox
 } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout/DashboardLayout';
 import Modal from '../../components/Modal/Modal';
@@ -462,7 +462,7 @@ const CollegeAdminHome = () => {
 
 const Empty = ({ text }) => (
   <div className={styles.empty}>
-    <span className={styles.emptyIcon}>📭</span>
+    <Inbox size={36} style={{ color: 'var(--text-3)', display: 'block', margin: '0 auto 12px auto' }} />
     <p className={styles.emptyText}>{text}</p>
   </div>
 );

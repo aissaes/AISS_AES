@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   User, Mail, Lock, Phone, Building2, BookOpen,
-  BrainCircuit, ArrowRight, ChevronDown, Eye, EyeOff
+  BrainCircuit, ArrowRight, ChevronDown, Eye, EyeOff, Clock
 } from 'lucide-react';
 import { authAPI, collegeAPI } from '../../api/client';
 import { useToast } from '../../components/Toast/Toast';
@@ -206,9 +206,9 @@ const Register = () => {
           <Link to="/login" className={styles.footerLink}>Sign In</Link>
         </p>
 
-        <div className={styles.notice}>
-          <span>⏳</span>
-          Your registration will be reviewed by the HOD or Super Admin before you can log in.
+        <div className={styles.notice} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Clock size={16} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+          <span>Your registration will be reviewed by the HOD or Super Admin before you can log in.</span>
         </div>
       </div>
     </div>
