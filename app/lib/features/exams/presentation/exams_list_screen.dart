@@ -9,6 +9,8 @@ import '../providers/exam_provider.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../shared/widgets/response_dialog.dart';
 import '../providers/student_results_provider.dart';
+import '../../../core/widgets/app_logo.dart';
+import '../../../core/widgets/app_loading_indicator.dart';
 
 class ExamsListScreen extends ConsumerStatefulWidget {
   const ExamsListScreen({super.key});
@@ -481,7 +483,7 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> {
                         loading: () => const Center(
                           child: Padding(
                             padding: EdgeInsets.all(32.0),
-                            child: CircularProgressIndicator(),
+                            child: AppLoadingIndicator(size: 50, logoSize: 24),
                           ),
                         ),
                         error: (err, stack) => Center(
@@ -525,6 +527,10 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> {
       backgroundColor: AppTheme.backgroundColor.withValues(alpha: 0.8),
       surfaceTintColor: Colors.transparent,
       centerTitle: true,
+      leading: const Padding(
+        padding: EdgeInsets.all(12.0),
+        child: AppLogo(size: 24),
+      ),
       title: const Text(
         'My Exams',
         style: TextStyle(

@@ -7,6 +7,7 @@ import '../../../core/widgets/app_image.dart';
 import '../../../core/widgets/app_logo.dart';
 import '../providers/scanner_provider.dart';
 import '../../exams/providers/selected_question_provider.dart';
+import '../../../core/widgets/app_loading_indicator.dart';
 
 class ScannerScreen extends ConsumerStatefulWidget {
   const ScannerScreen({super.key});
@@ -225,7 +226,12 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> with WidgetsBindi
             onPressed: () => context.pop(),
           ),
         ),
-        body: const Center(child: CircularProgressIndicator(color: Colors.white)),
+        body: const Center(
+          child: AppLoadingIndicator(
+            size: 60,
+            logoSize: 28,
+          ),
+        ),
       );
     }
 

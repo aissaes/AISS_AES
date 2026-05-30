@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
+import '../../core/widgets/app_loading_indicator.dart';
 
 class LoadingOverlay extends StatelessWidget {
   final bool isLoading;
@@ -20,9 +20,9 @@ class LoadingOverlay extends StatelessWidget {
           Container(
             color: Colors.black.withValues(alpha: 0.3),
             child: const Center(
-              child: SpinKitDoubleBounce(
-                color: Colors.white,
-                size: 50.0,
+              child: AppLoadingIndicator(
+                size: 70,
+                logoSize: 36,
               ),
             ),
           ),

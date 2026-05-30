@@ -201,6 +201,7 @@ export const evaluationAPI = {
   getDetailedResult: (examId, studentId) => client.get(`/results/faculty/exam/${examId}/student/${studentId}`),
   triggerAIEvaluation: (examId, studentId) => client.post(`/faculty/exam/${examId}/evaluate`, { studentId }),
   overrideGrade: (examId, studentId, data) => client.put(`/faculty/exam/${examId}/student/${studentId}/override`, data),
+  uploadMaterials: (examId, data) => client.post(`/faculty/exam/${examId}/upload-materials`, data),
 };
 
 export default client;

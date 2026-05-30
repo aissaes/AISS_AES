@@ -7,6 +7,8 @@ import '../../exams/providers/exam_provider.dart';
 import '../../exams/providers/student_results_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/repositories/student_repository.dart';
+import '../../../core/widgets/app_logo.dart';
+import '../../../core/widgets/app_loading_indicator.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -172,7 +174,7 @@ class DashboardScreen extends ConsumerWidget {
                           loading: () => const Center(
                             child: Padding(
                               padding: EdgeInsets.all(24.0),
-                              child: CircularProgressIndicator(),
+                              child: AppLoadingIndicator(size: 50, logoSize: 24),
                             ),
                           ),
                           error: (err, stack) => Center(
@@ -231,14 +233,21 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ),
       ),
-      title: const Text(
-        'AISS AES',
-        style: TextStyle(
-          fontWeight: FontWeight.w900,
-          color: AppTheme.primaryColor,
-          fontSize: 18,
-          letterSpacing: -0.5,
-        ),
+      title: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppLogo(size: 24),
+          SizedBox(width: 8),
+          Text(
+            'AISS AES',
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              color: AppTheme.primaryColor,
+              fontSize: 18,
+              letterSpacing: -0.5,
+            ),
+          ),
+        ],
       ),
       actions: const [
         Icon(Icons.verified_user_rounded, color: AppTheme.successColor, size: 20),

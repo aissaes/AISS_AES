@@ -16,12 +16,17 @@ def OCR_image_to_text(image_url):
     if img_response.status_code != 200:
         raise Exception("Failed to download file from ImageKit")
 
+    # Inspect headers to determine correct extension
+    content_type = img_response.headers.get('Content-Type', '').lower()
+
     # Dynamically determine correct filename extension for OCR Space API
     filename = "student_answer.png"
-    if ".pdf" in image_url.lower():
+    if 'pdf' in content_type or ".pdf" in image_url.lower():
         filename = "student_answer.pdf"
-    elif ".jpg" in image_url.lower() or ".jpeg" in image_url.lower():
+    elif 'jpeg' in content_type or 'jpg' in content_type or ".jpg" in image_url.lower() or ".jpeg" in image_url.lower():
         filename = "student_answer.jpg"
+    elif 'png' in content_type:
+        filename = "student_answer.png"
 
     files = {
         "file": (filename, BytesIO(img_response.content))

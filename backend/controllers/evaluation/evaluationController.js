@@ -24,11 +24,12 @@ export const getAllStudentsAppearedForExam = async (req, res) => {
     }
 
     // 2. Authorization check
-    const isHOD = userRole === "HOD";
-    const isSuperAdmin = userRole === "SUPERADMIN";
-    const isCreator = userRole === "FACULTY" && exam.createdBy.toString() === userId;
+    const normalizedRole = (userRole || "").toLowerCase();
+    const isHOD = normalizedRole === "hod";
+    const isSuperAdmin = normalizedRole === "collegeadmin" || normalizedRole === "superadmin";
+    const isAssignedFaculty = normalizedRole === "faculty" && exam.assignedFaculty && exam.assignedFaculty.toString() === userId;
 
-    if (!isHOD && !isSuperAdmin && !isCreator) {
+    if (!isHOD && !isSuperAdmin && !isAssignedFaculty) {
       return res.status(403).json({ success: false, message: "Unauthorized access" });
     }
 

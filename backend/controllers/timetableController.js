@@ -174,7 +174,9 @@ export const addExamToTimetable = async (req, res) => {
         You have been assigned to prepare the question paper for ${detail.subjectName} (${detail.subjectCode}) added to an existing timetable.
         Exam Date: ${new Date(detail.date).toDateString()}.
         Please log in to the AISS platform to upload the question paper.`
-      )
+      ).catch(err => {
+        console.error("Failed to send exam assignment email:", err);
+      });
     }
 
     res.status(201).json({ message: "Exam added to timetable successfully", exam: savedExam });

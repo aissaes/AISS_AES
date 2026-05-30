@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/splash/presentation/splash_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/dashboard/presentation/dashboard_screen.dart';
-import '../features/upload/presentation/upload_screen.dart';
 import '../features/upload/presentation/upload_success_screen.dart';
 import '../features/upload/presentation/scanner_screen.dart';
 import '../features/upload/presentation/review_scans_screen.dart';
@@ -37,7 +36,6 @@ final routerNotifierProvider = Provider<RouterNotifier>((ref) {
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorDashboardKey = GlobalKey<NavigatorState>(debugLabel: 'shellDashboard');
 final _shellNavigatorExamsKey = GlobalKey<NavigatorState>(debugLabel: 'shellExams');
-final _shellNavigatorUploadKey = GlobalKey<NavigatorState>(debugLabel: 'shellUpload');
 final _shellNavigatorProfileKey = GlobalKey<NavigatorState>(debugLabel: 'shellProfile');
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -103,37 +101,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
-            navigatorKey: _shellNavigatorUploadKey,
-            routes: [
-              GoRoute(
-                path: '/upload',
-                builder: (context, state) => const UploadScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'scanner',
-                    parentNavigatorKey: _rootNavigatorKey,
-                    builder: (context, state) => const ScannerScreen(),
-                  ),
-                  GoRoute(
-                    path: 'review',
-                    parentNavigatorKey: _rootNavigatorKey,
-                    builder: (context, state) => const ReviewScansScreen(),
-                  ),
-                  GoRoute(
-                    path: 'progress',
-                    parentNavigatorKey: _rootNavigatorKey,
-                    builder: (context, state) => const SubmissionProgressScreen(),
-                  ),
-                  GoRoute(
-                    path: 'quality-alert',
-                    parentNavigatorKey: _rootNavigatorKey,
-                    builder: (context, state) => const QualityAlertScreen(),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          StatefulShellBranch(
             navigatorKey: _shellNavigatorProfileKey,
             routes: [
               GoRoute(
@@ -143,6 +110,26 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
         ],
+      ),
+      GoRoute(
+        path: '/upload/scanner',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ScannerScreen(),
+      ),
+      GoRoute(
+        path: '/upload/review',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ReviewScansScreen(),
+      ),
+      GoRoute(
+        path: '/upload/progress',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const SubmissionProgressScreen(),
+      ),
+      GoRoute(
+        path: '/upload/quality-alert',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const QualityAlertScreen(),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,

@@ -57,15 +57,15 @@ class _CustomTextFieldState extends State<CustomTextField> {
               fillColor: _isFocused ? Colors.blue.withValues(alpha: 0.05) : Colors.grey.withValues(alpha: 0.05),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 borderSide: const BorderSide(color: Colors.blue, width: 2),
               ),
               prefixIcon: widget.prefixIcon != null
@@ -75,8 +75,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
                       decoration: BoxDecoration(
                         color: _isFocused ? Colors.blue.withValues(alpha: 0.1) : Colors.transparent,
                         borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(12),
-                          bottomLeft: Radius.circular(12),
+                          topLeft: Radius.circular(16),
+                          bottomLeft: Radius.circular(16),
                         ),
                       ),
                       child: Icon(

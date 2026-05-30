@@ -46,13 +46,16 @@ def ocr_agent(state: TeacherUploadState):
     url = state["raw_input"]
     extracted_text = ""
 
-    # 1. Handle Images Directly
-    if url.lower().endswith(('.png', '.jpg', '.jpeg')):
-        print("Input is an image. Calling OCR...")
-        extracted_text = OCR_image_to_text(url)
+    # Check headers for actual content type
+    try:
+        head_response = requests.head(url, allow_redirects=True)
+        content_type = head_response.headers.get('Content-Type', '').lower()
+    except Exception as e:
+        print(f"Could not fetch headers: {e}")
+        content_type = ""
 
-    # 2. Handle PDFs
-    elif url.lower().endswith('.pdf'):
+    # 1. Handle PDFs (Robust checking matches agents.py)
+    if 'pdf' in content_type or '.pdf' in url.lower():
         print("Input is a PDF. Checking for digital text...")
         response = requests.get(url)
         pdf_file = BytesIO(response.content)
@@ -78,9 +81,10 @@ def ocr_agent(state: TeacherUploadState):
         except Exception as e:
             print(f"Error reading PDF: {e}. Falling back to OCR.")
             extracted_text = OCR_image_to_text(url)
+    
+    # 2. Handle Images Directly (or anything else we don't recognize)
     else:
-        # Fallback if URL doesn't have an extension, try OCR anyway
-        print("Unknown file type. Attempting OCR...")
+        print("Input is an image or unknown. Calling OCR...")
         extracted_text = OCR_image_to_text(url)
 
     return {"extracted_text": extracted_text}
@@ -118,11 +122,11 @@ def vector_db_agent(state: TeacherUploadState):
     # Push chunks to Pinecone using the tool
     store_teacher_chunks(
         chunks=chunks,
-        question_id=state["question_id"],
-        content_type=state["content_type"],
-        subject=state["subject"],
-        exam_id=state["exam_id"],
-        NAMESPACE=state["namespace"]
+        question_id=state.get("question_id"),
+        content_type=state.get("content_type"),
+        subject=state.get("subject"),
+        exam_id=state.get("exam_id"),
+        NAMESPACE=state.get("namespace")
     )
 
     return {"upload_status": f"Success: Stored {len(chunks)} chunks in Pinecone."}

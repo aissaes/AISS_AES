@@ -28,7 +28,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
       vsync: this,
       duration: const Duration(seconds: 10),
     )..repeat(reverse: true);
-    
+
     _emailController.addListener(_clearError);
     _passwordController.addListener(_clearError);
   }
@@ -93,6 +93,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
             right: -50,
             child: _GlowCircle(color: Colors.blue.withValues(alpha: 0.1), size: 400),
           ),
+          Positioned(
+            bottom: -150,
+            left: -100,
+            child: _GlowCircle(color: Colors.indigo.withValues(alpha: 0.15), size: 500),
+          ),
           
           SafeArea(
             child: Center(
@@ -107,7 +112,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                         padding: const EdgeInsets.all(32),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(28),
+                          border: Border.all(color: Colors.grey.withValues(alpha: 0.08), width: 1.5),
                           boxShadow: AppTheme.premiumShadow,
                         ),
                         child: Form(
@@ -177,7 +183,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                                   ),
                                 ),
                               ],
-                              
+
                               // Email Field
                               const Text(
                                 'Email Address',
@@ -191,7 +197,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                               CustomTextField(
                                 label: '',
                                 hint: 'student@aiss.edu',
-                                prefixIcon: Icons.mail_outline_rounded,
                                 controller: _emailController,
                                 validator: (value) {
                                   if (value == null || value.isEmpty) return 'Email is required';
@@ -224,7 +229,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                               CustomTextField(
                                 label: '',
                                 hint: '••••••••',
-                                prefixIcon: Icons.lock_outline_rounded,
                                 isPassword: true,
                                 controller: _passwordController,
                                 validator: (value) {
@@ -232,6 +236,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                                   return null;
                                 },
                               ),
+                              const SizedBox(height: 28),
                               // Login Button
                               PrimaryButton(
                                 text: 'Login to AES',

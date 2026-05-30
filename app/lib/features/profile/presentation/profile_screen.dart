@@ -4,6 +4,8 @@ import '../../auth/providers/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../core/repositories/student_repository.dart';
+import '../../../core/widgets/app_logo.dart';
+import '../../../core/widgets/app_loading_indicator.dart';
 
 final studentProfileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final studentRepo = ref.watch(studentRepositoryProvider);
@@ -35,27 +37,17 @@ class ProfileScreen extends ConsumerWidget {
                         loading: () => const Center(
                           child: Padding(
                             padding: EdgeInsets.symmetric(vertical: 40),
-                            child: CircularProgressIndicator(),
+                            child: AppLoadingIndicator(size: 50, logoSize: 24),
                           ),
                         ),
                         error: (err, stack) {
                           if (cachedProfile != null) {
                             return _buildProfileContent(context, ref, cachedProfile, isCached: true);
                           }
-                          return _buildUnavailableState();
+                          return _buildUnavailableState(context, ref);
                         },
                         data: (profile) => _buildProfileContent(context, ref, profile),
                       ),
-                      
-                      const SizedBox(height: 32),
-                      PrimaryButton(
-                        text: 'Logout',
-                        onPressed: () => ref.read(authProvider.notifier).logout(),
-                        backgroundColor: AppTheme.errorColor.withValues(alpha: 0.1),
-                        textColor: AppTheme.errorColor,
-                        icon: Icons.logout_rounded,
-                      ),
-                      const SizedBox(height: 120), // Bottom padding for floating nav
                     ]),
                   ),
                 ),
@@ -72,6 +64,10 @@ class ProfileScreen extends ConsumerWidget {
       floating: true,
       backgroundColor: AppTheme.backgroundColor.withValues(alpha: 0.8),
       surfaceTintColor: Colors.transparent,
+      leading: const Padding(
+        padding: EdgeInsets.all(12.0),
+        child: AppLogo(size: 24),
+      ),
       title: const Text(
         'Student Profile',
         style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
@@ -259,6 +255,15 @@ class ProfileScreen extends ConsumerWidget {
               : (semester.toLowerCase().contains('semester') ? semester : 'Semester $semester'),
           color: Colors.orange,
         ),
+        const SizedBox(height: 32),
+        PrimaryButton(
+          text: 'Logout',
+          onPressed: () => ref.read(authProvider.notifier).logout(),
+          backgroundColor: AppTheme.errorColor.withValues(alpha: 0.1),
+          textColor: AppTheme.errorColor,
+          icon: Icons.logout_rounded,
+        ),
+        const SizedBox(height: 120), // Bottom padding for floating nav
       ],
     );
   }
@@ -310,7 +315,7 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildUnavailableState() {
+  Widget _buildUnavailableState(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
       decoration: BoxDecoration(
@@ -318,15 +323,15 @@ class ProfileScreen extends ConsumerWidget {
         borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
         border: Border.all(color: AppTheme.outlineColor.withValues(alpha: 0.15)),
       ),
-      child: const Column(
+      child: Column(
         children: [
-          Icon(
+          const Icon(
             Icons.account_circle_rounded,
             size: 64,
             color: AppTheme.outlineColor,
           ),
-          SizedBox(height: 20),
-          Text(
+          const SizedBox(height: 20),
+          const Text(
             'Profile information unavailable',
             style: TextStyle(
               fontSize: 16,
@@ -334,8 +339,8 @@ class ProfileScreen extends ConsumerWidget {
               color: AppTheme.textPrimary,
             ),
           ),
-          SizedBox(height: 8),
-          Text(
+          const SizedBox(height: 8),
+          const Text(
             'Connect to the university network or secure internet connection to sync student records.',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -344,6 +349,15 @@ class ProfileScreen extends ConsumerWidget {
               height: 1.5,
             ),
           ),
+          const SizedBox(height: 32),
+          PrimaryButton(
+            text: 'Logout',
+            onPressed: () => ref.read(authProvider.notifier).logout(),
+            backgroundColor: AppTheme.errorColor.withValues(alpha: 0.1),
+            textColor: AppTheme.errorColor,
+            icon: Icons.logout_rounded,
+          ),
+          const SizedBox(height: 80), // Bottom padding for floating nav inside container
         ],
       ),
     );

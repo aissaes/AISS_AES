@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../providers/student_results_provider.dart';
+import '../../../core/widgets/app_loading_indicator.dart';
 
 class StudentResultDetailScreen extends ConsumerWidget {
   final String examId;
@@ -119,7 +120,7 @@ class StudentResultDetailScreen extends ConsumerWidget {
                   ),
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: AppLoadingIndicator(size: 50, logoSize: 24)),
               error: (err, stack) => Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24.0),
