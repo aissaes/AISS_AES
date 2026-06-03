@@ -934,7 +934,7 @@ const Landing = () => {
               Students seamlessly upload answers safely and receive extremely granular AI-driven evaluation insights directly to their dashboard.
             </p>
             <div className={styles.heroBtns} style={{ justifyContent: 'center' }}>
-              <button className={styles.btnPrimary} onClick={() => navigate('/login')}>
+              <button className={styles.btnPrimary} onClick={() => navigate('/download')}>
                 <span>Student Portal</span>
                 <ArrowRight size={18} className={styles.btnIconSlide} />
               </button>

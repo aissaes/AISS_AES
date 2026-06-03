@@ -1042,6 +1042,7 @@
   height: 24px;
   border-radius: 50%;
   border: 2px solid var(--text-secondary);
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
