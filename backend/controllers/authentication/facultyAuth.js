@@ -48,7 +48,7 @@ export const registerFaculty = async (req, res) => {
     // 2. Route the approval to the correct authority
     const hod = await Faculty.findOne({
       collegeId,
-      department,
+      deptId,
       role: "hod"
     });
 
