@@ -26,6 +26,7 @@ const CollegeAdminDepartments = () => {
   const [saving, setSaving] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [editDeptModal, setEditDeptModal] = useState({ open: false, id: null, name: '', code: '', status: '' });
+  const [addDeptModalOpen, setAddDeptModalOpen] = useState(false);
 
   const fetchDepartments = useCallback(async () => {
     if (user?.collegeId) {
@@ -46,7 +47,7 @@ const CollegeAdminDepartments = () => {
   }, [fetchDepartments]);
 
   const handleAdd = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!newDeptName.trim() || !newDeptCode.trim()) return;
     setSaving(true);
     try {
@@ -57,6 +58,7 @@ const CollegeAdminDepartments = () => {
       setDepartments(p => [...p, res.data.department]);
       setNewDeptName('');
       setNewDeptCode('');
+      setAddDeptModalOpen(false);
       toast('Department created successfully!', 'success');
     } catch (err) {
       toast(err.response?.data?.message || 'Failed to create department', 'error');
@@ -121,33 +123,16 @@ const CollegeAdminDepartments = () => {
             <Building2 size={17} className={styles.cardHeaderIcon} />
             <h3 className={styles.cardTitle}>Academic Departments</h3>
           </div>
+          <button
+            className={styles.successModalBtn}
+            onClick={() => setAddDeptModalOpen(true)}
+            style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.82rem' }}
+          >
+            <Plus size={16} /> Add Department
+          </button>
         </div>
 
         <div style={{ padding: '20px' }}>
-          <form onSubmit={handleAdd} style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
-            <input 
-              type="text" 
-              value={newDeptName}
-              onChange={e => setNewDeptName(e.target.value)}
-              placeholder="Department Name (e.g. Computer Science)" 
-              className={styles.searchInput}
-              style={{ flex: 2, minWidth: '220px' }}
-              required
-            />
-            <input 
-              type="text" 
-              value={newDeptCode}
-              onChange={e => setNewDeptCode(e.target.value)}
-              placeholder="Code (e.g. CSE)" 
-              className={styles.searchInput}
-              style={{ flex: 1, minWidth: '100px' }}
-              required
-            />
-            <button type="submit" disabled={saving || !newDeptName.trim() || !newDeptCode.trim()} className={styles.successModalBtn} style={{ padding: '0 16px', height: 'auto', borderRadius: '8px' }}>
-              {saving ? 'Creating...' : <><Plus size={16} /> Add Department</>}
-            </button>
-          </form>
-
           {loading ? (
              <div className={styles.tableLoader}><div className={styles.spinner} /></div>
           ) : departments.length === 0 ? (
@@ -245,6 +230,50 @@ const CollegeAdminDepartments = () => {
               <option value="Active">Active</option>
               <option value="Archived">Archived</option>
             </select>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Add Department Modal */}
+      <Modal
+        isOpen={addDeptModalOpen}
+        onClose={() => !saving && setAddDeptModalOpen(false)}
+        title="Add Department"
+        footer={
+          <>
+            <button className={styles.cancelModalBtn} onClick={() => setAddDeptModalOpen(false)} disabled={saving}>
+              Cancel
+            </button>
+            <button className={styles.successModalBtn} onClick={handleAdd} disabled={saving || !newDeptName.trim() || !newDeptCode.trim()}>
+              {saving ? 'Creating...' : 'Create Department'}
+            </button>
+          </>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className={styles.modalField}>
+            <label className={styles.modalLabel}>Department Name <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <input
+              type="text"
+              className={styles.modalInput}
+              value={newDeptName}
+              onChange={e => setNewDeptName(e.target.value)}
+              placeholder="e.g. Computer Science"
+              disabled={saving}
+              required
+            />
+          </div>
+          <div className={styles.modalField}>
+            <label className={styles.modalLabel}>Department Code <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <input
+              type="text"
+              className={styles.modalInput}
+              value={newDeptCode}
+              onChange={e => setNewDeptCode(e.target.value)}
+              placeholder="e.g. CSE"
+              disabled={saving}
+              required
+            />
           </div>
         </div>
       </Modal>
