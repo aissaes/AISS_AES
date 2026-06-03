@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/models/question_model.dart';
 
-final selectedQuestionProvider = StateProvider<Map<String, dynamic>?>((ref) {
-  return null;
-});
+final selectedQuestionProvider = StateProvider<QuestionModel?>((ref) => null);

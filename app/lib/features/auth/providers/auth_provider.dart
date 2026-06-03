@@ -1,18 +1,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/repositories/auth_repository.dart';
-import '../../../core/repositories/student_repository.dart';
-import '../../../core/services/api_service.dart';
+import '../repositories/auth_repository.dart';
+import '../repositories/auth_repository_impl.dart';
+import '../../profile/repositories/student_repository.dart';
+import '../../profile/repositories/student_repository_impl.dart';
+import '../../../../core/errors/app_exception.dart';
+import '../../../core/models/student_model.dart';
 
 class AuthState {
   final bool isAuthenticated;
-  final String? userName;
+  final StudentModel? student;
   final bool isLoading;
   final String? errorMessage;
   final bool isOffline;
 
   AuthState({
     this.isAuthenticated = false,
-    this.userName,
+    this.student,
     this.isLoading = false,
     this.errorMessage,
     this.isOffline = false,
@@ -20,7 +23,7 @@ class AuthState {
 
   AuthState copyWith({
     bool? isAuthenticated,
-    String? userName,
+    StudentModel? student,
     bool? isLoading,
     String? errorMessage,
     bool? isOffline,
@@ -28,7 +31,7 @@ class AuthState {
   }) {
     return AuthState(
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
-      userName: userName ?? this.userName,
+      student: student ?? this.student,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       isOffline: isOffline ?? this.isOffline,
@@ -54,18 +57,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
 
     try {
-      // Fetch the real student profile to check token validity on the server
-      final profile = await _studentRepository.getProfile();
+      final data = await _studentRepository.getProfile();
       state = state.copyWith(
         isAuthenticated: true,
-        userName: profile['name'],
+        student: data,
         isLoading: false,
       );
-    } catch (e) {
-      if (e is OfflineException || 
-          e.toString().toLowerCase().contains('offline') || 
-          e.toString().toLowerCase().contains('connection') ||
-          e.toString().toLowerCase().contains('unreachable')) {
+    } catch (exception) {
+      if (exception is OfflineException || 
+          exception.toString().toLowerCase().contains('offline') || 
+          exception.toString().toLowerCase().contains('connection') ||
+          exception.toString().toLowerCase().contains('unreachable')) {
         // Safe check for offline / unreachable server
         state = state.copyWith(
           isLoading: false,
@@ -88,18 +90,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
     
     try {
       await _authRepository.login(email, password);
-      
       // Load student profile to ensure data consistency
-      final profile = await _studentRepository.getProfile();
-      
+      final data = await _studentRepository.getProfile();
       state = state.copyWith(
         isAuthenticated: true,
-        userName: profile['name'],
+        student: data,
         isLoading: false,
         clearError: true,
       );
-    } catch (e) {
-      String msg = e.toString();
+    } catch (exception) {
+      String msg = exception.toString();
       if (msg.startsWith('Exception: ')) {
         msg = msg.substring(11);
       }
@@ -141,5 +141,4 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   final studentRepository = ref.watch(studentRepositoryProvider);
   return AuthNotifier(authRepository, studentRepository);
 });
-
 

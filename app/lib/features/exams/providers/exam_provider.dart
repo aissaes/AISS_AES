@@ -1,50 +1,43 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/services/api_service.dart';
+import '../../upload/repositories/paper_repository.dart';
+import '../../upload/repositories/paper_repository_impl.dart';
+import '../../../core/models/exam_state.dart';
+import '../../../core/models/submission_model.dart';
 
-final activeExamProvider = StateProvider<Map<String, dynamic>?>((ref) => null);
+final activeExamProvider = StateProvider<ExamState>((ref) => const ExamState());
 
-class SubmissionsNotifier extends StateNotifier<AsyncValue<Map<String, String>>> {
-  final ApiService _apiService;
+class SubmissionsNotifier extends StateNotifier<AsyncValue<SubmissionModel>> {
+  final PaperRepository _paperRepository;
   final String? _examId;
 
-  SubmissionsNotifier(this._apiService, this._examId) : super(const AsyncValue.loading()) {
+  SubmissionsNotifier(this._paperRepository, this._examId) : super(const AsyncValue.loading()) {
     fetchSubmissions();
   }
 
   Future<void> fetchSubmissions() async {
     if (_examId == null) {
-      state = const AsyncValue.data({});
+      state = const AsyncValue.data(SubmissionModel(uploads: {}));
       return;
     }
     
     try {
-      final data = await _apiService.getStudentSubmissions(_examId!);
-      
-      // Parse map cleanly
-      final answersRaw = data['answers'] ?? {};
-      final Map<String, String> answers = {};
-      if (answersRaw is Map) {
-        answersRaw.forEach((k, v) {
-          answers[k.toString()] = v.toString();
-        });
-      }
-      
-      state = AsyncValue.data(answers);
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
+      final data = await _paperRepository.getStudentSubmissions(_examId!);
+      state = AsyncValue.data(data);
+    } catch (exception) {
+      state = AsyncValue.error(exception, StackTrace.current);
     }
   }
   
   void addSubmission(String questionId, String url) {
-    state.whenData((data) {
-      final newData = Map<String, String>.from(data);
-      newData[questionId] = url;
-      state = AsyncValue.data(newData);
+    state.whenData((submission) {
+      final newUploads = Map<String, String>.from(submission.uploads);
+      newUploads[questionId] = url;
+      state = AsyncValue.data(submission.copyWith(uploads: newUploads));
     });
   }
 }
 
-final examSubmissionsProvider = StateNotifierProvider.family<SubmissionsNotifier, AsyncValue<Map<String, String>>, String>((ref, examId) {
-  final apiService = ref.watch(apiServiceProvider);
-  return SubmissionsNotifier(apiService, examId);
+final examSubmissionsProvider = StateNotifierProvider.family<SubmissionsNotifier, AsyncValue<SubmissionModel>, String>((ref, examId) {
+  final paperRepository = ref.watch(paperRepositoryProvider);
+  return SubmissionsNotifier(paperRepository, examId);
 });
