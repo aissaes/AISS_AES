@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import ALL your modular routers here
-from routers import teacher, student, health_check
+from routers import teacher, student, health_check, testing
 
 # Initialize the server with beautiful Swagger UI metadata
 app = FastAPI(
@@ -26,3 +26,4 @@ app.add_middleware(
 app.include_router(teacher.router)
 app.include_router(student.router)
 app.include_router(health_check.router) 
+app.include_router(testing.router)
