@@ -6,16 +6,24 @@ import '../../../core/repositories/auth_repository.dart';
 import '../../../shared/widgets/custom_text_field.dart';
 import '../../../shared/widgets/primary_button.dart';
 
-class ForgotPasswordScreen extends ConsumerStatefulWidget {
-  const ForgotPasswordScreen({super.key});
+class ResetPasswordScreen extends ConsumerStatefulWidget {
+  final String email;
+  final String otp;
+
+  const ResetPasswordScreen({
+    super.key,
+    required this.email,
+    required this.otp,
+  });
 
   @override
-  ConsumerState<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  ConsumerState<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> with SingleTickerProviderStateMixin {
+class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> with SingleTickerProviderStateMixin {
   late AnimationController _bgController;
-  final _emailController = TextEditingController();
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
   String? _successMessage;
@@ -32,14 +40,25 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> wit
   @override
   void dispose() {
     _bgController.dispose();
-    _emailController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  void _requestOtp() async {
-    final email = _emailController.text.trim();
-    if (email.isEmpty) {
-      setState(() => _errorMessage = 'Please enter your registered email.');
+  void _resetPassword() async {
+    final newPassword = _newPasswordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    if (newPassword.isEmpty || confirmPassword.isEmpty) {
+      setState(() => _errorMessage = 'All fields are required.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setState(() => _errorMessage = 'Password must be at least 6 characters.');
+      return;
+    }
+    if (newPassword != confirmPassword) {
+      setState(() => _errorMessage = 'Passwords do not match.');
       return;
     }
 
@@ -50,13 +69,13 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> wit
     });
 
     try {
-      await ref.read(authRepositoryProvider).forgotPassword(email);
+      await ref.read(authRepositoryProvider).resetForgottenPassword(widget.email, widget.otp, newPassword);
       setState(() {
-        _successMessage = 'A 6-digit verification code has been sent to $email';
+        _successMessage = 'Your password has been successfully reset! Redirecting to login...';
       });
-      Future.delayed(const Duration(milliseconds: 1500), () {
+      Future.delayed(const Duration(seconds: 2), () {
         if (mounted) {
-          context.push('/forgot-password/otp', extra: email);
+          context.go('/login');
         }
       });
     } catch (e) {
@@ -136,7 +155,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> wit
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
-                                  Icons.lock_reset_rounded,
+                                  Icons.lock_open_rounded,
                                   color: AppTheme.primaryColor,
                                   size: 48,
                                 ),
@@ -146,7 +165,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> wit
                             
                             // Title & Description
                             const Text(
-                              'Reset Password',
+                              'Set New Password',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 24,
@@ -157,7 +176,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> wit
                             ),
                             const SizedBox(height: 8),
                             const Text(
-                              'Enter your registered email address below to receive a secure password reset OTP verification code.',
+                              'Choose a new strong and secure password for your account.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: AppTheme.textSecondary,
@@ -216,7 +235,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> wit
                             ],
                             
                             const Text(
-                              'Email Address',
+                              'New Password',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -226,57 +245,32 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> wit
                             const SizedBox(height: 8),
                             CustomTextField(
                               label: '',
-                              hint: 'student@aiss.edu',
-                              controller: _emailController,
-                              keyboardType: TextInputType.emailAddress,
+                              hint: 'Min. 6 characters',
+                              isPassword: true,
+                              controller: _newPasswordController,
                             ),
-                            const SizedBox(height: 24),
-                            PrimaryButton(
-                              text: 'Send Reset OTP',
-                              icon: Icons.arrow_forward_rounded,
-                              isLoading: _isLoading,
-                              onPressed: _requestOtp,
-                            ),
-                            const SizedBox(height: 24),
-                            const Divider(),
                             const SizedBox(height: 16),
                             const Text(
-                              'Alternative Support Options',
+                              'Confirm Password',
                               style: TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w800,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
                                 color: AppTheme.textPrimary,
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            const Text(
-                              "If you don't have access to your registered academic email address or require physical credential recovery, please use one of these college support channels:",
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                color: AppTheme.textSecondary,
-                                height: 1.35,
-                              ),
+                            const SizedBox(height: 8),
+                            CustomTextField(
+                              label: '',
+                              hint: 'Re-enter your password',
+                              isPassword: true,
+                              controller: _confirmPasswordController,
                             ),
-                            const SizedBox(height: 16),
-                            _buildSupportChannel(
-                              icon: Icons.person_search_rounded,
-                              title: 'Contact Department HOD',
-                              description: 'Visit your branch Head of Department (HOD) office with your College Identity Card to request an instant account reset.',
-                              color: AppTheme.primaryColor,
-                            ),
-                            const SizedBox(height: 12),
-                            _buildSupportChannel(
-                              icon: Icons.contact_mail_rounded,
-                              title: 'Academic IT Helpdesk',
-                              description: 'Send an email request to support@aiss.edu. Include your Student Registration ID and branch details.',
-                              color: const Color(0xFFD97706),
-                            ),
-                            const SizedBox(height: 12),
-                            _buildSupportChannel(
-                              icon: Icons.admin_panel_settings_rounded,
-                              title: 'Academic Registrar Office',
-                              description: 'Visit Block A, Desk 4 for physical verification and credential unlock (9 AM - 4 PM).',
-                              color: AppTheme.successColor,
+                            const SizedBox(height: 24),
+                            PrimaryButton(
+                              text: 'Reset Password',
+                              icon: Icons.check_circle_outline_rounded,
+                              isLoading: _isLoading,
+                              onPressed: _resetPassword,
                             ),
                             
                             const SizedBox(height: 20),
@@ -285,7 +279,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> wit
                             TextButton(
                               onPressed: () => context.pop(),
                               child: const Text(
-                                'Back to Login',
+                                '← Go Back',
                                 style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
                               ),
                             ),
@@ -296,60 +290,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> wit
                   ),
                 ),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSupportChannel({
-    required IconData icon,
-    required String title,
-    required String description,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppTheme.backgroundColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.outlineColor.withValues(alpha: 0.1)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  description,
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    color: AppTheme.textSecondary,
-                    height: 1.3,
-                  ),
-                ),
-              ],
             ),
           ),
         ],

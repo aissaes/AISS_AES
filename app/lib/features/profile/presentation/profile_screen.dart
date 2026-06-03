@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/primary_button.dart';
-import '../../../shared/widgets/custom_text_field.dart';
 import '../../../core/repositories/student_repository.dart';
-import '../../../core/repositories/auth_repository.dart';
 import '../../../core/widgets/app_logo.dart';
 import '../../../core/widgets/app_loading_indicator.dart';
 
@@ -74,15 +73,6 @@ class ProfileScreen extends ConsumerWidget {
         'Student Profile',
         style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
       ),
-    );
-  }
-
-  void _showChangePasswordBottomSheet(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _ChangePasswordBottomSheet(ref: ref),
     );
   }
 
@@ -271,7 +261,7 @@ class ProfileScreen extends ConsumerWidget {
         // Action Buttons
         PrimaryButton(
           text: 'Change Password',
-          onPressed: () => _showChangePasswordBottomSheet(context, ref),
+          onPressed: () => context.push('/change-password'),
           backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
           textColor: AppTheme.primaryColor,
           icon: Icons.key_rounded,
@@ -385,149 +375,3 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-class _ChangePasswordBottomSheet extends StatefulWidget {
-  final WidgetRef ref;
-  const _ChangePasswordBottomSheet({required this.ref});
-
-  @override
-  State<_ChangePasswordBottomSheet> createState() => _ChangePasswordBottomSheetState();
-}
-
-class _ChangePasswordBottomSheetState extends State<_ChangePasswordBottomSheet> {
-  final _oldPasswordController = TextEditingController();
-  final _newPasswordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-  bool _isLoading = false;
-  String? _errorMessage;
-
-  @override
-  void dispose() {
-    _oldPasswordController.dispose();
-    _newPasswordController.dispose();
-    _confirmPasswordController.dispose();
-    super.dispose();
-  }
-
-  void _handleChangePassword() async {
-    final oldPassword = _oldPasswordController.text;
-    final newPassword = _newPasswordController.text;
-    final confirmPassword = _confirmPasswordController.text;
-
-    if (oldPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty) {
-      setState(() => _errorMessage = 'All fields are required.');
-      return;
-    }
-
-    if (newPassword != confirmPassword) {
-      setState(() => _errorMessage = 'Passwords do not match.');
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      setState(() => _errorMessage = 'Password must be at least 6 characters.');
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      await widget.ref.read(authRepositoryProvider).changePassword(oldPassword, newPassword);
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('✓ Password changed successfully!'),
-            backgroundColor: AppTheme.successColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
-      }
-    } catch (e) {
-      setState(() => _errorMessage = e.toString().replaceAll('Exception: ', ''));
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Change Password',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppTheme.textPrimary),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close_rounded),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-          const Divider(),
-          const SizedBox(height: 16),
-          if (_errorMessage != null) ...[
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFDAD6).withValues(alpha: 0.5),
-                border: Border.all(color: const Color(0xFFBA1A1A).withValues(alpha: 0.2)),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                _errorMessage!,
-                style: const TextStyle(color: Color(0xFF93000A), fontSize: 13, fontWeight: FontWeight.w500),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-          CustomTextField(
-            label: 'Current Password',
-            hint: '••••••••',
-            isPassword: true,
-            controller: _oldPasswordController,
-          ),
-          const SizedBox(height: 16),
-          CustomTextField(
-            label: 'New Password',
-            hint: 'At least 6 characters',
-            isPassword: true,
-            controller: _newPasswordController,
-          ),
-          const SizedBox(height: 16),
-          CustomTextField(
-            label: 'Confirm New Password',
-            hint: 'Confirm new password',
-            isPassword: true,
-            controller: _confirmPasswordController,
-          ),
-          const SizedBox(height: 24),
-          PrimaryButton(
-            text: 'Update Password',
-            isLoading: _isLoading,
-            onPressed: _handleChangePassword,
-          ),
-        ],
-      ),
-    );
-  }
-}

@@ -41,11 +41,11 @@ class _MainShellState extends State<MainShell> {
           children: [
             Icon(Icons.exit_to_app_rounded, color: AppTheme.errorColor),
             SizedBox(width: 12),
-            Text('Exit App', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+            Text('Exit AISS AES', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
           ],
         ),
         content: const Text(
-          'Are you sure you want to close AISS Exam Portal?',
+          'Are you sure you want to exit AISS AES?',
           style: TextStyle(color: AppTheme.textSecondary, fontSize: 14, height: 1.4),
         ),
         actions: [

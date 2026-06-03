@@ -18,6 +18,9 @@ import '../features/main_shell/presentation/main_shell.dart';
 import '../features/auth/providers/auth_provider.dart';
 
 import '../features/auth/presentation/forgot_password_screen.dart';
+import '../features/auth/presentation/otp_verification_screen.dart';
+import '../features/auth/presentation/reset_password_screen.dart';
+import '../features/profile/presentation/change_password_screen.dart';
 
 class RouterNotifier extends ChangeNotifier {
   final Ref _ref;
@@ -57,6 +60,24 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/forgot-password',
         builder: (context, state) => const ForgotPasswordScreen(),
+        routes: [
+          GoRoute(
+            path: 'otp',
+            builder: (context, state) {
+              final email = state.extra as String? ?? '';
+              return OtpVerificationScreen(email: email);
+            },
+          ),
+          GoRoute(
+            path: 'reset',
+            builder: (context, state) {
+              final extra = state.extra as Map<String, String>? ?? {};
+              final email = extra['email'] ?? '';
+              final otp = extra['otp'] ?? '';
+              return ResetPasswordScreen(email: email, otp: otp);
+            },
+          ),
+        ],
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
@@ -117,6 +138,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ScannerScreen(),
       ),
       GoRoute(
+        path: '/change-password',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const ChangePasswordScreen(),
+      ),
+      GoRoute(
         path: '/upload/review',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const ReviewScansScreen(),
@@ -142,7 +168,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuthenticated = authState.isAuthenticated;
       final isLoggingIn = state.matchedLocation == '/login';
       final isSplash = state.matchedLocation == '/splash';
-      final isForgotPassword = state.matchedLocation == '/forgot-password';
+      final isForgotPassword = state.matchedLocation.startsWith('/forgot-password');
 
       // Keep them on splash screen if currently checking credentials or server is offline
       if (authState.isLoading || authState.isOffline) {
