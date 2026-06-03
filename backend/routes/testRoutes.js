@@ -193,109 +193,31 @@ testRouter.post("/test/sandbox/vectorize", upload.single("file"), async (req, re
   }
 });
 
-// Helper for OCR Space API
+// Helper for OCR Space API delegating to Python Agent
 const runOcrDirect = async (fileUrl) => {
-  const ocrApiKey = process.env.OCR_SPACE_API_KEY;
-  if (!ocrApiKey) {
-    throw new Error("OCR_SPACE_API_KEY is not defined in backend environment variables.");
-  }
-
-  const formData = new URLSearchParams();
-  formData.append("apikey", ocrApiKey);
-  formData.append("url", fileUrl);
-  formData.append("language", "eng");
-  formData.append("OCREngine", "2");
-
-  const response = await axios.post("https://api.ocr.space/parse/image", formData.toString(), {
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded"
-    }
+  const response = await axios.post(`${AI_BASE_URL}/testing/test`, {
+    action: "ocr",
+    file_url: fileUrl
   });
-
-  if (response.data?.IsErroredOnProcessing) {
-    throw new Error(response.data?.ErrorMessage || "OCR processing failed.");
+  if (!response.data?.success) {
+    throw new Error(response.data?.detail || "Agent OCR processing failed.");
   }
-
-  const parsedResults = response.data?.ParsedResults || [];
-  return parsedResults.map(p => p.ParsedText).filter(Boolean).join("\n\n");
+  return response.data.extractedText;
 };
 
-// Helper for direct LLM evaluation
+// Helper for direct LLM evaluation delegating to Python Agent
 const runEvaluationDirect = async ({ studentAnswer, answerKey, contextNotes, maxMarks }) => {
-  const prompt = `You are an expert academic evaluator. Your task is to grade a student's answer based on the provided Teacher's Answer Key and additional Contextual Notes.
-
-### TEACHER'S ANSWER KEY:
-${answerKey}
-
-### CONTEXTUAL NOTES:
-${contextNotes || "None"}
-
-### STUDENT'S ANSWER:
-${studentAnswer}
-
-### EVALUATION CRITERIA:
-1. Accuracy: Does the answer align with the Teacher's Key?
-2. Completeness: Does the student use relevant details found in the Contextual Notes?
-3. Clarity: Is the explanation easy to understand?
-
-### OUTPUT FORMAT:
-You MUST respond with ONLY a valid JSON object. 
-
-{
-  "score": <number from 0 to ${maxMarks}>,
-  "reasoning": "<overall evaluation reasoning>",
-  "strengths": "<what the student got right>",
-  "weaknesses": "<what was missing, incorrect, or unclear>",
-  "feedback": "<corrective feedback and suggestions for improvement>"
-}`;
-
-  // Try Groq first
-  if (process.env.GROQ_API_KEY) {
-    try {
-      const response = await axios.post(
-        "https://api.groq.com/openai/v1/chat/completions",
-        {
-          model: "llama-3.3-70b-versatile",
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.1,
-          response_format: { type: "json_object" }
-        },
-        {
-          headers: {
-            "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
-            "Content-Type": "application/json"
-          }
-        }
-      );
-      return response.data?.choices?.[0]?.message?.content;
-    } catch (err) {
-      console.error("Groq direct call failed, trying Gemini:", err.response?.data || err.message);
-    }
+  const response = await axios.post(`${AI_BASE_URL}/testing/test`, {
+    action: "evaluate-text",
+    studentAnswer,
+    answerKey,
+    contextNotes,
+    maxMarks: Number(maxMarks) || 10
+  });
+  if (!response.data?.success) {
+    throw new Error(response.data?.detail || "Agent direct evaluation failed.");
   }
-
-  // Try Gemini next
-  if (process.env.GOOGLE_API_KEY) {
-    try {
-      const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GOOGLE_API_KEY}`,
-        {
-          contents: [{
-            parts: [{ text: prompt }]
-          }],
-          generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.1
-          }
-        }
-      );
-      return response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    } catch (err) {
-      console.error("Gemini direct call failed:", err.response?.data || err.message);
-      throw new Error(`AI direct call failed (Groq and Gemini both failed or unavailable). last error: ${err.message}`);
-    }
-  }
-
-  throw new Error("Neither GROQ_API_KEY nor GOOGLE_API_KEY is configured in backend environment.");
+  return response.data.evaluation;
 };
 
 // 2. OCR Test Endpoint

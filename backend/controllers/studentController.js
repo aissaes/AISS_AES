@@ -4,6 +4,7 @@ import Upload from "../models/uploadSession.js";
 import Answers from "../models/answer.js";
 import Timetable from "../models/timetable.js";
 import StudentCourseEnrollment from "../models/studentCourseEnrollment.js";
+import Result from "../models/result.js";
 
 export const getExamByIdByToken = async (req, res) => {
   try {
@@ -189,10 +190,29 @@ export const getStudentTimetableAndExams = async (req, res) => {
     .populate('department', 'name code')
     .sort({ date: 1 });
 
+    const examIds = exams.map(e => e._id);
+    const submissions = await Answers.find({
+      for_exam: { $in: examIds },
+      uploaded_student: studentId
+    });
+    const results = await Result.find({
+      student: studentId,
+      exam: { $in: examIds }
+    });
+
+    const submittedExamIds = new Set(submissions.map(s => s.for_exam.toString()));
+    const resultExamIds = new Set(results.map(r => r.exam.toString()));
+
+    const examsWithSubmission = exams.map(exam => {
+      const examObj = exam.toObject();
+      examObj.hasSubmitted = submittedExamIds.has(exam._id.toString()) || resultExamIds.has(exam._id.toString());
+      return examObj;
+    });
+
     res.status(200).json({
       success: true,
       timetables,
-      exams
+      exams: examsWithSubmission
     });
 
   } catch (error) {
