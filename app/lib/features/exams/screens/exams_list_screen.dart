@@ -191,35 +191,42 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> with WidgetsB
         }
       },
       child: Scaffold(
-          backgroundColor: AppTheme.backgroundColor,
+        backgroundColor: AppTheme.backgroundColor,
+        appBar: _buildAppBar(context),
         body: SafeArea(
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 600),
-              child: RefreshIndicator(
-                onRefresh: () async {
-                  ref.invalidate(studentTimetableAndExamsProvider);
-                  try {
-                    await ref.read(studentTimetableAndExamsProvider.future);
-                  } catch (_) {}
-                },
-                child: CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(
-                    parent: BouncingScrollPhysics(),
-                  ),
-                  slivers: [
-                    _buildAppBar(context),
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        _buildHeader(context),
-                        const SizedBox(height: 24),
-                        
-                        ref.watch(studentTimetableAndExamsProvider).when(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 20),
+                    _buildHeader(context),
+                    const SizedBox(height: 24),
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: () async {
+                          ref.invalidate(studentTimetableAndExamsProvider);
+                          try {
+                            await ref.read(studentTimetableAndExamsProvider.future);
+                          } catch (_) {}
+                        },
+                        child: ref.watch(studentTimetableAndExamsProvider).when(
                           data: (exams) {
                             if (exams.isEmpty) {
-                              return _buildNoExamsPlaceholder();
+                              return SingleChildScrollView(
+                                physics: const AlwaysScrollableScrollPhysics(
+                                  parent: BouncingScrollPhysics(),
+                                ),
+                                child: SizedBox(
+                                  height: 400,
+                                  child: Center(
+                                    child: _buildNoExamsPlaceholder(),
+                                  ),
+                                ),
+                              );
                             }
                             
                             // Calculate status categories on the fly
@@ -292,8 +299,10 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> with WidgetsB
                               activeList.sort((a, b) => (b.startTime ?? b.date ?? DateTime.now()).compareTo(a.startTime ?? a.date ?? DateTime.now()));
                             }
   
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            return ListView(
+                              physics: const AlwaysScrollableScrollPhysics(
+                                parent: BouncingScrollPhysics(),
+                              ),
                               children: [
                                 // Gmail-style tabs row
                                 SizedBox(
@@ -502,35 +511,46 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> with WidgetsB
                                       );
                                     },
                                   ),
+                                const SizedBox(height: 120),
                               ],
                             );
                           },
-                          loading: () => const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(32.0),
-                              child: AppLoadingIndicator(size: 50, logoSize: 24),
+                          loading: () => const SingleChildScrollView(
+                            physics: AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                            child: SizedBox(
+                              height: 300,
+                              child: Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(32.0),
+                                  child: AppLoadingIndicator(size: 50, logoSize: 24),
+                                ),
+                              ),
                             ),
                           ),
-                          error: (err, stack) => Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(24.0),
-                              child: Text(
-                                'Error loading timetable: $err',
-                                style: const TextStyle(color: Colors.red),
+                          error: (err, stack) => SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                            child: SizedBox(
+                              height: 300,
+                              child: Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(24.0),
+                                  child: Text(
+                                    'Error loading timetable: $err',
+                                    style: const TextStyle(color: Colors.red),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 120),
-                      ]),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -598,11 +618,10 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> with WidgetsB
   }
 
 
-  Widget _buildAppBar(BuildContext context) {
-    return SliverAppBar(
-      floating: true,
-      backgroundColor: AppTheme.backgroundColor.withValues(alpha: 0.8),
-      surfaceTintColor: Colors.transparent,
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
+    return AppBar(
+      backgroundColor: AppTheme.backgroundColor,
+      elevation: 0,
       centerTitle: true,
       leading: const Padding(
         padding: EdgeInsets.all(12.0),
