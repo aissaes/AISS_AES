@@ -73,7 +73,7 @@ const FacultyHome = () => {
           <div>
             <p className={styles.bannerGreeting}>Good day,</p>
             <h2 className={styles.bannerName}>{profile.name}</h2>
-            <p className={styles.bannerRole}>{roleLabel} · {profile.department}</p>
+            <p className={styles.bannerRole}>{roleLabel} · {profile.department?.name || profile.department || ''}</p>
           </div>
         </div>
         <div className={`${styles.bannerBadge} ${profile.isApproved ? styles.badgeApproved : styles.badgePending}`}>
@@ -85,7 +85,7 @@ const FacultyHome = () => {
       <div className={styles.statsGrid}>
         <StatCard icon={FileText}   label="Papers"           value={paperCount}         color="blue"  />
         <StatCard icon={CheckCircle2} label="Status"         value={profile.isApproved ? 'Approved' : 'Pending'} color="green" />
-        <StatCard icon={BookOpen}   label="Department"       value={profile.department} color="violet"/>
+        <StatCard icon={BookOpen}   label="Department"       value={profile.department?.name || profile.department || ''} color="violet"/>
         <StatCard icon={Building2}  label="Account Level"    value={roleLabel}          color="amber" />
       </div>
 
@@ -100,7 +100,7 @@ const FacultyHome = () => {
           <ProfileRow icon={FileText}  label="Email"       value={profile.email} />
           <ProfileRow icon={FileText}  label="Role"        value={roleLabel} />
           <ProfileRow icon={FileText}  label="Phone"       value={profile.phone} />
-          <ProfileRow icon={BookOpen}  label="Department"  value={profile.department} />
+          <ProfileRow icon={BookOpen}  label="Department"  value={profile.department?.name || profile.department || ''} />
         </div>
       </div>
     </div>

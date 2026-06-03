@@ -193,11 +193,11 @@ const CollegeAdminFaculty = () => {
   const filtered = allFaculty.filter(f =>
     f.name?.toLowerCase().includes(search.toLowerCase()) ||
     f.email?.toLowerCase().includes(search.toLowerCase()) ||
-    f.department?.toLowerCase().includes(search.toLowerCase())
+    (typeof f.department === 'object' ? f.department?.name : f.department)?.toLowerCase().includes(search.toLowerCase())
   );
 
   const deptGroups = filtered.reduce((acc, f) => {
-    const d = f.department || 'Other';
+    const d = (typeof f.department === 'object' ? f.department?.name : f.department) || 'Other';
     if (!acc[d]) acc[d] = [];
     acc[d].push(f);
     return acc;
@@ -260,7 +260,7 @@ const CollegeAdminFaculty = () => {
                       <td>
                         <div className={styles.actionBtns}>
                           {f.role === 'faculty' && (
-                            <button className={`${styles.actionBtn} ${styles.hodBtn}`} onClick={() => setMakeHODModal({ open: true, id: f._id, name: f.name, dept: f.department })}>
+                            <button className={`${styles.actionBtn} ${styles.hodBtn}`} onClick={() => setMakeHODModal({ open: true, id: f._id, name: f.name, dept: typeof f.department === 'object' ? f.department?.name : f.department })}>
                               <Crown size={12} /> Make HOD
                             </button>
                           )}
@@ -427,7 +427,7 @@ const CollegeAdminHome = () => {
                   <tr key={item._id} className={isApproving ? styles.rowApproving : ''}>
                     <td><div className={styles.nameCell}><div className={styles.miniAvatar}>{(item.name||'U')[0].toUpperCase()}</div>{item.name}</div></td>
                     {tab !== 'rejected' && <td className={styles.mutedCell}>{item.email}</td>}
-                    <td className={styles.mutedCell}>{item.department || '—'}</td>
+                    <td className={styles.mutedCell}>{typeof item.department === 'object' ? (item.department?.name || '—') : (item.department || '—')}</td>
                     {tab === 'rejected' && <td className={styles.reasonCell}>{item.rejectedReason || 'N/A'}</td>}
                     {tab === 'pending' && (
                       <td>

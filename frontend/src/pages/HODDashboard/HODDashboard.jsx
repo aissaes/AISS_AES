@@ -344,7 +344,7 @@ const HODStudents = () => {
   const fetchHODInfo = useCallback(async () => {
     try {
       const { data } = await facultyAPI.getMe();
-      setHodInfo(data.faculty || null);
+      setHodInfo(data.profile || null);
     } catch {}
   }, []);
 
@@ -502,7 +502,7 @@ const HODStudents = () => {
         <div>
           <h2 className={styles.pageTitle}>Student Enrollment</h2>
           <p className={styles.pageSub}>
-            Overview and manage student course assignments under the {hodInfo?.department} department.
+            Overview and manage student course assignments under the {hodInfo?.department?.name || hodInfo?.department || ''} department.
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
