@@ -6,6 +6,8 @@ import sendEmail from "../../configurations/nodemailer.js"; // Ensure your maile
 import generateSessionToken from "../../utils/generateToken.js";
 import Exam from "../../models/exam.js";
 import generateQR from "../../utils/qrcode.js";
+import mongoose from "mongoose";
+import Department from "../../models/department.js";
 
 // 1. Transfer HOD (Current HOD hands over power to another faculty member)
 export const transferHOD = async (req, res) => {
@@ -21,7 +23,7 @@ export const transferHOD = async (req, res) => {
 
     // 2. Ensure they are in the same college AND department
     const currentHOD = await Faculty.findById(currentHODId);
-    if (newHOD.collegeId.toString() !== currentHOD.collegeId.toString() || newHOD.department !== currentHOD.department) {
+    if (newHOD.collegeId.toString() !== currentHOD.collegeId.toString() || newHOD.department.toString() !== currentHOD.department.toString()) {
       return res.status(403).json({ message: "You can only transfer the role to someone in your own college and department." });
     }
 
@@ -34,8 +36,10 @@ export const transferHOD = async (req, res) => {
     await newHOD.save();
 
     // --- 5. NEW EMAIL NOTIFICATION BLOCK ---
+    const deptDoc = await Department.findById(newHOD.department);
+    const deptName = deptDoc ? deptDoc.name : "your";
     const subject = "Transfer of Head of Department (HOD) Role - AISS Platform";
-    const body = `Dear ${newHOD.name},\n\nThe Head of Department (HOD) role for the ${newHOD.department} department has been officially transferred to you.\n\nYou now have full access to the HOD Dashboard to manage timetables, assign faculty, and review question papers.\n\nRegards,\nCollege Administration`;
+    const body = `Dear ${newHOD.name},\n\nThe Head of Department (HOD) role for the ${deptName} department has been officially transferred to you.\n\nYou now have full access to the HOD Dashboard to manage timetables, assign faculty, and review question papers.\n\nRegards,\nCollege Administration`;
 
     await sendEmail(newHOD.email, subject, body).catch(err => {
       console.error("Failed to send HOD transfer email:", err);
@@ -198,13 +202,17 @@ export const getDepartmentStudents = async (req, res) => {
     const hod = await Faculty.findById(req.user.id);
     if (!hod) return res.status(404).json({ message: "HOD profile not found." });
 
+    // Resolve department to support both ObjectId and legacy string values
+    const deptDoc = await Department.findById(hod.department);
     let filter = {
       collegeId: hod.collegeId,
-      department: hod.department
+      department: deptDoc ? { $in: [hod.department, deptDoc.name] } : hod.department
     };
 
     if (req.query.semesterId) {
-      filter.semester = req.query.semesterId;
+      if (mongoose.Types.ObjectId.isValid(req.query.semesterId)) {
+        filter.semester = req.query.semesterId;
+      }
     }
 
     if (req.query.courseId) {
@@ -248,6 +256,13 @@ export const generateToken = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Exam ID is required",
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(examId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Exam ID format",
       });
     }
 
@@ -302,6 +317,13 @@ export const generateQRCode = async (req, res) => {
       });
     }
 
+    if (!mongoose.Types.ObjectId.isValid(examId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Exam ID format",
+      });
+    }
+
     // 1. Find exam
     const exam = await Exam.findById(examId).populate("courseId");
 
@@ -351,6 +373,14 @@ export const updateStudentAcademics = async (req, res) => {
       return res.status(400).json({ message: "Student ID is required." });
     }
 
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+      return res.status(400).json({ message: "Invalid Student ID format." });
+    }
+
+    if (semesterId && !mongoose.Types.ObjectId.isValid(semesterId)) {
+      return res.status(400).json({ message: "Invalid Semester ID format." });
+    }
+
     const hod = await Faculty.findById(req.user.id);
     if (!hod || hod.role !== "hod") {
       return res.status(403).json({ message: "Only HODs can edit student academic details." });
@@ -373,11 +403,23 @@ export const updateStudentAcademics = async (req, res) => {
 
     // Course assignments mapping
     if (courseIds && Array.isArray(courseIds)) {
-      const departmentCourses = await Course.find({ collegeId: hod.collegeId, department: hod.department });
-      const deptCourseIdsStr = departmentCourses.map(c => c._id.toString());
+      const allCollegeCourses = await Course.find({ collegeId: hod.collegeId, status: { $ne: "Archived" } });
+
+      // Resolve any legacy/string course inputs (names/codes) to ObjectIds
+      const resolvedCourseIds = [];
+      for (const cid of courseIds) {
+        if (mongoose.Types.ObjectId.isValid(cid)) {
+          resolvedCourseIds.push(cid.toString());
+        } else {
+          const matchedCourse = allCollegeCourses.find(c => c.courseName === cid || c.courseCode === cid);
+          if (matchedCourse) {
+            resolvedCourseIds.push(matchedCourse._id.toString());
+          }
+        }
+      }
 
       // Get new active courses
-      const newCourses = departmentCourses.filter(c => courseIds.includes(c._id.toString()));
+      const newCourses = allCollegeCourses.filter(c => resolvedCourseIds.includes(c._id.toString()));
       
       for (const newCourse of newCourses) {
         const yr = academicYear || semesterDoc?.academicYear || "2026-2027";
@@ -389,8 +431,10 @@ export const updateStudentAcademics = async (req, res) => {
       }
 
       // Mark dropped courses in join table
+      const currentEnrollments = await StudentCourseEnrollment.find({ student: student._id, status: "Enrolled" });
+      const currentCourseIdsStr = currentEnrollments.map(e => e.course.toString());
       const newCourseIdsStr = newCourses.map(c => c._id.toString());
-      const droppedCourseIds = deptCourseIdsStr.filter(cId => !newCourseIdsStr.includes(cId));
+      const droppedCourseIds = currentCourseIdsStr.filter(cId => !newCourseIdsStr.includes(cId));
       if (droppedCourseIds.length > 0) {
         await StudentCourseEnrollment.updateMany(
           { student: student._id, course: { $in: droppedCourseIds }, status: "Enrolled" },

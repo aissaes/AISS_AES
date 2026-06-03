@@ -5,12 +5,12 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import sendEmail from "../configurations/nodemailer.js";
 
-// 1. View all pending colleges
 export const getPendingColleges = async (req, res) => {
   try {
     // We populate the admin details so the Overall Admin can see who requested it
     const pendingColleges = await College.find({ status: "Pending" })
-                                         .populate("collegeAdminId", "name email phone");
+                                         .populate("collegeAdminId", "name email phone")
+                                         .populate("departments", "name code");
     
     res.status(200).json({ colleges: pendingColleges });
   } catch (error) {

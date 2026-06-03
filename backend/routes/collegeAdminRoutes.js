@@ -12,7 +12,11 @@ import {
   getAllCollegeStudents,
   updateSingleStudent,
   deleteSingleStudent,
-  bulkDeleteStudents
+  bulkDeleteStudents,
+  updateSingleFaculty,
+  createDepartment,
+  updateDepartment,
+  deleteDepartment
 } from "../controllers/faculty/collegeAdminController.js";
 
 const collegeAdminRouter = express.Router();
@@ -23,12 +27,18 @@ collegeAdminRouter.use(verifyToken, isCollegeAdmin);
 // College Overview
 collegeAdminRouter.get("/college", getAllCollegeFaculty);
 
-// update departments in a college
+// update departments in a college (legacy string-array way, kept for compatibility)
 collegeAdminRouter.put("/update-departments", updateCollegeDepartments);
 
-// Role Management
+// Role & Faculty Management
 collegeAdminRouter.post("/make-hod", makeHOD);
 collegeAdminRouter.post("/transfer", transferCollegeAdmin);
+collegeAdminRouter.put("/faculty/:facultyId", updateSingleFaculty);
+
+// Department CRUD Management
+collegeAdminRouter.post("/departments", createDepartment);
+collegeAdminRouter.put("/departments/:departmentId", updateDepartment);
+collegeAdminRouter.delete("/departments/:departmentId", deleteDepartment);
 
 // Student CRUD Management
 collegeAdminRouter.post("/students", addSingleStudent);

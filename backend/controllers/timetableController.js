@@ -6,6 +6,7 @@ import QuestionPaper from "../models/questionPapers.js";
 import generateQR from "../configurations/qrcode.js";
 import Semester from "../models/semester.js";
 import generateSessionToken from "../utils/generateToken.js";
+import mongoose from "mongoose";
 
 // 1. Create a new Timetable and its associated Exams
 export const createTimetable = async (req, res) => {
@@ -22,6 +23,9 @@ export const createTimetable = async (req, res) => {
     }
 
     // Resolve structural Semester
+    if (!mongoose.Types.ObjectId.isValid(semester)) {
+      return res.status(400).json({ message: "Invalid Semester ID format." });
+    }
     const semesterDoc = await Semester.findById(semester);
     if (!semesterDoc) {
       return res.status(404).json({ message: "Selected Semester not found." });
@@ -32,6 +36,12 @@ export const createTimetable = async (req, res) => {
 
     // Loop through and create individual Exam documents
     for (const detail of examDetails) {
+      if (detail.courseId && !mongoose.Types.ObjectId.isValid(detail.courseId)) {
+        return res.status(400).json({ message: "Invalid Course ID format inside exam details." });
+      }
+      if (detail.assignedFaculty && !mongoose.Types.ObjectId.isValid(detail.assignedFaculty)) {
+        return res.status(400).json({ message: "Invalid Faculty ID format inside exam details." });
+      }
       const newExam = new Exam({
         collegeId: hod.collegeId,
         courseId: detail.courseId,
@@ -108,6 +118,7 @@ export const getTimetables = async (req, res) => {
     // 2. Fetch the timetables
     const timetables = await Timetable.find(query)
       .populate("semester", "semesterNumber semesterName academicYear status")
+      .populate("department", "name code")
       .populate({
         path: 'exams',
         // removed the questionPaper ID from the payload 
@@ -132,6 +143,17 @@ export const addExamToTimetable = async (req, res) => {
   try {
     const { timetableId } = req.params;
     const detail = req.body; // Expecting a single exam object
+
+    if (!mongoose.Types.ObjectId.isValid(timetableId)) {
+      return res.status(400).json({ message: "Invalid Timetable ID format" });
+    }
+
+    if (detail.courseId && !mongoose.Types.ObjectId.isValid(detail.courseId)) {
+      return res.status(400).json({ message: "Invalid Course ID format" });
+    }
+    if (detail.assignedFaculty && !mongoose.Types.ObjectId.isValid(detail.assignedFaculty)) {
+      return res.status(400).json({ message: "Invalid Faculty ID format" });
+    }
 
     const timetable = await Timetable.findById(timetableId);
     if (!timetable) return res.status(404).json({ message: "Timetable not found" });
@@ -192,6 +214,10 @@ export const updateExam = async (req, res) => {
     const { examId } = req.params;
     const updates = req.body;
 
+    if (!mongoose.Types.ObjectId.isValid(examId)) {
+      return res.status(400).json({ message: "Invalid Exam ID format" });
+    }
+
     // 1. Fetch the HOD and their College ID for verification
     const hod = await Faculty.findById(req.user.id);
 
@@ -200,7 +226,10 @@ export const updateExam = async (req, res) => {
     if (!exam) return res.status(404).json({ message: "Exam not found" });
 
     // 3. SECURITY CHECK: Does this exam belong to this HOD's department and college?
-    if (exam.collegeId.toString() !== hod.collegeId.toString() || exam.department?.toString() !== hod.department?.toString()) {
+    if (
+      !exam.collegeId || !hod.collegeId || exam.collegeId.toString() !== hod.collegeId.toString() ||
+      !exam.department || !hod.department || exam.department.toString() !== hod.department.toString()
+    ) {
       return res.status(403).json({ message: "Unauthorized: You can only edit exams in your own department." });
     }
 
@@ -226,11 +255,18 @@ export const deleteExam = async (req, res) => {
     // 1. Fetch the HOD and their College ID
     const hod = await Faculty.findById(req.user.id);
 
+    if (!mongoose.Types.ObjectId.isValid(examId)) {
+      return res.status(400).json({ message: "Invalid Exam ID format" });
+    }
+
     const exam = await Exam.findById(examId);
     if (!exam) return res.status(404).json({ message: "Exam not found" });
 
     // 2. SECURITY CHECK
-    if (exam.collegeId.toString() !== hod.collegeId.toString() || exam.department?.toString() !== hod.department?.toString()) {
+    if (
+      !exam.collegeId || !hod.collegeId || exam.collegeId.toString() !== hod.collegeId.toString() ||
+      !exam.department || !hod.department || exam.department.toString() !== hod.department.toString()
+    ) {
       return res.status(403).json({ message: "Unauthorized: You can only delete exams from your own department." });
     }
 
@@ -260,6 +296,10 @@ export const deleteExam = async (req, res) => {
 export const getTimetableById = async (req, res) => {
   try {
     const { timetableId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(timetableId)) {
+      return res.status(400).json({ message: "Invalid Timetable ID format" });
+    }
 
     // 1. Find who is asking
     const user = await Faculty.findById(req.user.id);
@@ -301,6 +341,10 @@ export const getExamById = async (req, res) => {
     const { examId } = req.params;
     const userId = req.user.id; // From your auth middleware
 
+    if (!mongoose.Types.ObjectId.isValid(examId)) {
+      return res.status(400).json({ message: "Invalid Exam ID format" });
+    }
+
     const user = await Faculty.findById(userId);
     const exam = await Exam.findById(examId).populate('assignedFaculty', 'name email');
 
@@ -330,11 +374,17 @@ export const getExamById = async (req, res) => {
 export const generateExamQR = async (req, res) => {
   try {
     const { examId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(examId)) {
+      return res.status(400).json({ message: "Invalid Exam ID format" });
+    }
     const exam = await Exam.findById(examId);
     if (!exam) return res.status(404).json({ message: "Exam not found" });
 
     const hod = await Faculty.findById(req.user.id);
-    if (exam.collegeId.toString() !== hod.collegeId.toString() || exam.department?.toString() !== hod.department?.toString()) {
+    if (
+      !exam.collegeId || !hod.collegeId || exam.collegeId.toString() !== hod.collegeId.toString() ||
+      !exam.department || !hod.department || exam.department.toString() !== hod.department.toString()
+    ) {
       return res.status(403).json({ message: "Unauthorized: You can only manage exams in your own department." });
     }
 

@@ -20,7 +20,8 @@ const facultySchema = new mongoose.Schema({
   },
 
   course: {
-    type: String
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Course"
   },
 
   email:{

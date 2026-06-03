@@ -3,12 +3,10 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import multer from "multer"; // <-- Added for image upload
-import ImageKit from "imagekit"; // <-- Added for image upload
-
 import connectDB from "./configurations/database.js";
 
 // --- ROUTES ---
+import uploadRouter from "./routes/uploadRoutes.js";
 import facultyAuthRouter from "./routes/facultyAuth.js";
 import overallAdminAuthRouter from "./routes/overallAdminAuth.js";
 import overallAdminRouter from "./routes/overallAdminRoutes.js";
@@ -45,21 +43,6 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-// --- IMAGEKIT & MULTER CONFIGURATION ---
-const imagekit = new ImageKit({
-  publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
-  privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
-  urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT
-});
-
-const upload = multer({ 
-  storage: multer.memoryStorage(),
-  limits: {
-      fileSize: 10 * 1024 * 1024 // 10MB limit
-  }
-});
-// ---------------------------------------
-
 //  Vercel Fix: Connect DB inside request lifecycle
 app.use(async (req, res, next) => {
   await connectDB();
@@ -67,6 +50,8 @@ app.use(async (req, res, next) => {
 });
 
 // --- ROUTE MAPPINGS ---
+
+app.use("/", uploadRouter);
 
 // Public / Base Routes
 app.use("/college", collegeRouter);
@@ -100,71 +85,6 @@ app.use("/faculty/exam", evaluationRouter);
 //results routes
 app.use("/results", resultRoutes);
 
-// --- IMAGE UPLOAD ROUTE ---
-app.post('/upload-image', upload.single('answer_script'), async (req, res) => {
-  try {
-      if (!req.file) {
-          return res.status(400).json({ error: 'No image file uploaded.' });
-      }
-
-      const uploadResponse = await imagekit.upload({
-          file: req.file.buffer, 
-          fileName: req.file.originalname, 
-          folder: "/answer_scripts", 
-          useUniqueFileName: true 
-      });
-
-      return res.status(200).json({
-          success: true,
-          message: 'Image uploaded successfully',
-          imageUrl: uploadResponse.url,
-          fileId: uploadResponse.fileId
-      });
-
-  } catch (error) {
-      console.error('ImageKit Upload Error:', error);
-      return res.status(500).json({ 
-          success: false, 
-          error: 'Failed to upload image to ImageKit' 
-      });
-  }
-});
-// --------------------------
-
-// --- PDF UPLOAD ROUTE ---
-app.post('/upload-pdf', upload.single('pdf_file'), async (req, res) => {
-  try {
-      if (!req.file) {
-          return res.status(400).json({ error: 'No file uploaded.' });
-      }
-
-      // Security Check: Ensure the uploaded file is actually a PDF
-      if (req.file.mimetype !== 'application/pdf') {
-          return res.status(400).json({ error: 'Invalid file format. Please upload a PDF.' });
-      }
-
-      const uploadResponse = await imagekit.upload({
-          file: req.file.buffer, 
-          fileName: req.file.originalname, 
-          folder: "/teacher_materials", // Changed the folder to keep things organized
-          useUniqueFileName: true 
-      });
-
-      return res.status(200).json({
-          success: true,
-          message: 'PDF uploaded successfully',
-          pdfUrl: uploadResponse.url, // Changed variable name to pdfUrl for clarity
-          fileId: uploadResponse.fileId
-      });
-
-  } catch (error) {
-      console.error('ImageKit PDF Upload Error:', error);
-      return res.status(500).json({ 
-          success: false, 
-          error: 'Failed to upload PDF to ImageKit' 
-      });
-  }
-});
 
 // Local dev server — Vercel uses the export below instead
 const PORT = process.env.PORT || 5000;

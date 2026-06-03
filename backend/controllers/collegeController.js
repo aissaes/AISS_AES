@@ -7,16 +7,17 @@ import sendEmail from "../configurations/nodemailer.js";
 import Department from "../models/department.js";
 
 export const getAllCollegesList = async (req, res) => {
-  try {
-    // Only fetch colleges where status is NOT 'Pending'
-    // We only send the _id and collegeName to keep the payload tiny and fast
-    const colleges = await College.find({ status: { $ne: 'Pending' } }).select('_id collegeName');
-    
-    res.status(200).json({ colleges });
-  } catch (error) {
-    console.error("Error fetching colleges:", error);
-    res.status(500).json({ message: "Internal server error", error: error.message });
-  }
+  try {
+    // Only fetch colleges where status is NOT 'Pending'
+    const colleges = await College.find({ status: { $ne: 'Pending' } })
+      .populate('collegeAdminId', 'name email phone')
+      .populate('departments', 'name code');
+    
+    res.status(200).json({ colleges });
+  } catch (error) {
+    console.error("Error fetching colleges:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message });
+  }
 };
 
 // 2. Fetch departments for a specific college (Triggered when user selects a college)
@@ -29,9 +30,7 @@ export const getCollegeDepartments = async (req, res) => {
       return res.status(404).json({ message: "College not found" });
     }
 
-    const deptNames = (college.departments || []).map(d => typeof d === 'object' && d.name ? d.name : d);
-
-    res.status(200).json({ departments: deptNames });
+    res.status(200).json({ departments: college.departments || [] });
   } catch (error) {
     console.error("Error fetching departments:", error);
     res.status(500).json({ message: "Internal server error", error: error.message });

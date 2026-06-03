@@ -5,7 +5,7 @@ import FacultyCourseAssignment from "../../models/facultyCourseAssignment.js";
 // 1. Create Course
 export const createCourse = async (req, res) => {
   try {
-    const { courseCode, courseName, semesterId, credits } = req.body;
+    const { courseCode, courseName, semesterId, credits, courseType } = req.body;
     if (!courseCode || !courseName || !semesterId) {
       return res.status(400).json({ message: "All fields are required (courseCode, courseName, semesterId)." });
     }
@@ -26,6 +26,11 @@ export const createCourse = async (req, res) => {
       return res.status(400).json({ message: `Course with code ${courseCode} already exists in your department.` });
     }
 
+    const validTypes = ["Core", "Department Elective", "Open Elective", "Minor", "Honors"];
+    if (courseType && !validTypes.includes(courseType)) {
+      return res.status(400).json({ message: `Invalid courseType. Must be one of ${validTypes.join(", ")}` });
+    }
+
     const newCourse = new Course({
       collegeId: hod.collegeId,
       courseCode,
@@ -33,6 +38,7 @@ export const createCourse = async (req, res) => {
       department: hod.department,
       semester: semesterId,
       credits: credits ? Number(credits) : 3,
+      courseType: courseType || "Core",
       status: "Active"
     });
 
@@ -51,7 +57,7 @@ export const getCourses = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found." });
 
     const query = { collegeId: user.collegeId };
-    if (user.role !== "collegeAdmin") {
+    if (user.role !== "collegeAdmin" && req.query.allCollege !== 'true') {
       query.department = user.department;
     }
     if (req.query.includeArchived !== "true") {
@@ -63,6 +69,7 @@ export const getCourses = async (req, res) => {
 
     const courses = await Course.find(query)
       .populate("semester", "semesterNumber semesterName academicYear status")
+      .populate("department", "name code")
       .sort({ courseCode: 1 });
 
     // Fetch faculty assignments for these courses
@@ -94,7 +101,7 @@ export const getCourses = async (req, res) => {
 export const updateCourse = async (req, res) => {
   try {
     const { id } = req.params;
-    const { courseName, credits, status } = req.body;
+    const { courseName, credits, status, courseType } = req.body;
 
     const hod = await Faculty.findById(req.user.id);
     if (!hod || hod.role !== "hod") {
@@ -106,9 +113,15 @@ export const updateCourse = async (req, res) => {
       return res.status(404).json({ message: "Course not found." });
     }
 
+    const validTypes = ["Core", "Department Elective", "Open Elective", "Minor", "Honors"];
+    if (courseType && !validTypes.includes(courseType)) {
+      return res.status(400).json({ message: `Invalid courseType. Must be one of ${validTypes.join(", ")}` });
+    }
+
     if (courseName) courseDoc.courseName = courseName;
     if (credits) courseDoc.credits = Number(credits);
     if (status) courseDoc.status = status;
+    if (courseType) courseDoc.courseType = courseType;
 
     await courseDoc.save();
     res.status(200).json({ message: "Course updated successfully.", course: courseDoc });

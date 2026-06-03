@@ -7,6 +7,7 @@ const courseSchema = new mongoose.Schema({
   department: { type: mongoose.Schema.Types.ObjectId, ref: "Department", required: true },
   semester: { type: mongoose.Schema.Types.ObjectId, ref: "Semester", required: true, index: true },
   credits: { type: Number, default: 3, required: true },
+  courseType: { type: String, enum: ["Core", "Department Elective", "Open Elective", "Minor", "Honors"], default: "Core", required: true },
   status: { type: String, enum: ["Active", "Archived"], default: "Active" }
 }, { timestamps: true });
 

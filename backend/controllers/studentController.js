@@ -18,7 +18,12 @@ export const getExamByIdByToken = async (req, res) => {
     }
 
     // 2. Find exam using token
-    const exam = await Exam.findOne({ token }).populate("questionPaper");
+    const exam = await Exam.findOne({ token })
+      .populate("questionPaper")
+      .populate("assignedFaculty", "name email")
+      .populate("courseId")
+      .populate("semesterId", "semesterNumber semesterName")
+      .populate("department", "name code");
 
     if (!exam) {
       return res.status(404).json({
@@ -159,25 +164,29 @@ export const getStudentTimetableAndExams = async (req, res) => {
       collegeId,
       semester
     })
+    .populate("semester", "semesterNumber semesterName academicYear status")
+    .populate("department", "name code")
     .populate({
       path: 'exams',
       select: '-questionPaper -token -qrCode', // Hide sensitive fields from students!
       populate: [
         { path: 'assignedFaculty', select: 'name email' },
-        { path: 'courseId' }
+        { path: 'courseId' },
+        { path: 'semesterId', select: 'semesterNumber semesterName' }
       ]
     })
     .sort({ createdAt: -1 });
 
-    // 3. Fetch exams matching college, courses, and semester
+    // 3. Fetch exams matching college and enrolled courses
     const exams = await Exam.find({
       collegeId,
-      semesterId: semester,
       courseId: { $in: crs }
     })
     .select('-questionPaper -token -qrCode') // Hide sensitive fields from students!
     .populate('assignedFaculty', 'name email')
     .populate('courseId')
+    .populate('semesterId', 'semesterNumber semesterName')
+    .populate('department', 'name code')
     .sort({ date: 1 });
 
     res.status(200).json({

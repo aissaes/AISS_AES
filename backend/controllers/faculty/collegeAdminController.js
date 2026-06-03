@@ -10,6 +10,8 @@ import Semester from "../../models/semester.js";
 import Course from "../../models/course.js";
 import StudentCourseEnrollment from "../../models/studentCourseEnrollment.js";
 import Department from "../../models/department.js";
+import Timetable from "../../models/timetable.js";
+import Exam from "../../models/exam.js";
 
 const resolveRelationalSemesterAndCourse = async (collegeId, deptInput, semVal, courseVal) => {
   let deptDoc;
@@ -48,16 +50,20 @@ const resolveRelationalSemesterAndCourse = async (collegeId, deptInput, semVal, 
 
   let courseDoc = null;
   if (courseVal) {
-    courseDoc = await Course.findOne({
-      collegeId,
-      department: deptDoc._id,
-      $or: [
-        { courseCode: courseVal },
-        { courseName: courseVal }
-      ]
-    });
+    if (mongoose.Types.ObjectId.isValid(courseVal)) {
+      courseDoc = await Course.findById(courseVal);
+    } else {
+      courseDoc = await Course.findOne({
+        collegeId,
+        department: deptDoc._id,
+        $or: [
+          { courseCode: courseVal },
+          { courseName: courseVal }
+        ]
+      });
+    }
 
-    if (!courseDoc) {
+    if (!courseDoc && !mongoose.Types.ObjectId.isValid(courseVal)) {
       courseDoc = new Course({
         collegeId,
         courseCode: courseVal.split(' ').map(w => w[0]).join('').toUpperCase() + Math.floor(100 + Math.random() * 900),
@@ -82,11 +88,18 @@ export const getAllCollegeFaculty = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Fetch everyone in the college who is approved
+    // Fetch everyone in the college who is approved and populate department
     const allFaculty = await Faculty.find({
-      collegeId: currentUser.collegeId, // <--- UPDATED TO MATCH NEW SCHEMA
+      collegeId: currentUser.collegeId, 
       isApproved: true
-    }).select("-password -otp -otpExpires").sort({ department: 1 }); // Sort alphabetically by department for a cleaner UI
+    }).select("-password -otp -otpExpires").populate("department", "name code");
+
+    // Sort alphabetically by department name in-memory
+    allFaculty.sort((a, b) => {
+      const deptA = a.department?.name || "";
+      const deptB = b.department?.name || "";
+      return deptA.localeCompare(deptB);
+    });
 
     res.status(200).json({
         message: "All college faculty fetched successfully", 
@@ -105,6 +118,10 @@ export const getAllCollegeFaculty = async (req, res) => {
 export const makeHOD = async (req, res) => {
   try {
     const { facultyId } = req.body;
+
+    if (!facultyId || !mongoose.Types.ObjectId.isValid(facultyId)) {
+      return res.status(400).json({ message: "Invalid Faculty ID format." });
+    }
 
     const faculty = await Faculty.findById(facultyId);
 
@@ -151,6 +168,10 @@ export const transferCollegeAdmin = async (req, res) => {
   try {
     const { facultyId, newDepartment } = req.body; 
 
+    if (!facultyId || !mongoose.Types.ObjectId.isValid(facultyId)) {
+      return res.status(400).json({ message: "Invalid Faculty ID format." });
+    }
+
     if (!newDepartment) {
       return res.status(400).json({ 
         message: "You must specify your new department before stepping down." 
@@ -179,9 +200,21 @@ export const transferCollegeAdmin = async (req, res) => {
       await college.save();
     }
 
+    // Resolve newDepartment string to ObjectId
+    let deptDoc = null;
+    if (mongoose.Types.ObjectId.isValid(newDepartment)) {
+      deptDoc = await Department.findById(newDepartment);
+    } else {
+      deptDoc = await Department.findOne({ collegeId: currentAdmin.collegeId, name: newDepartment });
+      if (!deptDoc) {
+        const deptCode = newDepartment.substring(0, 5).toUpperCase();
+        deptDoc = await Department.create({ collegeId: currentAdmin.collegeId, name: newDepartment, code: deptCode });
+      }
+    }
+
     // 4. Demote the current Super Admin and reassign their department
     currentAdmin.role = "faculty";
-    currentAdmin.department = newDepartment; 
+    currentAdmin.department = deptDoc ? deptDoc._id : null; 
     
     // 5. Promote the new Super Admin and move them to Administration
     let adminDept = await Department.findOne({ collegeId: currentAdmin.collegeId, name: "Administration" });
@@ -469,6 +502,10 @@ export const updateSingleStudent = async (req, res) => {
 
     const { name, rollNumber, email, course, department, semester, cgpa } = req.body;
 
+    if (!mongoose.Types.ObjectId.isValid(req.params.studentId)) {
+      return res.status(400).json({ message: "Invalid Student ID format." });
+    }
+
     const oldStudent = await Student.findOne({ 
       _id: req.params.studentId, collegeId: adminUser.collegeId
     });
@@ -482,18 +519,46 @@ export const updateSingleStudent = async (req, res) => {
     if (email) oldStudent.email = email;
     if (cgpa !== undefined) oldStudent.cgpa = Number(cgpa);
 
-    if (semester || department || course) {
-      const deptName = department || (oldStudent.department ? oldStudent.department.toString() : "General");
-      const { semesterDoc, courseDoc, deptDoc } = await resolveRelationalSemesterAndCourse(
-        adminUser.collegeId,
-        deptName,
-        semester || 1,
-        course
-      );
-      
-      if (semester) oldStudent.semester = semesterDoc._id;
-      if (department) oldStudent.department = deptDoc._id;
-      
+    if (department) {
+      let deptDoc = null;
+      if (mongoose.Types.ObjectId.isValid(department)) {
+        deptDoc = await Department.findOne({ _id: department, collegeId: adminUser.collegeId });
+      } else {
+        deptDoc = await Department.findOne({ name: department, collegeId: adminUser.collegeId });
+      }
+      if (!deptDoc) {
+        return res.status(404).json({ message: "Department not found in your college." });
+      }
+      oldStudent.department = deptDoc._id;
+    }
+
+    if (semester) {
+      let semDoc = null;
+      if (mongoose.Types.ObjectId.isValid(semester)) {
+        semDoc = await Semester.findOne({ _id: semester, collegeId: adminUser.collegeId });
+      } else {
+        const semNum = Number(semester);
+        semDoc = await Semester.findOne({
+          semesterNumber: semNum,
+          collegeId: adminUser.collegeId,
+          department: oldStudent.department
+        });
+      }
+      if (semDoc) {
+        oldStudent.semester = semDoc._id;
+      }
+    }
+
+    if (course) {
+      let courseDoc = null;
+      if (mongoose.Types.ObjectId.isValid(course)) {
+        courseDoc = await Course.findOne({ _id: course, collegeId: adminUser.collegeId });
+      } else {
+        courseDoc = await Course.findOne({
+          $or: [{ courseCode: course }, { courseName: course }],
+          collegeId: adminUser.collegeId
+        });
+      }
       if (courseDoc) {
         const existingEnrollment = await StudentCourseEnrollment.findOne({
           student: oldStudent._id,
@@ -503,7 +568,7 @@ export const updateSingleStudent = async (req, res) => {
           const enrollment = new StudentCourseEnrollment({
             student: oldStudent._id,
             course: courseDoc._id,
-            semester: semesterDoc._id,
+            semester: oldStudent.semester || courseDoc.semester,
             academicYear: "2026-2027"
           });
           await enrollment.save().catch(() => {});
@@ -534,6 +599,10 @@ export const deleteSingleStudent = async (req, res) => {
       return res.status(403).json({ message: "Only College Admins can deactivate student accounts." });
     }
 
+    if (!mongoose.Types.ObjectId.isValid(req.params.studentId)) {
+      return res.status(400).json({ message: "Invalid Student ID format." });
+    }
+
     const deletedStudent = await Student.findOneAndDelete({ 
       _id: req.params.studentId, collegeId: adminUser.collegeId
     });
@@ -560,12 +629,234 @@ export const bulkDeleteStudents = async (req, res) => {
       return res.status(400).json({ message: "No student IDs provided for deletion." });
     }
 
+    const validStudentIds = studentIds.filter(id => mongoose.Types.ObjectId.isValid(id));
+    if (validStudentIds.length === 0) {
+      return res.status(400).json({ message: "No valid student IDs provided." });
+    }
+
     const result = await Student.deleteMany({
-      _id: { $in: studentIds }, collegeId: adminUser.collegeId
+      _id: { $in: validStudentIds }, collegeId: adminUser.collegeId
     });
 
     res.status(200).json({ message: "Bulk deletion complete.", requestedDeletions: studentIds.length, actualDeleted: result.deletedCount });
   } catch (error) {
     res.status(500).json({ message: "Server error during bulk deletion.", error: error.message });
+  }
+};
+
+// Update Single Faculty account
+export const updateSingleFaculty = async (req, res) => {
+  try {
+    const adminUser = await Faculty.findById(req.user.id);
+    if (!adminUser || adminUser.role !== "collegeAdmin") {
+      return res.status(403).json({ message: "Only College Admins can edit faculty accounts." });
+    }
+
+    const { facultyId } = req.params;
+    const { name, email, phone, role, department } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(facultyId)) {
+      return res.status(400).json({ message: "Invalid Faculty ID format." });
+    }
+
+    const faculty = await Faculty.findOne({ _id: facultyId, collegeId: adminUser.collegeId });
+    if (!faculty) {
+      return res.status(404).json({ message: "Faculty member not found in your college." });
+    }
+
+    if (name) faculty.name = name;
+    if (email) faculty.email = email;
+    if (phone) faculty.phone = phone;
+    if (role) {
+      const validRoles = ["faculty", "hod", "collegeAdmin"];
+      if (!validRoles.includes(role)) {
+        return res.status(400).json({ message: `Invalid role. Must be one of ${validRoles.join(", ")}` });
+      }
+      faculty.role = role;
+    }
+
+    if (department) {
+      let deptDoc = null;
+      if (mongoose.Types.ObjectId.isValid(department)) {
+        deptDoc = await Department.findOne({ _id: department, collegeId: adminUser.collegeId });
+      } else {
+        deptDoc = await Department.findOne({ name: department, collegeId: adminUser.collegeId });
+      }
+      if (!deptDoc) {
+        return res.status(404).json({ message: "Department not found in your college." });
+      }
+      faculty.department = deptDoc._id;
+    }
+
+    await faculty.save();
+
+    const facultyResponse = faculty.toObject();
+    delete facultyResponse.password;
+
+    res.status(200).json({ message: "Faculty account updated successfully.", faculty: facultyResponse });
+  } catch (error) {
+    console.error("Error updating faculty:", error);
+    res.status(500).json({ message: "Server error updating faculty.", error: error.message });
+  }
+};
+
+// Create Department
+export const createDepartment = async (req, res) => {
+  try {
+    const adminUser = await Faculty.findById(req.user.id);
+    if (!adminUser || adminUser.role !== "collegeAdmin") {
+      return res.status(403).json({ message: "Only College Admins can create departments." });
+    }
+
+    const { name, code } = req.body;
+    if (!name || !code) {
+      return res.status(400).json({ message: "Department Name and Code are required." });
+    }
+
+    // Check uniqueness within the college
+    const existingName = await Department.findOne({ collegeId: adminUser.collegeId, name });
+    if (existingName) {
+      return res.status(400).json({ message: "A department with this name already exists in this college." });
+    }
+
+    const existingCode = await Department.findOne({ collegeId: adminUser.collegeId, code });
+    if (existingCode) {
+      return res.status(400).json({ message: "A department with this code already exists in this college." });
+    }
+
+    const newDept = new Department({
+      collegeId: adminUser.collegeId,
+      name,
+      code,
+      status: "Active"
+    });
+    await newDept.save();
+
+    // Link to College
+    const college = await College.findById(adminUser.collegeId);
+    if (college) {
+      if (!college.departments) college.departments = [];
+      college.departments.push(newDept._id);
+      await college.save();
+    }
+
+    res.status(201).json({ message: "Department created successfully.", department: newDept });
+  } catch (error) {
+    console.error("Error creating department:", error);
+    res.status(500).json({ message: "Server error creating department.", error: error.message });
+  }
+};
+
+// Update Department (Rename or Archive/Activate)
+export const updateDepartment = async (req, res) => {
+  try {
+    const adminUser = await Faculty.findById(req.user.id);
+    if (!adminUser || adminUser.role !== "collegeAdmin") {
+      return res.status(403).json({ message: "Only College Admins can update departments." });
+    }
+
+    const { departmentId } = req.params;
+    const { name, code, status } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(departmentId)) {
+      return res.status(400).json({ message: "Invalid Department ID format." });
+    }
+
+    const department = await Department.findOne({ _id: departmentId, collegeId: adminUser.collegeId });
+    if (!department) {
+      return res.status(404).json({ message: "Department not found in your college." });
+    }
+
+    if (name && name !== department.name) {
+      const existingName = await Department.findOne({ collegeId: adminUser.collegeId, name });
+      if (existingName) {
+        return res.status(400).json({ message: "A department with this name already exists in this college." });
+      }
+      department.name = name;
+    }
+
+    if (code && code !== department.code) {
+      const existingCode = await Department.findOne({ collegeId: adminUser.collegeId, code });
+      if (existingCode) {
+        return res.status(400).json({ message: "A department with this code already exists in this college." });
+      }
+      department.code = code;
+    }
+
+    if (status) {
+      const validStatuses = ["Active", "Archived"];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ message: `Invalid status. Must be one of ${validStatuses.join(", ")}` });
+      }
+      department.status = status;
+    }
+
+    await department.save();
+
+    res.status(200).json({ message: "Department updated successfully.", department });
+  } catch (error) {
+    console.error("Error updating department:", error);
+    res.status(500).json({ message: "Server error updating department.", error: error.message });
+  }
+};
+
+// Delete Department with active reference guards
+export const deleteDepartment = async (req, res) => {
+  try {
+    const adminUser = await Faculty.findById(req.user.id);
+    if (!adminUser || adminUser.role !== "collegeAdmin") {
+      return res.status(403).json({ message: "Only College Admins can delete departments." });
+    }
+
+    const { departmentId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(departmentId)) {
+      return res.status(400).json({ message: "Invalid Department ID format." });
+    }
+
+    const department = await Department.findOne({ _id: departmentId, collegeId: adminUser.collegeId });
+    if (!department) {
+      return res.status(404).json({ message: "Department not found in your college." });
+    }
+
+    if (department.name === "Administration") {
+      return res.status(400).json({ message: "The Administration department cannot be deleted." });
+    }
+
+    // Dependency check counts
+    const facultyCount = await Faculty.countDocuments({ department: departmentId });
+    const studentCount = await Student.countDocuments({ department: departmentId });
+    const courseCount = await Course.countDocuments({ department: departmentId });
+    const timetableCount = await Timetable.countDocuments({ department: departmentId });
+    const examCount = await Exam.countDocuments({ department: departmentId });
+    const semesterCount = await Semester.countDocuments({ department: departmentId });
+
+    if (facultyCount > 0 || studentCount > 0 || courseCount > 0 || timetableCount > 0 || examCount > 0 || semesterCount > 0) {
+      const details = [];
+      if (facultyCount > 0) details.push(`${facultyCount} faculty members`);
+      if (studentCount > 0) details.push(`${studentCount} students`);
+      if (courseCount > 0) details.push(`${courseCount} courses`);
+      if (timetableCount > 0) details.push(`${timetableCount} timetables`);
+      if (examCount > 0) details.push(`${examCount} exams`);
+      if (semesterCount > 0) details.push(`${semesterCount} semesters`);
+
+      return res.status(400).json({ 
+        message: `Cannot delete department. It is referenced by: ${details.join(", ")}. Please reassign or delete these references first, or archive the department instead.` 
+      });
+    }
+
+    await Department.findByIdAndDelete(departmentId);
+
+    // Remove from College.departments array
+    const college = await College.findById(adminUser.collegeId);
+    if (college && college.departments) {
+      college.departments = college.departments.filter(id => id.toString() !== departmentId.toString());
+      await college.save();
+    }
+
+    res.status(200).json({ message: "Department deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting department:", error);
+    res.status(500).json({ message: "Server error deleting department.", error: error.message });
   }
 };
