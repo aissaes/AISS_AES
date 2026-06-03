@@ -43,6 +43,9 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
+// Serve static APK download
+app.use('/downloads', express.static('public/downloads'));
+
 //  Vercel Fix: Connect DB inside request lifecycle
 app.use(async (req, res, next) => {
   await connectDB();
