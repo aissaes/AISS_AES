@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, XCircle } from 'lucide-react';
+import { Plus, Trash2, XCircle, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import styles from './QuestionPaperBuilder.module.css';
 
-const QuestionPaperBuilder = ({ initialData, onCancel, onSubmit, submitting }) => {
+const QuestionPaperBuilder = ({ initialData, maxMarks, onCancel, onSubmit, submitting }) => {
   const [instructions, setInstructions] = useState(['']);
 
   const baseQuestion = {
@@ -114,6 +114,36 @@ const QuestionPaperBuilder = ({ initialData, onCancel, onSubmit, submitting }) =
   const removeInstruction = (idx) => {
     if (instructions.length <= 1) return;
     setInstructions(instructions.filter((_, i) => i !== idx));
+  };
+
+  const calculateTotalPossibleMarks = () => {
+    let total = 0;
+    for (let i = 0; i < sections.length; i++) {
+      const sectionQuestions = sections[i] || [];
+      const questionMarksList = sectionQuestions.map(q => {
+        if (q.children && q.children.length > 0) {
+          const childMarks = q.children.map(c => c.marks || 0);
+          if (q.choice && q.choice.attempt && q.choice.attempt < childMarks.length) {
+            const sortedChildMarks = [...childMarks].sort((a, b) => b - a);
+            return sortedChildMarks.slice(0, q.choice.attempt).reduce((sum, m) => sum + m, 0);
+          } else {
+            return childMarks.reduce((sum, m) => sum + m, 0);
+          }
+        }
+        return q.marks || 0;
+      });
+
+      const choiceRule = sectionChoices && sectionChoices[i];
+      if (choiceRule && choiceRule.attempt && choiceRule.attempt < questionMarksList.length) {
+        const sortedQuestionMarks = [...questionMarksList].sort((a, b) => b - a);
+        const sectionTotal = sortedQuestionMarks.slice(0, choiceRule.attempt).reduce((sum, m) => sum + m, 0);
+        total += sectionTotal;
+      } else {
+        const sectionTotal = questionMarksList.reduce((sum, m) => sum + m, 0);
+        total += sectionTotal;
+      }
+    }
+    return total;
   };
 
   const handleSubmit = () => {
@@ -419,10 +449,34 @@ const QuestionPaperBuilder = ({ initialData, onCancel, onSubmit, submitting }) =
           </button>
         </div>
       </div>
+
+      {maxMarks > 0 && (
+        <div className={styles.validationSummary}>
+          {calculateTotalPossibleMarks() === maxMarks ? (
+            <div className={styles.validationSuccess}>
+              <CheckCircle2 size={16} />
+              <span>
+                Total possible marks match the required exam marks: <strong>{calculateTotalPossibleMarks()} / {maxMarks}</strong>
+              </span>
+            </div>
+          ) : (
+            <div className={styles.validationError}>
+              <AlertTriangle size={16} />
+              <span>
+                Total possible marks (<strong>{calculateTotalPossibleMarks()}</strong>) do not match the required exam marks (<strong>{maxMarks}</strong>). Please adjust question marks or section rules.
+              </span>
+            </div>
+          )}
+        </div>
+      )}
       
       <div className={styles.builderFooter}>
         <button className={styles.btnCancel} onClick={onCancel} disabled={submitting}>Cancel</button>
-        <button className={styles.btnSubmit} onClick={handleSubmit} disabled={submitting}>
+        <button 
+          className={styles.btnSubmit} 
+          onClick={handleSubmit} 
+          disabled={submitting || (maxMarks > 0 && calculateTotalPossibleMarks() !== maxMarks)}
+        >
           {submitting ? 'Submitting…' : (initialData?.isRevision ? 'Resubmit for Review' : 'Submit Question Paper')}
         </button>
       </div>

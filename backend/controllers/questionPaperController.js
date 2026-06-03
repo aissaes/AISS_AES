@@ -1,8 +1,53 @@
 import QuestionPaper from "../models/questionPapers.js";
 import Exam from "../models/exam.js";
 import Faculty from "../models/faculty.js";
-import College from "../models/college.js";
 import sendEmail from "../configurations/nodemailer.js";
+
+
+// Helper to calculate maximum possible marks of a question paper considering choice rules
+export const calculateQuestionPaperMaxMarks = (sections, sectionChoices) => {
+  let totalMaxMarks = 0;
+
+  for (let i = 0; i < sections.length; i++) {
+    const sectionQuestions = sections[i] || [];
+    
+    // Calculate the max marks for each question in the section
+    const questionMarksList = sectionQuestions.map(q => {
+      // If the question has children (sub-questions)
+      if (q.children && q.children.length > 0) {
+        // Calculate max marks for the sub-questions
+        const childMarks = q.children.map(c => c.marks || 0);
+        
+        // If there's a choice rule at the question level
+        if (q.choice && q.choice.attempt && q.choice.attempt < childMarks.length) {
+          // Sort children marks descending and take top 'attempt'
+          childMarks.sort((a, b) => b - a);
+          return childMarks.slice(0, q.choice.attempt).reduce((sum, m) => sum + m, 0);
+        } else {
+          // No choice or all subquestions are compulsory: sum all children marks
+          return childMarks.reduce((sum, m) => sum + m, 0);
+        }
+      }
+      // If no subquestions, use the question's marks directly
+      return q.marks || 0;
+    });
+
+    // Check if there is a section-level choice rule
+    const choiceRule = sectionChoices && sectionChoices[i];
+    if (choiceRule && choiceRule.attempt && choiceRule.attempt < questionMarksList.length) {
+      // Sort question max marks descending and take top 'attempt'
+      questionMarksList.sort((a, b) => b - a);
+      const sectionTotal = questionMarksList.slice(0, choiceRule.attempt).reduce((sum, m) => sum + m, 0);
+      totalMaxMarks += sectionTotal;
+    } else {
+      // No section choice rule: sum all questions in this section
+      const sectionTotal = questionMarksList.reduce((sum, m) => sum + m, 0);
+      totalMaxMarks += sectionTotal;
+    }
+  }
+
+  return totalMaxMarks;
+};
 
 // 1. TEACHER: Upload the Question Paper
 export const uploadQuestionPaper = async (req, res) => {
@@ -43,6 +88,20 @@ export const uploadQuestionPaper = async (req, res) => {
     const faculty = await Faculty.findById(req.user.id);
     if (!faculty) {
       return res.status(404).json({ success: false, message: "Faculty profile not found." });
+    }
+
+    // Validate the Question Paper Max Marks match the Exam Max Marks
+    const exam = await Exam.findById(examId);
+    if (!exam) {
+      return res.status(404).json({ success: false, message: "Associated exam not found." });
+    }
+
+    const calculatedMaxMarks = calculateQuestionPaperMaxMarks(formattedSections, otherData.sectionChoices);
+    if (calculatedMaxMarks !== exam.maxMarks) {
+      return res.status(400).json({
+        success: false,
+        message: `The question paper's total possible marks (${calculatedMaxMarks}) must be exactly equal to the exam's maximum marks (${exam.maxMarks}). Please adjust your question marks or choices.`
+      });
     }
 
     // 4. Save to database using the correct schema keys
@@ -288,6 +347,19 @@ export const updateQuestionPaper = async (req, res) => {
     });
 
     // 4. Apply the updates and reset the status
+    const exam = paper.examId;
+    if (!exam) {
+      return res.status(404).json({ success: false, message: "Associated exam not found." });
+    }
+
+    const calculatedMaxMarks = calculateQuestionPaperMaxMarks(formattedSections, sectionChoices);
+    if (calculatedMaxMarks !== exam.maxMarks) {
+      return res.status(400).json({
+        success: false,
+        message: `The question paper's total possible marks (${calculatedMaxMarks}) must be exactly equal to the exam's maximum marks (${exam.maxMarks}). Please adjust your question marks or choices.`
+      });
+    }
+
     paper.instructions = instructions;
     paper.sections = formattedSections; // Save the formatted sections here!
     paper.sectionChoices = sectionChoices;

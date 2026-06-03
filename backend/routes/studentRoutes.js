@@ -53,6 +53,13 @@ import express from "express";
 import { verifyToken } from "../middlewares/authMiddleware.js";
 import { isStudent } from "../middlewares/roleMiddleware.js";
 import { getExamByIdByToken , startUploadSession, getStudentSubmissions, getStudentTimetableAndExams } from "../controllers/studentController.js";
+import { 
+  getSemesters, 
+  getSemesterCourses, 
+  getSemesterTimetableCategories, 
+  getTimetableCategoryExams, 
+  getCourseDetail 
+} from "../controllers/academicsController.js";
 
 const studentRouter = express.Router();
 
@@ -60,5 +67,12 @@ studentRouter.post("/get-exam", verifyToken, isStudent, getExamByIdByToken);
 studentRouter.post("/start-session", verifyToken, isStudent, startUploadSession);
 studentRouter.get("/exam-submissions/:examId/answers", verifyToken, isStudent, getStudentSubmissions);
 studentRouter.get("/timetable-exams", verifyToken, isStudent, getStudentTimetableAndExams);
+
+// Academics Redesign Routes
+studentRouter.get("/academics/semesters", verifyToken, isStudent, getSemesters);
+studentRouter.get("/academics/semesters/:semesterId/courses", verifyToken, isStudent, getSemesterCourses);
+studentRouter.get("/academics/semesters/:semesterId/timetable", verifyToken, isStudent, getSemesterTimetableCategories);
+studentRouter.get("/academics/semesters/:semesterId/timetable/:categoryId/exams", verifyToken, isStudent, getTimetableCategoryExams);
+studentRouter.get("/academics/courses/:courseId/detail", verifyToken, isStudent, getCourseDetail);
 
 export default studentRouter;

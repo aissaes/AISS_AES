@@ -12,7 +12,7 @@ const Assignments = () => {
   const [loading, setLoading] = useState(true);
 
   /* ── Draft Modal state ── */
-  const [draftModal, setDraftModal] = useState({ open: false, examId: null, examName: '', paperId: null, isRevision: false });
+  const [draftModal, setDraftModal] = useState({ open: false, examId: null, examName: '', paperId: null, maxMarks: 0, isRevision: false });
   const [builderData, setBuilderData] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -52,6 +52,7 @@ const Assignments = () => {
       examId: exam._id,
       examName: `${exam.subjectName} (${exam.subjectCode})`,
       paperId: exam.questionPaper?._id || null,
+      maxMarks: exam.maxMarks || 0,
       isRevision
     });
   };
@@ -81,7 +82,7 @@ const Assignments = () => {
   };
 
   const closeDraftModal = () => {
-    setDraftModal({ open: false, examId: null, examName: '', paperId: null, isRevision: false });
+    setDraftModal({ open: false, examId: null, examName: '', paperId: null, maxMarks: 0, isRevision: false });
     setBuilderData(null);
   };
 
@@ -173,6 +174,7 @@ const Assignments = () => {
       >
         <QuestionPaperBuilder
           initialData={builderData}
+          maxMarks={draftModal.maxMarks}
           onCancel={closeDraftModal}
           onSubmit={handleSubmit}
           submitting={submitting}

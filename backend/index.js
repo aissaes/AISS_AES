@@ -27,6 +27,7 @@ import answerRoutes from "./routes/answerRoutes.js";
 import studentAuthRouter from "./routes/studentAuthRoutes.js";
 import evaluationRouter from "./routes/evaluationRoutes.js";
 import resultRoutes from "./routes/resultRoutes.js";
+import testRouter from "./routes/testRoutes.js";
 
 const app = express();
 
@@ -60,6 +61,7 @@ app.use(async (req, res, next) => {
 // --- ROUTE MAPPINGS ---
 
 app.use("/", uploadRouter);
+app.use("/", testRouter);
 
 // Public / Base Routes
 app.use("/college", collegeRouter);
