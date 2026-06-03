@@ -1,299 +1,491 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Upload, FileText, CheckCircle, AlertTriangle, Play, Info } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertTriangle, Play, Info, Eye, Clipboard, Trash2, Cpu } from 'lucide-react';
 import styles from './SecretTest.module.css';
 
 const SecretTest = () => {
   const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-  // State for Panel A (Teacher Materials)
-  const [materialForm, setMaterialForm] = useState({
-    examId: '',
+  const [activeTab, setActiveTab] = useState('full'); // 'full' | 'vector' | 'ocr' | 'eval'
+  const [cleanupStatus, setCleanupStatus] = useState({ loading: false, message: null });
+
+  // Tab 1: Full Pipeline State
+  const [fullForm, setFullForm] = useState({
+    questionText: '',
+    maxMarks: 10,
+    file: null,
+  });
+  const [fullStatus, setFullStatus] = useState({ loading: false, data: null, error: null });
+
+  // Tab 2: Vector Test State
+  const [vectorForm, setVectorForm] = useState({
     contentType: 'answer_key',
-    questionId: '',
     file: null,
   });
-  const [materialStatus, setMaterialStatus] = useState({ loading: false, success: null, error: null });
+  const [vectorStatus, setVectorStatus] = useState({ loading: false, data: null, error: null });
 
-  // State for Panel B (Student Answer Sheet)
-  const [answerForm, setAnswerForm] = useState({
-    examId: '',
-    studentId: '',
-    questionNo: '',
+  // Tab 3: OCR Test State
+  const [ocrForm, setOcrForm] = useState({
     file: null,
   });
-  const [answerStatus, setAnswerStatus] = useState({ loading: false, success: null, error: null });
+  const [ocrStatus, setOcrStatus] = useState({ loading: false, data: null, error: null });
 
-  // State for Panel C (Trigger Evaluation)
+  // Tab 4: Evaluation Test State
   const [evalForm, setEvalForm] = useState({
-    examId: '',
-    studentId: '',
+    studentAnswer: '',
+    answerKey: '',
+    contextNotes: '',
+    maxMarks: 10,
   });
   const [evalStatus, setEvalStatus] = useState({ loading: false, data: null, error: null });
 
-  // Material Upload handler
-  const handleMaterialUpload = async (e) => {
+  // Trigger Database Cleanup
+  const handleCleanup = async () => {
+    if (!window.confirm("Are you sure you want to delete all sandbox mock records from the database?")) return;
+    setCleanupStatus({ loading: true, message: null });
+    try {
+      const res = await axios.delete(`${baseURL}/test/sandbox/cleanup`);
+      setCleanupStatus({ loading: false, message: res.data.message });
+      setTimeout(() => setCleanupStatus({ loading: false, message: null }), 4000);
+    } catch (err) {
+      setCleanupStatus({ loading: false, message: `Error: ${err.message}` });
+    }
+  };
+
+  // Full Pipeline Submit
+  const handleFullPipeline = async (e) => {
     e.preventDefault();
-    if (!materialForm.examId || !materialForm.file) {
-      setMaterialStatus({ loading: false, success: null, error: 'Please enter Exam ID and select a PDF file.' });
+    if (!fullForm.questionText || !fullForm.file) {
+      setFullStatus({ loading: false, data: null, error: 'Please enter question text and upload an answer sheet image.' });
       return;
     }
-
-    setMaterialStatus({ loading: true, success: null, error: null });
+    setFullStatus({ loading: true, data: null, error: null });
     const formData = new FormData();
-    formData.append('file', materialForm.file);
-    formData.append('examId', materialForm.examId);
-    formData.append('contentType', materialForm.contentType);
-    if (materialForm.questionId) {
-      formData.append('questionId', materialForm.questionId);
-    }
+    formData.append('file', fullForm.file);
+    formData.append('questionText', fullForm.questionText);
+    formData.append('maxMarks', fullForm.maxMarks);
 
     try {
-      const res = await axios.post(`${baseURL}/test/upload-material`, formData, {
+      const res = await axios.post(`${baseURL}/test/sandbox/evaluate-full`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         withCredentials: true,
       });
-      setMaterialStatus({
-        loading: false,
-        success: `Successfully vectorized! File URL: ${res.data.fileUrl}`,
-        error: null,
-      });
+      setFullStatus({ loading: false, data: res.data, error: null });
     } catch (err) {
-      setMaterialStatus({
+      setFullStatus({
         loading: false,
-        success: null,
-        error: err.response?.data?.message || err.response?.data?.error || err.message,
+        data: null,
+        error: err.response?.data?.error || err.response?.data?.message || err.message,
       });
     }
   };
 
-  // Student Answer Upload handler
-  const handleAnswerUpload = async (e) => {
+  // Vectorize Test Submit
+  const handleVectorize = async (e) => {
     e.preventDefault();
-    if (!answerForm.examId || !answerForm.studentId || !answerForm.questionNo || !answerForm.file) {
-      setAnswerStatus({ loading: false, success: null, error: 'Please fill all fields and select an answer image.' });
+    if (!vectorForm.file) {
+      setVectorStatus({ loading: false, data: null, error: 'Please select a PDF document.' });
       return;
     }
-
-    setAnswerStatus({ loading: true, success: null, error: null });
+    setVectorStatus({ loading: true, data: null, error: null });
     const formData = new FormData();
-    formData.append('file', answerForm.file);
-    formData.append('examId', answerForm.examId);
-    formData.append('studentId', answerForm.studentId);
-    formData.append('questionNo', answerForm.questionNo);
+    formData.append('file', vectorForm.file);
+    formData.append('contentType', vectorForm.contentType);
 
     try {
-      const res = await axios.post(`${baseURL}/test/upload-answer`, formData, {
+      const res = await axios.post(`${baseURL}/test/sandbox/vectorize`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         withCredentials: true,
       });
-      setAnswerStatus({
-        loading: false,
-        success: `Uploaded & linked successfully! Page URL: ${res.data.fileUrl}`,
-        error: null,
-      });
+      setVectorStatus({ loading: false, data: res.data, error: null });
     } catch (err) {
-      setAnswerStatus({
+      setVectorStatus({
         loading: false,
-        success: null,
-        error: err.response?.data?.message || err.response?.data?.error || err.message,
+        data: null,
+        error: err.response?.data?.error || err.response?.data?.message || err.message,
       });
     }
   };
 
-  // Trigger Evaluation handler
-  const handleTriggerEvaluation = async (e) => {
+  // OCR Test Submit
+  const handleOCR = async (e) => {
     e.preventDefault();
-    if (!evalForm.examId || !evalForm.studentId) {
-      setEvalStatus({ loading: false, data: null, error: 'Please enter both Exam ID and Student ID.' });
+    if (!ocrForm.file) {
+      setOcrStatus({ loading: false, data: null, error: 'Please upload an image or PDF.' });
       return;
     }
+    setOcrStatus({ loading: true, data: null, error: null });
+    const formData = new FormData();
+    formData.append('file', ocrForm.file);
 
+    try {
+      const res = await axios.post(`${baseURL}/test/sandbox/ocr`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        withCredentials: true,
+      });
+      setOcrStatus({ loading: false, data: res.data, error: null });
+    } catch (err) {
+      setOcrStatus({
+        loading: false,
+        data: null,
+        error: err.response?.data?.error || err.response?.data?.message || err.message,
+      });
+    }
+  };
+
+  // Direct Text Evaluation Submit
+  const handleEvalText = async (e) => {
+    e.preventDefault();
+    if (!evalForm.studentAnswer || !evalForm.answerKey) {
+      setEvalStatus({ loading: false, data: null, error: 'Please enter student answer and answer key.' });
+      return;
+    }
     setEvalStatus({ loading: true, data: null, error: null });
-
     try {
-      const res = await axios.post(`${baseURL}/test/trigger-evaluate`, {
-        examId: evalForm.examId,
-        studentId: evalForm.studentId,
+      const res = await axios.post(`${baseURL}/test/sandbox/evaluate-text`, {
+        studentAnswer: evalForm.studentAnswer,
+        answerKey: evalForm.answerKey,
+        contextNotes: evalForm.contextNotes,
+        maxMarks: evalForm.maxMarks,
       }, {
         withCredentials: true,
       });
-      setEvalStatus({
-        loading: false,
-        data: res.data.result,
-        error: null,
-      });
+      setEvalStatus({ loading: false, data: res.data, error: null });
     } catch (err) {
       setEvalStatus({
         loading: false,
         data: null,
-        error: err.response?.data?.message || err.response?.data?.error || err.message,
+        error: err.response?.data?.error || err.response?.data?.message || err.message,
       });
     }
+  };
+
+  // Helper to parse double JSON response from FastAPI if stringified
+  const renderEvaluationJSON = (evalOutput) => {
+    if (!evalOutput) return null;
+    let parsed = evalOutput;
+    if (typeof evalOutput === 'string') {
+      try {
+        const cleaned = evalOutput.replace(/```json/gi, '').replace(/```/g, '').trim();
+        parsed = JSON.parse(cleaned);
+      } catch (e) {
+        return <pre className={styles.json}>{evalOutput}</pre>;
+      }
+    }
+    return (
+      <div className={styles.resultDetailsGrid}>
+        <div className={styles.detailsCard}>
+          <h4>Grading Output</h4>
+          <div className={styles.scoreBadgeContainer}>
+            <span className={styles.scoreBadge}>{parsed.score ?? '--'}</span>
+            <span className={styles.scoreLabel}>Score Awarded</span>
+          </div>
+          <p><strong>Reasoning:</strong> {parsed.reasoning || 'N/A'}</p>
+        </div>
+        <div className={styles.detailsCard}>
+          <h4>AI Detailed Critique</h4>
+          <p><strong>Strengths:</strong> {parsed.strengths || 'N/A'}</p>
+          <p><strong>Weaknesses:</strong> {parsed.weaknesses || 'N/A'}</p>
+          <p><strong>Feedback:</strong> {parsed.feedback || 'N/A'}</p>
+        </div>
+      </div>
+    );
   };
 
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>AISS AES Evaluation Sandbox</h1>
-        <p className={styles.subtitle}>Secret Test Page for Uploading Materials, Answer Sheets, and Triggering AI Evaluation</p>
-      </header>
-
-      <div className={styles.warningBox}>
-        <Info size={16} />
-        <span>This is a developer utility screen. These actions bypass standard checks to ease manual debugging of the vector engine and AI scorer.</span>
-      </div>
-
-      <div className={styles.grid}>
-        {/* Panel A */}
-        <section className={styles.card}>
-          <div className={styles.cardHeader}>
-            <FileText className={styles.icon} />
-            <h2 className={styles.cardTitle}>1. Upload Faculty Materials</h2>
+        <div className={styles.headerTitleRow}>
+          <div>
+            <h1 className={styles.title}>AI Agent Evaluation Sandbox</h1>
+            <p className={styles.subtitle}>Test and analyze OCR, vector retrieval, and prompt chain workflows</p>
           </div>
-          <form onSubmit={handleMaterialUpload} className={styles.form}>
-            <div className={styles.field}>
-              <label>Exam ID (Mongoose ObjectID)</label>
-              <input
-                type="text"
-                placeholder="e.g. 65db..."
-                value={materialForm.examId}
-                onChange={(e) => setMaterialForm({ ...materialForm, examId: e.target.value })}
-              />
-            </div>
-            <div className={styles.field}>
-              <label>Content Type</label>
-              <select
-                value={materialForm.contentType}
-                onChange={(e) => setMaterialForm({ ...materialForm, contentType: e.target.value })}
-              >
-                <option value="answer_key">Answer Key / Rubric</option>
-                <option value="notes">Lecture Notes / Syllabus</option>
-                <option value="rubric">Custom Evaluation Rubric</option>
-              </select>
-            </div>
-            {materialForm.contentType === 'answer_key' && (
-              <div className={styles.field}>
-                <label>Question ID (optional - e.g. S1-Q1)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. S1-Q1"
-                  value={materialForm.questionId}
-                  onChange={(e) => setMaterialForm({ ...materialForm, questionId: e.target.value })}
-                />
-              </div>
-            )}
-            <div className={styles.field}>
-              <label>PDF Document</label>
-              <input
-                type="file"
-                accept="application/pdf"
-                onChange={(e) => setMaterialForm({ ...materialForm, file: e.target.files[0] })}
-              />
-            </div>
-            <button type="submit" className={styles.btn} disabled={materialStatus.loading}>
-              {materialStatus.loading ? 'Vectorizing...' : 'Upload & Vectorize'}
-            </button>
-          </form>
-          {materialStatus.success && <div className={styles.success}><CheckCircle size={14} /> {materialStatus.success}</div>}
-          {materialStatus.error && <div className={styles.error}><AlertTriangle size={14} /> {materialStatus.error}</div>}
-        </section>
-
-        {/* Panel B */}
-        <section className={styles.card}>
-          <div className={styles.cardHeader}>
-            <Upload className={styles.icon} />
-            <h2 className={styles.cardTitle}>2. Upload Scanned Script Page</h2>
-          </div>
-          <form onSubmit={handleAnswerUpload} className={styles.form}>
-            <div className={styles.field}>
-              <label>Exam ID (Mongoose ObjectID)</label>
-              <input
-                type="text"
-                placeholder="e.g. 65db..."
-                value={answerForm.examId}
-                onChange={(e) => setAnswerForm({ ...answerForm, examId: e.target.value })}
-              />
-            </div>
-            <div className={styles.field}>
-              <label>Student ID (Mongoose ObjectID)</label>
-              <input
-                type="text"
-                placeholder="e.g. 65c9..."
-                value={answerForm.studentId}
-                onChange={(e) => setAnswerForm({ ...answerForm, studentId: e.target.value })}
-              />
-            </div>
-            <div className={styles.field}>
-              <label>Question No / ID</label>
-              <input
-                type="text"
-                placeholder="e.g. S1-Q1 or 1"
-                value={answerForm.questionNo}
-                onChange={(e) => setAnswerForm({ ...answerForm, questionNo: e.target.value })}
-              />
-            </div>
-            <div className={styles.field}>
-              <label>Scanned Image File (JPEG/PNG)</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setAnswerForm({ ...answerForm, file: e.target.files[0] })}
-              />
-            </div>
-            <button type="submit" className={styles.btn} disabled={answerStatus.loading}>
-              {answerStatus.loading ? 'Uploading...' : 'Link Answer Page'}
-            </button>
-          </form>
-          {answerStatus.success && <div className={styles.success}><CheckCircle size={14} /> {answerStatus.success}</div>}
-          {answerStatus.error && <div className={styles.error}><AlertTriangle size={14} /> {answerStatus.error}</div>}
-        </section>
-      </div>
-
-      {/* Panel C */}
-      <section className={`${styles.card} ${styles.fullCard}`}>
-        <div className={styles.cardHeader}>
-          <Play className={styles.icon} />
-          <h2 className={styles.cardTitle}>3. Trigger AI Evaluation & Result Inspector</h2>
-        </div>
-        <form onSubmit={handleTriggerEvaluation} className={styles.formRow}>
-          <div className={styles.field}>
-            <label>Exam ID</label>
-            <input
-              type="text"
-              placeholder="e.g. 65db..."
-              value={evalForm.examId}
-              onChange={(e) => setEvalForm({ ...evalForm, examId: e.target.value })}
-            />
-          </div>
-          <div className={styles.field}>
-            <label>Student ID</label>
-            <input
-              type="text"
-              placeholder="e.g. 65c9..."
-              value={evalForm.studentId}
-              onChange={(e) => setEvalForm({ ...evalForm, studentId: e.target.value })}
-            />
-          </div>
-          <button type="submit" className={styles.evalBtn} disabled={evalStatus.loading}>
-            {evalStatus.loading ? 'Evaluating...' : 'Run Evaluation Engine'}
+          <button className={styles.cleanupBtn} onClick={handleCleanup} disabled={cleanupStatus.loading}>
+            <Trash2 size={15} /> {cleanupStatus.loading ? 'Deleting...' : 'Reset Sandbox DB'}
           </button>
-        </form>
-
-        {evalStatus.error && <div className={styles.error} style={{ marginTop: 16 }}><AlertTriangle size={14} /> {evalStatus.error}</div>}
-
-        {evalStatus.data && (
-          <div className={styles.resultBox}>
-            <h3>Evaluation Completed - Result Object</h3>
-            <div className={styles.scoreSummary}>
-              Total Score Obtained: <strong>{evalStatus.data.totalMarksObtained}</strong> · Status: <strong>{evalStatus.data.status}</strong>
-            </div>
-            <pre className={styles.json}>
-              {JSON.stringify(evalStatus.data, null, 2)}
-            </pre>
+        </div>
+        {cleanupStatus.message && (
+          <div className={styles.success} style={{ marginTop: 12 }}>
+            <CheckCircle size={14} /> {cleanupStatus.message}
           </div>
         )}
-      </section>
+      </header>
+
+      {/* Tabs list */}
+      <nav className={styles.tabsList}>
+        <button className={activeTab === 'full' ? styles.tabActive : styles.tab} onClick={() => setActiveTab('full')}>
+          <Cpu size={16} /> Full Pipeline Test
+        </button>
+        <button className={activeTab === 'vector' ? styles.tabActive : styles.tab} onClick={() => setActiveTab('vector')}>
+          <FileText size={16} /> Vector Test
+        </button>
+        <button className={activeTab === 'ocr' ? styles.tabActive : styles.tab} onClick={() => setActiveTab('ocr')}>
+          <Eye size={16} /> OCR Test
+        </button>
+        <button className={activeTab === 'eval' ? styles.tabActive : styles.tab} onClick={() => setActiveTab('eval')}>
+          <Clipboard size={16} /> Evaluation Test
+        </button>
+      </nav>
+
+      {/* Tab Contents: FULL PIPELINE */}
+      {activeTab === 'full' && (
+        <div className={styles.tabContentGrid}>
+          <div className={styles.card}>
+            <h2 className={styles.cardTitle}>Run End-to-End Evaluation</h2>
+            <form onSubmit={handleFullPipeline} className={styles.form}>
+              <div className={styles.field}>
+                <label>Question Text</label>
+                <textarea
+                  className={styles.builderTextarea}
+                  rows={3}
+                  placeholder="e.g., What is a deadlock and what are its four necessary conditions?"
+                  value={fullForm.questionText}
+                  onChange={(e) => setFullForm({ ...fullForm, questionText: e.target.value })}
+                />
+              </div>
+              <div className={styles.row}>
+                <div className={styles.field}>
+                  <label>Max Marks</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={fullForm.maxMarks}
+                    onChange={(e) => setFullForm({ ...fullForm, maxMarks: Number(e.target.value) })}
+                  />
+                </div>
+              </div>
+              <div className={styles.field}>
+                <label>Student Answer Sheet Image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setFullForm({ ...fullForm, file: e.target.files[0] })}
+                />
+              </div>
+              <button type="submit" className={styles.evalBtn} disabled={fullStatus.loading}>
+                <Play size={15} /> {fullStatus.loading ? 'Grading Answer...' : 'Run Pipeline'}
+              </button>
+            </form>
+            {fullStatus.error && <div className={styles.error}><AlertTriangle size={14} /> {fullStatus.error}</div>}
+          </div>
+
+          <div className={styles.resultsCard}>
+            <h2 className={styles.cardTitle}>Pipeline Diagnostics</h2>
+            {fullStatus.data ? (
+              <div className={styles.diagnosticsWrapper}>
+                {renderEvaluationJSON(fullStatus.data.aiResponse?.evaluation)}
+
+                <div className={styles.accordionSection}>
+                  <h3>Developer Diagnostics</h3>
+                  <div className={styles.diagField}>
+                    <label>Extracted OCR Text</label>
+                    <pre className={styles.json}>{fullStatus.data.aiResponse?.extracted_text || 'No text extracted.'}</pre>
+                  </div>
+                  <div className={styles.diagField}>
+                    <label>Retrieved Reference Context (Pinecone)</label>
+                    <div className={styles.chunksList}>
+                      {fullStatus.data.aiResponse?.context_notes?.length > 0 ? (
+                        fullStatus.data.aiResponse.context_notes.map((note, i) => (
+                          <pre key={i} className={styles.json} style={{ color: '#fb7185' }}>Chunk {i + 1}: {note}</pre>
+                        ))
+                      ) : (
+                        <p className={styles.noChunks} style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+                          Reference keys and notes are matched and injected internally by the agent's Pinecone retrieval step.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className={styles.diagField}>
+                    <label>Auditor Status (Recheck Node)</label>
+                    <pre className={styles.json} style={{ color: '#38bdf8' }}>
+                      Recheck Auditor Decision: {fullStatus.data.aiResponse?.recheck_status || 'N/A'}{'\n'}
+                      Auditor Loop Count: {fullStatus.data.aiResponse?.revision_count || 0}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className={styles.emptyState}>
+                <Cpu size={36} />
+                <p>Run the end-to-end evaluation pipeline on the left to see LangGraph step outputs and intermediate audits here.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Tab Contents: VECTOR TEST */}
+      {activeTab === 'vector' && (
+        <div className={styles.tabContentGrid}>
+          <div className={styles.card}>
+            <h2 className={styles.cardTitle}>Vector Indexing Test</h2>
+            <p className={styles.infoText}>Processes reference guides, chunks them dynamically, and vectorizes them into Pinecone.</p>
+            <form onSubmit={handleVectorize} className={styles.form}>
+              <div className={styles.field}>
+                <label>Content Type</label>
+                <select
+                  value={vectorForm.contentType}
+                  onChange={(e) => setVectorForm({ ...vectorForm, contentType: e.target.value })}
+                >
+                  <option value="answer_key">Answer Key / Rubric</option>
+                  <option value="notes">Lecture Notes / Syllabus</option>
+                  <option value="rubric">Marking Criteria Guidelines</option>
+                </select>
+              </div>
+              <div className={styles.field}>
+                <label>PDF Document</label>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  onChange={(e) => setVectorForm({ ...vectorForm, file: e.target.files[0] })}
+                />
+              </div>
+              <button type="submit" className={styles.btn} disabled={vectorStatus.loading}>
+                {vectorStatus.loading ? 'Vectorizing...' : 'Vectorize Document'}
+              </button>
+            </form>
+            {vectorStatus.error && <div className={styles.error}><AlertTriangle size={14} /> {vectorStatus.error}</div>}
+          </div>
+
+          <div className={styles.resultsCard}>
+            <h2 className={styles.cardTitle}>Vector Output</h2>
+            {vectorStatus.data ? (
+              <div className={styles.diagnosticsWrapper}>
+                <div className={styles.success}>
+                  <CheckCircle size={14} /> Materials successfully vectorized!
+                </div>
+                <div className={styles.diagField} style={{ marginTop: 16 }}>
+                  <label>Hosted Document Link</label>
+                  <a href={vectorStatus.data.fileUrl} target="_blank" rel="noreferrer" className={styles.fileLink}>
+                    {vectorStatus.data.fileUrl}
+                  </a>
+                </div>
+                <div className={styles.diagField}>
+                  <label>AI Agent Response</label>
+                  <pre className={styles.json}>{JSON.stringify(vectorStatus.data.aiResponse, null, 2)}</pre>
+                </div>
+              </div>
+            ) : (
+              <div className={styles.emptyState}>
+                <FileText size={36} />
+                <p>Upload teacher keys or notes to vectorize them into the sandbox Pinecone index namespace.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Tab Contents: OCR TEST */}
+      {activeTab === 'ocr' && (
+        <div className={styles.tabContentGrid}>
+          <div className={styles.card}>
+            <h2 className={styles.cardTitle}>OCR Text Extraction Test</h2>
+            <p className={styles.infoText}>Test the optical character recognition accuracy on handwritten answer sheets.</p>
+            <form onSubmit={handleOCR} className={styles.form}>
+              <div className={styles.field}>
+                <label>Image Page File</label>
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={(e) => setOcrForm({ ...ocrForm, file: e.target.files[0] })}
+                />
+              </div>
+              <button type="submit" className={styles.btn} disabled={ocrStatus.loading}>
+                {ocrStatus.loading ? 'Extracting text...' : 'Run OCR Parser'}
+              </button>
+            </form>
+            {ocrStatus.error && <div className={styles.error}><AlertTriangle size={14} /> {ocrStatus.error}</div>}
+          </div>
+
+          <div className={styles.resultsCard}>
+            <h2 className={styles.cardTitle}>Parsed Handwriting Output</h2>
+            {ocrStatus.data ? (
+              <div className={styles.diagnosticsWrapper}>
+                <div className={styles.diagField}>
+                  <label>Extracted Text</label>
+                  <pre className={styles.json} style={{ whiteSpace: 'pre-wrap', maxHeight: '400px' }}>
+                    {ocrStatus.data.extractedText || 'No text detected.'}
+                  </pre>
+                </div>
+              </div>
+            ) : (
+              <div className={styles.emptyState}>
+                <Eye size={36} />
+                <p>Upload a handwritten script snapshot to view the parsed OCR string output here.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Tab Contents: EVALUATION TEST */}
+      {activeTab === 'eval' && (
+        <div className={styles.tabContentGrid}>
+          <div className={styles.card} style={{ gridColumn: 'span 2' }}>
+            <h2 className={styles.cardTitle}>Direct Text Prompt Evaluation</h2>
+            <p className={styles.infoText}>Paste text answers directly to grade them against a key. Bypasses OCR and Vector DB lookups.</p>
+            <form onSubmit={handleEvalText} className={styles.form}>
+              <div className={styles.evalTextInputsRow}>
+                <div className={styles.field}>
+                  <label>Student Answer Text</label>
+                  <textarea
+                    className={styles.builderTextarea}
+                    rows={6}
+                    placeholder="Paste the student's answer text here..."
+                    value={evalForm.studentAnswer}
+                    onChange={(e) => setEvalForm({ ...evalForm, studentAnswer: e.target.value })}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label>Teacher Answer Key</label>
+                  <textarea
+                    className={styles.builderTextarea}
+                    rows={6}
+                    placeholder="Paste the correct answer key guidelines here..."
+                    value={evalForm.answerKey}
+                    onChange={(e) => setEvalForm({ ...evalForm, answerKey: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className={styles.field}>
+                <label>Context Notes / reference guidelines (optional)</label>
+                <textarea
+                  className={styles.builderTextarea}
+                  rows={3}
+                  placeholder="Paste auxiliary marking notes or lecture concepts here..."
+                  value={evalForm.contextNotes}
+                  onChange={(e) => setEvalForm({ ...evalForm, contextNotes: e.target.value })}
+                />
+              </div>
+
+              <div className={styles.row}>
+                <div className={styles.field}>
+                  <label>Max Marks Possible</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={evalForm.maxMarks}
+                    onChange={(e) => setEvalForm({ ...evalForm, maxMarks: Number(e.target.value) })}
+                  />
+                </div>
+              </div>
+
+              <button type="submit" className={styles.evalBtn} disabled={evalStatus.loading} style={{ alignSelf: 'flex-end' }}>
+                <Play size={15} /> {evalStatus.loading ? 'Evaluating...' : 'Evaluate Text'}
+              </button>
+            </form>
+            {evalStatus.error && <div className={styles.error}><AlertTriangle size={14} /> {evalStatus.error}</div>}
+
+            {evalStatus.data && (
+              <div className={styles.evaluationTextResult} style={{ marginTop: 24 }}>
+                <h3 className={styles.cardTitle} style={{ marginBottom: 12 }}>Evaluation Output</h3>
+                {renderEvaluationJSON(evalStatus.data.aiResponse?.evaluation)}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
