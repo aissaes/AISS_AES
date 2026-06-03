@@ -125,7 +125,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                               const Center(
                                 child: Column(
                                   children: [
-                                    AppLogo(size: 80),
+                                    AppLogo(size: 80, heroTag: 'app_logo'),
                                     SizedBox(height: 16),
                                     Text(
                                       'AISS AES',

@@ -19,38 +19,51 @@ class ProfileScreen extends ConsumerWidget {
     final profileAsync = ref.watch(studentProfileProvider);
     final cachedProfile = ref.watch(studentRepositoryProvider).getCachedProfile();
 
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: CustomScrollView(
-              slivers: [
-                _buildAppBar(context, ref),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      profileAsync.when(
-                        loading: () => const Center(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 40),
-                            child: AppLoadingIndicator(size: 50, logoSize: 24),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        if (context.mounted) {
+          try {
+            StatefulNavigationShell.of(context).goBranch(0);
+          } catch (e) {
+            debugPrint('Error navigating to Dashboard branch: $e');
+          }
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        body: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: CustomScrollView(
+                slivers: [
+                  _buildAppBar(context, ref),
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        profileAsync.when(
+                          loading: () => const Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 40),
+                              child: AppLoadingIndicator(size: 50, logoSize: 24),
+                            ),
                           ),
+                          error: (err, stack) {
+                            if (cachedProfile != null) {
+                              return _buildProfileContent(context, ref, cachedProfile, isCached: true);
+                            }
+                            return _buildUnavailableState(context, ref);
+                          },
+                          data: (profile) => _buildProfileContent(context, ref, profile),
                         ),
-                        error: (err, stack) {
-                          if (cachedProfile != null) {
-                            return _buildProfileContent(context, ref, cachedProfile, isCached: true);
-                          }
-                          return _buildUnavailableState(context, ref);
-                        },
-                        data: (profile) => _buildProfileContent(context, ref, profile),
-                      ),
-                    ]),
+                      ]),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

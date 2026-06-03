@@ -25,18 +25,7 @@ class StudentRepositoryImpl implements StudentRepository {
       }
       throw ApiException('Invalid profile format received from server.');
     } on DioException catch (e) {
-      // Return cached version on failure (Offline first!)
-      final cached = getCachedProfile();
-      if (cached != null) {
-        return cached;
-      }
       _apiClient.handleDioException(e);
-      rethrow;
-    } catch (e) {
-      final cached = getCachedProfile();
-      if (cached != null) {
-        return cached;
-      }
       rethrow;
     }
   }

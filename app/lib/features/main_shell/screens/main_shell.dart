@@ -2,10 +2,12 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 
-class MainShell extends StatefulWidget {
+class MainShell extends ConsumerStatefulWidget {
   const MainShell({
     required this.navigationShell,
     super.key,
@@ -14,10 +16,14 @@ class MainShell extends StatefulWidget {
   final StatefulNavigationShell navigationShell;
 
   @override
-  State<MainShell> createState() => _MainShellState();
+  ConsumerState<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> {
+class _MainShellState extends ConsumerState<MainShell> {
+  _MainShellState() {
+    debugPrint('MAIN SHELL CREATED');
+  }
+
   void _onTabTapped(int index) {
     if (index == widget.navigationShell.currentIndex) return;
     widget.navigationShell.goBranch(index);
@@ -47,6 +53,10 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('MAIN SHELL REBUILT');
+    final authState = ref.watch(authProvider);
+    final isOffline = authState.isOffline;
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
@@ -55,7 +65,44 @@ class _MainShellState extends State<MainShell> {
       },
       child: Scaffold(
         extendBody: true, // Allows the body to flow behind the navigation bar
-        body: widget.navigationShell,
+        body: Column(
+          children: [
+            if (isOffline)
+              Container(
+                width: double.infinity,
+                color: Colors.orange.shade800,
+                padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top + 8,
+                  bottom: 8,
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.wifi_off_rounded, size: 16, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text(
+                      'Offline Mode — Viewing Cached Data',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            Expanded(
+              child: isOffline
+                  ? MediaQuery.removePadding(
+                      context: context,
+                      removeTop: true,
+                      child: widget.navigationShell,
+                    )
+                  : widget.navigationShell,
+            ),
+          ],
+        ),
         bottomNavigationBar: _ModernBottomNav(
           currentIndex: widget.navigationShell.currentIndex,
           onTap: _onTabTapped,

@@ -53,10 +53,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
     if (!_isAnimFinished) return; // Keep splash on screen for at least 2 seconds
     
     final authState = ref.read(authProvider);
-    if (!authState.isLoading && !authState.isOffline) {
+    if (!authState.isLoading) {
       if (authState.isAuthenticated) {
         context.go('/dashboard');
-      } else {
+      } else if (!authState.isOffline) {
         context.go('/login');
       }
     }
@@ -74,7 +74,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
 
     // Listen for state transitions after animations or startup checks complete
     ref.listen<AuthState>(authProvider, (previous, next) {
-      if (!next.isLoading && !next.isOffline) {
+      if (!next.isLoading) {
         _navigateIfReady();
       }
     });
@@ -128,7 +128,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
                           ),
                         ],
                       ),
-                      child: const AppLogo(size: 120),
+                      child: const AppLogo(size: 120, heroTag: 'app_logo'),
                     ),
                     const SizedBox(height: 32),
                     const Text(

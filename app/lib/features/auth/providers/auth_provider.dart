@@ -69,9 +69,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
           exception.toString().toLowerCase().contains('connection') ||
           exception.toString().toLowerCase().contains('unreachable')) {
         // Safe check for offline / unreachable server
+        final cachedProfile = _studentRepository.getCachedProfile();
         state = state.copyWith(
           isLoading: false,
           isOffline: true,
+          isAuthenticated: cachedProfile != null,
+          student: cachedProfile,
         );
       } else {
         // Token is invalid/expired or rejected by server (401/403)

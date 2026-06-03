@@ -26,7 +26,8 @@ class RouterNotifier extends ChangeNotifier {
   final Ref _ref;
 
   RouterNotifier(this._ref) {
-    _ref.listen(authProvider, (_, __) {
+    _ref.listen(authProvider, (prev, next) {
+      debugPrint('AUTH CHANGED: prev=${prev?.isAuthenticated}, next=${next.isAuthenticated}, isLoading=${next.isLoading}');
       notifyListeners();
     });
   }
@@ -170,8 +171,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isSplash = state.matchedLocation == '/splash';
       final isForgotPassword = state.matchedLocation.startsWith('/forgot-password');
 
-      // Keep them on splash screen if currently checking credentials or server is offline
-      if (authState.isLoading || authState.isOffline) {
+      debugPrint('REDIRECT CALLED: matchedLocation=${state.matchedLocation}, isAuthenticated=$isAuthenticated, isLoading=${authState.isLoading}');
+
+      // Keep them on splash screen if currently checking credentials, or if the server is offline and they are not authenticated
+      if (authState.isLoading || (authState.isOffline && !isAuthenticated)) {
         if (isSplash) return null;
         return '/splash';
       }

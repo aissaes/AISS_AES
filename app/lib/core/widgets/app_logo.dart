@@ -3,10 +3,12 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 class AppLogo extends StatelessWidget {
   final double size;
+  final String? heroTag;
 
   const AppLogo({
     super.key,
     this.size = 100,
+    this.heroTag,
   });
 
   static const String _svgString = '''
@@ -25,13 +27,19 @@ class AppLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Hero(
-      tag: 'app_logo',
-      child: SvgPicture.string(
-        _svgString,
-        width: size,
-        height: size,
-      ),
+    final Widget logoWidget = SvgPicture.string(
+      _svgString,
+      width: size,
+      height: size,
     );
+
+    if (heroTag != null) {
+      return Hero(
+        tag: heroTag!,
+        child: logoWidget,
+      );
+    }
+
+    return logoWidget;
   }
 }
