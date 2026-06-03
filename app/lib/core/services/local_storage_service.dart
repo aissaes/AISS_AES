@@ -50,5 +50,17 @@ class LocalStorageService {
   Future<void> clearStudentProfile() async {
     await _prefs.remove(_keyStudentProfile);
   }
+
+  Future<void> saveString(String key, String value) async {
+    await _prefs.setString(key, value);
+  }
+
+  String? getString(String key) {
+    return _prefs.getString(key);
+  }
+
+  Future<void> remove(String key) async {
+    await _prefs.remove(key);
+  }
 }
 

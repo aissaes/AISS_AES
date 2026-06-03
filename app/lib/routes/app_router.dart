@@ -16,6 +16,10 @@ import '../features/exams/screens/student_results_list_screen.dart';
 import '../features/exams/screens/student_result_detail_screen.dart';
 import '../features/main_shell/screens/main_shell.dart';
 import '../features/auth/providers/auth_provider.dart';
+import '../features/academics/screens/academics_screen.dart';
+import '../features/academics/screens/semester_detail_screen.dart';
+import '../features/academics/screens/course_detail_screen.dart';
+import '../features/academics/screens/timetable_detail_screen.dart';
 
 import '../features/auth/screens/forgot_password_screen.dart';
 import '../features/auth/screens/otp_verification_screen.dart';
@@ -40,6 +44,7 @@ final routerNotifierProvider = Provider<RouterNotifier>((ref) {
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorDashboardKey = GlobalKey<NavigatorState>(debugLabel: 'shellDashboard');
 final _shellNavigatorExamsKey = GlobalKey<NavigatorState>(debugLabel: 'shellExams');
+final _shellNavigatorAcademicsKey = GlobalKey<NavigatorState>(debugLabel: 'shellAcademics');
 final _shellNavigatorProfileKey = GlobalKey<NavigatorState>(debugLabel: 'shellProfile');
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -117,6 +122,39 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'detail',
                     builder: (context, state) => const ExamDetailScreen(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            navigatorKey: _shellNavigatorAcademicsKey,
+            routes: [
+              GoRoute(
+                path: '/academics',
+                builder: (context, state) => const AcademicsScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'semester/:semId',
+                    builder: (context, state) {
+                      final semId = state.pathParameters['semId']!;
+                      return SemesterDetailScreen(semesterId: semId);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'course/:courseId',
+                    builder: (context, state) {
+                      final courseId = state.pathParameters['courseId']!;
+                      return CourseDetailScreen(courseId: courseId);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'timetable/:categoryId',
+                    builder: (context, state) {
+                      final categoryId = state.pathParameters['categoryId']!;
+                      final semId = state.uri.queryParameters['semId'] ?? '';
+                      return TimetableDetailScreen(semesterId: semId, categoryId: categoryId);
+                    },
                   ),
                 ],
               ),

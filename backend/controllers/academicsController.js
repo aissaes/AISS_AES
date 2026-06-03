@@ -95,7 +95,7 @@ export const getSemesters = async (req, res) => {
           const courseEnrollment = semEnrollments.find(e => e.course._id.toString() === examObj.courseId.toString());
           const courseCredits = courseEnrollment ? courseEnrollment.course.credits : 3;
           
-          if (resDoc.status === "Completed") {
+          if (resDoc.status === "Completed" && examObj.resultsPublished === true) {
             const gp = calculateGradePoint(resDoc.totalMarksObtained, examObj.maxMarks);
             gpTotal += gp * courseCredits;
             creditsCounted += courseCredits;
@@ -111,7 +111,7 @@ export const getSemesters = async (req, res) => {
       let totalMaxMarksPossible = 0;
       for (const resDoc of results) {
         const examObj = exams.find(ex => ex._id.toString() === resDoc.exam.toString());
-        if (examObj && resDoc.status === "Completed") {
+        if (examObj && resDoc.status === "Completed" && examObj.resultsPublished === true) {
           totalObtainedMarks += resDoc.totalMarksObtained;
           totalMaxMarksPossible += examObj.maxMarks;
         }
@@ -343,13 +343,13 @@ export const getTimetableCategoryExams = async (req, res) => {
       const resultDoc = await Result.findOne({ student: studentId, exam: exam._id });
       let resultData = null;
       
-      if (resultDoc && resultDoc.status === "Completed") {
+      if (resultDoc && resultDoc.status === "Completed" && exam.resultsPublished === true) {
         resultData = {
           marksObtained: resultDoc.totalMarksObtained,
           maxMarks: exam.maxMarks,
           status: "Graded"
         };
-      } else if (resultDoc && resultDoc.status === "Evaluating") {
+      } else if (resultDoc && (resultDoc.status === "Evaluating" || (resultDoc.status === "Completed" && exam.resultsPublished !== true))) {
         resultData = {
           marksObtained: null,
           maxMarks: exam.maxMarks,
@@ -411,7 +411,7 @@ export const getCourseDetail = async (req, res) => {
     for (const exam of exams) {
       const resultDoc = results.find(r => r.exam.toString() === exam._id.toString());
       
-      const isCompleted = resultDoc && resultDoc.status === "Completed";
+      const isCompleted = resultDoc && resultDoc.status === "Completed" && exam.resultsPublished === true;
       const marksObtained = isCompleted ? resultDoc.totalMarksObtained : null;
       
       const type = exam.examType.includes("Mid") ? "Mid Semester" : (exam.examType.includes("End") ? "Final Semester" : "Quiz");
@@ -435,7 +435,7 @@ export const getCourseDetail = async (req, res) => {
         examId: exam._id,
         examTitle: exam.examType,
         type,
-        status: resultDoc ? resultDoc.status : "Pending",
+        status: (resultDoc && exam.resultsPublished === true) ? resultDoc.status : "Evaluating",
         marksObtained,
         maxMarks: exam.maxMarks,
         percentage: marksObtained != null ? parseFloat(((marksObtained / exam.maxMarks) * 100).toFixed(1)) : null
