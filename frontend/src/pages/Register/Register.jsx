@@ -89,7 +89,10 @@ const Register = () => {
   useEffect(() => {
     if (form.collegeId) {
       collegeAPI.getDepartments(form.collegeId).then(res => {
-        setDepartments(res.data.departments.map(d => ({ label: d, value: d })));
+        const activeDepts = (res.data.departments || [])
+          .filter(d => d.status === 'Active')
+          .map(d => ({ label: `${d.name} (${d.code})`, value: d._id }));
+        setDepartments(activeDepts);
       }).catch(console.error);
       setForm(p => ({ ...p, department: '' }));
     } else {

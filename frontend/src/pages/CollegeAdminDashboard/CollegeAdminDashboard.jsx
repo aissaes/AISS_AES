@@ -21,48 +21,88 @@ const CollegeAdminDepartments = () => {
   const { toast } = useToast();
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [newDept, setNewDept] = useState('');
+  const [newDeptName, setNewDeptName] = useState('');
+  const [newDeptCode, setNewDeptCode] = useState('');
   const [saving, setSaving] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [editDeptModal, setEditDeptModal] = useState({ open: false, id: null, name: '', code: '', status: '' });
 
-  useEffect(() => {
+  const fetchDepartments = useCallback(async () => {
     if (user?.collegeId) {
       const colId = typeof user.collegeId === 'object' ? user.collegeId._id : user.collegeId;
-      collegeAPI.getDepartments(colId)
-        .then(res => setDepartments(res.data.departments || []))
-        .catch(err => toast('Failed to load departments', 'error'))
-        .finally(() => setLoading(false));
+      try {
+        const res = await collegeAPI.getDepartments(colId);
+        setDepartments(res.data.departments || []);
+      } catch (err) {
+        toast('Failed to load departments', 'error');
+      } finally {
+        setLoading(false);
+      }
     }
   }, [user, toast]);
 
-  const handleSave = async (updatedList) => {
+  useEffect(() => {
+    fetchDepartments();
+  }, [fetchDepartments]);
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    if (!newDeptName.trim() || !newDeptCode.trim()) return;
     setSaving(true);
     try {
-      const res = await collegeAdminAPI.updateDepartments(updatedList);
-      setDepartments(res.data.departments);
-      toast('Departments updated successfully!', 'success');
+      const res = await collegeAdminAPI.createDepartment({
+        name: newDeptName.trim(),
+        code: newDeptCode.trim().toUpperCase()
+      });
+      setDepartments(p => [...p, res.data.department]);
+      setNewDeptName('');
+      setNewDeptCode('');
+      toast('Department created successfully!', 'success');
     } catch (err) {
-      toast(err.response?.data?.message || 'Failed to update', 'error');
+      toast(err.response?.data?.message || 'Failed to create department', 'error');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleAdd = (e) => {
-    e.preventDefault();
-    if (!newDept.trim()) return;
-    if (departments.some(d => d.toLowerCase() === newDept.trim().toLowerCase())) {
-      toast('Department already exists', 'warning');
-      return;
+  const handleToggleStatus = async (dept) => {
+    const targetStatus = dept.status === 'Active' ? 'Archived' : 'Active';
+    try {
+      const res = await collegeAdminAPI.updateDepartment(dept._id, { status: targetStatus });
+      setDepartments(p => p.map(d => d._id === dept._id ? res.data.department : d));
+      toast(`Department status updated to ${targetStatus}!`, 'success');
+    } catch (err) {
+      toast(err.response?.data?.message || 'Failed to update department', 'error');
     }
-    const updated = [...departments, newDept.trim()];
-    handleSave(updated);
-    setNewDept('');
   };
 
-  const handleRemove = (deptToRemove) => {
-    if (window.confirm(`Are you sure you want to remove ${deptToRemove}? This will not delete faculty, but limits future registrations.`)) {
-      const updated = departments.filter(d => d !== deptToRemove);
-      handleSave(updated);
+  const handleEditSave = async () => {
+    if (!editDeptModal.name.trim() || !editDeptModal.code.trim()) return;
+    setActionLoading(true);
+    try {
+      const res = await collegeAdminAPI.updateDepartment(editDeptModal.id, {
+        name: editDeptModal.name.trim(),
+        code: editDeptModal.code.trim().toUpperCase(),
+        status: editDeptModal.status
+      });
+      setDepartments(p => p.map(d => d._id === editDeptModal.id ? res.data.department : d));
+      setEditDeptModal({ open: false, id: null, name: '', code: '', status: '' });
+      toast('Department updated successfully!', 'success');
+    } catch (err) {
+      toast(err.response?.data?.message || 'Failed to update department', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDelete = async (dept) => {
+    if (!window.confirm(`Are you sure you want to permanently delete the department: ${dept.name}? This will check for active references first.`)) return;
+    try {
+      await collegeAdminAPI.deleteDepartment(dept._id);
+      setDepartments(p => p.filter(d => d._id !== dept._id));
+      toast('Department deleted successfully!', 'success');
+    } catch (err) {
+      toast(err.response?.data?.message || 'Failed to delete department', 'error');
     }
   };
 
@@ -71,11 +111,11 @@ const CollegeAdminDepartments = () => {
       <div className={styles.pageHead}>
         <div>
           <h2 className={styles.pageTitle}>Manage Departments</h2>
-          <p className={styles.pageSub}>Add or remove academic departments for your institution</p>
+          <p className={styles.pageSub}>Configure academic departments, codes, and active statuses</p>
         </div>
       </div>
 
-      <div className={styles.card} style={{ maxWidth: '600px' }}>
+      <div className={styles.card}>
         <div className={styles.cardHeader}>
           <div className={styles.cardHeaderLeft}>
             <Building2 size={17} className={styles.cardHeaderIcon} />
@@ -84,18 +124,27 @@ const CollegeAdminDepartments = () => {
         </div>
 
         <div style={{ padding: '20px' }}>
-          <form onSubmit={handleAdd} style={{ display: 'flex', gap: '10px', marginBottom: '24px' }}>
+          <form onSubmit={handleAdd} style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
             <input 
               type="text" 
-              value={newDept}
-              onChange={e => setNewDept(e.target.value)}
-              placeholder="E.g., Computer Science..." 
+              value={newDeptName}
+              onChange={e => setNewDeptName(e.target.value)}
+              placeholder="Department Name (e.g. Computer Science)" 
               className={styles.searchInput}
-              style={{ flex: 1 }}
+              style={{ flex: 2, minWidth: '220px' }}
               required
             />
-            <button type="submit" disabled={saving || !newDept.trim()} className={styles.successModalBtn} style={{ padding: '0 16px', height: 'auto', borderRadius: '8px' }}>
-              {saving ? '...' : <><Plus size={16} /> Add</>}
+            <input 
+              type="text" 
+              value={newDeptCode}
+              onChange={e => setNewDeptCode(e.target.value)}
+              placeholder="Code (e.g. CSE)" 
+              className={styles.searchInput}
+              style={{ flex: 1, minWidth: '100px' }}
+              required
+            />
+            <button type="submit" disabled={saving || !newDeptName.trim() || !newDeptCode.trim()} className={styles.successModalBtn} style={{ padding: '0 16px', height: 'auto', borderRadius: '8px' }}>
+              {saving ? 'Creating...' : <><Plus size={16} /> Add Department</>}
             </button>
           </form>
 
@@ -104,22 +153,101 @@ const CollegeAdminDepartments = () => {
           ) : departments.length === 0 ? (
              <Empty text="No departments configured yet." />
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {departments.map((dept, idx) => (
-                <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--surface-2)', border: '1px solid var(--border-2)', borderRadius: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <GripVertical size={14} color="var(--text-3)" />
-                    <span style={{ color: 'var(--text-1)', fontWeight: 500 }}>{dept}</span>
-                  </div>
-                  <button onClick={() => handleRemove(dept)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }} title="Remove department">
-                    <XCircle size={16} />
-                  </button>
-                </div>
-              ))}
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Department Name</th>
+                    <th>Code</th>
+                    <th>Status</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {departments.map((dept) => (
+                    <tr key={dept._id}>
+                      <td style={{ fontWeight: 500, color: 'var(--text-1)' }}>{dept.name}</td>
+                      <td><strong>{dept.code}</strong></td>
+                      <td>
+                        <span className={`${styles.badge} ${dept.status === 'Active' ? styles.badgeSuccess : styles.badgeFaculty}`} style={{ cursor: 'pointer' }} onClick={() => handleToggleStatus(dept)} title="Click to toggle status">
+                          {dept.status}
+                        </span>
+                      </td>
+                      <td>
+                        <div className={styles.actionBtns} style={{ justifyContent: 'flex-end', gap: '8px' }}>
+                          <button className={`${styles.actionBtn} ${styles.hodBtn}`} onClick={() => setEditDeptModal({ open: true, id: dept._id, name: dept.name, code: dept.code, status: dept.status })}>
+                            Edit
+                          </button>
+                          {dept.name !== "Administration" && (
+                            <button className={`${styles.actionBtn} ${styles.rejectBtn}`} onClick={() => handleDelete(dept)}>
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
       </div>
+
+      {/* Edit Department Modal */}
+      <Modal
+        isOpen={editDeptModal.open}
+        onClose={() => !actionLoading && setEditDeptModal({ open: false, id: null, name: '', code: '', status: '' })}
+        title="Edit Department"
+        footer={
+          <>
+            <button className={styles.cancelModalBtn} onClick={() => setEditDeptModal({ open: false, id: null, name: '', code: '', status: '' })} disabled={actionLoading}>
+              Cancel
+            </button>
+            <button className={styles.successModalBtn} onClick={handleEditSave} disabled={actionLoading}>
+              {actionLoading ? 'Saving...' : 'Save Changes'}
+            </button>
+          </>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className={styles.modalField}>
+            <label className={styles.modalLabel}>Department Name <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <input
+              type="text"
+              className={styles.modalInput}
+              value={editDeptModal.name}
+              onChange={e => setEditDeptModal(p => ({ ...p, name: e.target.value }))}
+              disabled={actionLoading}
+              required
+            />
+          </div>
+          <div className={styles.modalField}>
+            <label className={styles.modalLabel}>Department Code <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <input
+              type="text"
+              className={styles.modalInput}
+              value={editDeptModal.code}
+              onChange={e => setEditDeptModal(p => ({ ...p, code: e.target.value }))}
+              disabled={actionLoading}
+              required
+            />
+          </div>
+          <div className={styles.modalField}>
+            <label className={styles.modalLabel}>Status <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <select
+              className={styles.modalSelect}
+              value={editDeptModal.status}
+              onChange={e => setEditDeptModal(p => ({ ...p, status: e.target.value }))}
+              disabled={actionLoading}
+              style={{ background: 'var(--surface-2)', color: 'var(--text-1)', width: '100%', padding: '10px', border: '1px solid var(--border-2)', borderRadius: '6px' }}
+            >
+              <option value="Active">Active</option>
+              <option value="Archived">Archived</option>
+            </select>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
@@ -141,6 +269,9 @@ const CollegeAdminFaculty = () => {
   const [newDept, setNewDept] = useState('');
   const [transferLoading, setTransferLoading] = useState(false);
   const [departments, setDepartments] = useState([]);
+
+  const [editFacultyModal, setEditFacultyModal] = useState({ open: false, id: null, name: '', email: '', phone: '', role: '', department: '' });
+  const [editFacultyLoading, setEditFacultyLoading] = useState(false);
 
   const fetchFaculty = useCallback(async () => {
     setLoading(true);
@@ -187,6 +318,30 @@ const CollegeAdminFaculty = () => {
       toast(err.response?.data?.message || 'Transfer failed.', 'error');
     } finally {
       setTransferLoading(false);
+    }
+  };
+
+  const handleEditFacultySave = async () => {
+    if (!editFacultyModal.name.trim() || !editFacultyModal.email.trim()) {
+      toast('Name and Email are required.', 'warning');
+      return;
+    }
+    setEditFacultyLoading(true);
+    try {
+      await collegeAdminAPI.updateFaculty(editFacultyModal.id, {
+        name: editFacultyModal.name.trim(),
+        email: editFacultyModal.email.trim(),
+        phone: editFacultyModal.phone.trim(),
+        role: editFacultyModal.role,
+        department: editFacultyModal.department
+      });
+      toast('Faculty account updated successfully!', 'success');
+      setEditFacultyModal({ open: false, id: null, name: '', email: '', phone: '', role: '', department: '' });
+      fetchFaculty();
+    } catch (err) {
+      toast(err.response?.data?.message || 'Failed to update faculty account.', 'error');
+    } finally {
+      setEditFacultyLoading(false);
     }
   };
 
@@ -239,7 +394,7 @@ const CollegeAdminFaculty = () => {
                     <th>Name</th>
                     <th>Email</th>
                     <th>Role</th>
-                    <th>Actions</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -258,7 +413,10 @@ const CollegeAdminFaculty = () => {
                         </span>
                       </td>
                       <td>
-                        <div className={styles.actionBtns}>
+                        <div className={styles.actionBtns} style={{ justifyContent: 'flex-end', gap: '8px' }}>
+                          <button className={`${styles.actionBtn} ${styles.hodBtn}`} onClick={() => setEditFacultyModal({ open: true, id: f._id, name: f.name, email: f.email, phone: f.phone || '', role: f.role, department: typeof f.department === 'object' ? f.department?._id : f.department })}>
+                            Edit Details
+                          </button>
                           {f.role === 'faculty' && (
                             <button className={`${styles.actionBtn} ${styles.hodBtn}`} onClick={() => setMakeHODModal({ open: true, id: f._id, name: f.name, dept: typeof f.department === 'object' ? f.department?.name : f.department })}>
                               <Crown size={12} /> Make HOD
@@ -298,8 +456,95 @@ const CollegeAdminFaculty = () => {
           <label className={styles.modalLabel}>Your new department <span style={{color:'var(--danger)'}}>*</span></label>
           <select className={styles.modalInput} value={newDept} onChange={e => setNewDept(e.target.value)} disabled={transferLoading}>
             <option value="" disabled>Select your new department...</option>
-            {departments.map(dept => <option key={dept} value={dept}>{dept}</option>)}
+            {departments.map(dept => (
+              <option key={dept._id || dept} value={dept._id || dept}>
+                {dept.name || dept}
+              </option>
+            ))}
           </select>
+        </div>
+      </Modal>
+
+      {/* Edit Faculty Modal */}
+      <Modal
+        isOpen={editFacultyModal.open}
+        onClose={() => !editFacultyLoading && setEditFacultyModal({ open: false, id: null, name: '', email: '', phone: '', role: '', department: '' })}
+        title="Edit Faculty Member"
+        footer={
+          <>
+            <button className={styles.cancelModalBtn} onClick={() => setEditFacultyModal({ open: false, id: null, name: '', email: '', phone: '', role: '', department: '' })} disabled={editFacultyLoading}>
+              Cancel
+            </button>
+            <button className={styles.successModalBtn} onClick={handleEditFacultySave} disabled={editFacultyLoading}>
+              {editFacultyLoading ? 'Saving...' : 'Save Changes'}
+            </button>
+          </>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className={styles.modalField}>
+            <label className={styles.modalLabel}>Full Name <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <input
+              type="text"
+              className={styles.modalInput}
+              value={editFacultyModal.name}
+              onChange={e => setEditFacultyModal(p => ({ ...p, name: e.target.value }))}
+              disabled={editFacultyLoading}
+              required
+            />
+          </div>
+          <div className={styles.modalField}>
+            <label className={styles.modalLabel}>Email Address <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <input
+              type="email"
+              className={styles.modalInput}
+              value={editFacultyModal.email}
+              onChange={e => setEditFacultyModal(p => ({ ...p, email: e.target.value }))}
+              disabled={editFacultyLoading}
+              required
+            />
+          </div>
+          <div className={styles.modalField}>
+            <label className={styles.modalLabel}>Phone Number</label>
+            <input
+              type="text"
+              className={styles.modalInput}
+              value={editFacultyModal.phone}
+              onChange={e => setEditFacultyModal(p => ({ ...p, phone: e.target.value }))}
+              disabled={editFacultyLoading}
+            />
+          </div>
+          <div className={styles.modalField}>
+            <label className={styles.modalLabel}>Role <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <select
+              className={styles.modalSelect}
+              value={editFacultyModal.role}
+              onChange={e => setEditFacultyModal(p => ({ ...p, role: e.target.value }))}
+              disabled={editFacultyLoading}
+              style={{ background: 'var(--surface-2)', color: 'var(--text-1)', width: '100%', padding: '10px', border: '1px solid var(--border-2)', borderRadius: '6px' }}
+            >
+              <option value="faculty">Faculty</option>
+              <option value="hod">HOD</option>
+              <option value="collegeAdmin">College Admin</option>
+            </select>
+          </div>
+          <div className={styles.modalField}>
+            <label className={styles.modalLabel}>Department <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <select
+              className={styles.modalSelect}
+              value={editFacultyModal.department}
+              onChange={e => setEditFacultyModal(p => ({ ...p, department: e.target.value }))}
+              disabled={editFacultyLoading}
+              style={{ background: 'var(--surface-2)', color: 'var(--text-1)', width: '100%', padding: '10px', border: '1px solid var(--border-2)', borderRadius: '6px' }}
+            >
+              <option value="" disabled>Select Department</option>
+              {departments.filter(d => d.status === 'Active' || d._id === editFacultyModal.department).map(dept => (
+                <option key={dept._id} value={dept._id}>
+                  {dept.name} ({dept.code})
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </Modal>
     </div>
@@ -483,6 +728,10 @@ const CollegeAdminStudents = () => {
   const [bulkModal, setBulkModal] = useState(false);
   const [tempPassModal, setTempPassModal] = useState({ open: false, password: '', name: '' });
   const [deleteModal, setDeleteModal] = useState({ open: false, id: null, name: '' });
+
+  // Edit student state
+  const [editStudentModal, setEditStudentModal] = useState({ open: false, id: null, name: '', rollNumber: '', email: '', semester: '1', department: '', cgpa: '' });
+  const [editStudentLoading, setEditStudentLoading] = useState(false);
 
   // Single student form
   const [formName, setFormName] = useState('');
@@ -701,6 +950,45 @@ const CollegeAdminStudents = () => {
     }
   };
 
+  const handleEditStudentClick = (student) => {
+    setEditStudentModal({
+      open: true,
+      id: student._id,
+      name: student.name || '',
+      rollNumber: student.rollNumber || '',
+      email: student.email || '',
+      semester: typeof student.semester === 'object' && student.semester !== null ? (student.semester.semesterNumber || '1') : (student.semester || '1'),
+      department: typeof student.department === 'object' && student.department !== null ? student.department._id : (student.department || ''),
+      cgpa: student.cgpa !== undefined ? student.cgpa : ''
+    });
+  };
+
+  const handleEditStudentSubmit = async (e) => {
+    if (e) e.preventDefault();
+    if (!editStudentModal.name.trim() || !editStudentModal.rollNumber.trim() || !editStudentModal.email.trim()) {
+      toast('Name, Roll Number, and Email are required.', 'warning');
+      return;
+    }
+    setEditStudentLoading(true);
+    try {
+      await collegeAdminAPI.updateStudent(editStudentModal.id, {
+        name: editStudentModal.name.trim(),
+        rollNumber: editStudentModal.rollNumber.trim(),
+        email: editStudentModal.email.trim(),
+        semester: editStudentModal.semester,
+        department: editStudentModal.department,
+        cgpa: editStudentModal.cgpa ? Number(editStudentModal.cgpa) : undefined
+      });
+      toast('Student account updated successfully!', 'success');
+      setEditStudentModal({ open: false, id: null, name: '', rollNumber: '', email: '', semester: '1', department: '', cgpa: '' });
+      fetchStudents();
+    } catch (err) {
+      toast(err.response?.data?.message || 'Failed to update student account.', 'error');
+    } finally {
+      setEditStudentLoading(false);
+    }
+  };
+
   // Search filtering
   const filteredStudents = students.filter(s => {
     const term = search.toLowerCase();
@@ -794,9 +1082,7 @@ const CollegeAdminStudents = () => {
                       </span>
                     </td>
                     <td className={styles.mutedCell}>
-                      {Array.isArray(student.departments) && student.departments.length > 0
-                        ? student.departments.join(', ')
-                        : '—'}
+                      {student.departmentName || (typeof student.department === 'object' ? student.department?.name : student.department) || '—'}
                     </td>
                     <td className={styles.mutedCell}>
                       {Array.isArray(student.courses) && student.courses.length > 0
@@ -804,7 +1090,13 @@ const CollegeAdminStudents = () => {
                         : '—'}
                     </td>
                     <td>
-                      <div className={styles.actionBtns} style={{ justifyContent: 'flex-end' }}>
+                      <div className={styles.actionBtns} style={{ justifyContent: 'flex-end', gap: '8px' }}>
+                        <button 
+                          className={`${styles.actionBtn} ${styles.hodBtn}`}
+                          onClick={() => handleEditStudentClick(student)}
+                        >
+                          Edit
+                        </button>
                         <button 
                           className={`${styles.actionBtn} ${styles.rejectBtn}`}
                           onClick={() => setDeleteModal({ open: true, id: student._id, name: student.name })}
@@ -895,8 +1187,10 @@ const CollegeAdminStudents = () => {
               style={{ background: 'var(--surface-2)', color: 'var(--text-1)', width: '100%', padding: '10px', border: '1px solid var(--border-2)', borderRadius: '6px' }}
             >
               <option value="" style={{ background: 'var(--surface-1)' }}>-- None --</option>
-              {departments.map(dept => (
-                <option key={dept} value={dept} style={{ background: 'var(--surface-1)' }}>{dept}</option>
+              {departments.filter(d => d.status === 'Active').map(dept => (
+                <option key={dept._id} value={dept._id} style={{ background: 'var(--surface-1)' }}>
+                  {dept.name} ({dept.code})
+                </option>
               ))}
             </select>
           </div>
@@ -1005,6 +1299,7 @@ const CollegeAdminStudents = () => {
             />
           </div>
 
+
           {/* Validation Error Logger */}
           {bulkErrors.length > 0 && (
             <div 
@@ -1020,7 +1315,7 @@ const CollegeAdminStudents = () => {
               <h5 style={{ margin: '0 0 6px 0', color: 'var(--danger)', fontSize: '13px', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <AlertTriangle size={14} /> CSV Validation Errors ({bulkErrors.length})
               </h5>
-              <ul style={{ margin: 0, paddingLeft: 18, fontSize: '12px', color: '#fca5a5', lineHeight: 1.6 }}>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: '12px', color: 'var(--danger)', opacity: 0.9, lineHeight: 1.6 }}>
                 {bulkErrors.map((err, idx) => (
                   <li key={idx}>{err}</li>
                 ))}
@@ -1040,12 +1335,12 @@ const CollegeAdminStudents = () => {
                   borderRadius: '8px',
                   maxHeight: '180px',
                   overflowY: 'auto',
-                  background: 'rgba(0,0,0,0.22)',
+                  background: 'var(--surface-2)',
                 }}
               >
                 <table className={styles.table} style={{ fontSize: '12px' }}>
                   <thead>
-                    <tr style={{ background: 'rgba(0,0,0,0.3)' }}>
+                    <tr style={{ background: 'var(--table-header-bg)' }}>
                       <th style={{ padding: '6px 12px' }}>Name</th>
                       <th style={{ padding: '6px 12px' }}>Roll Number</th>
                       <th style={{ padding: '6px 12px' }}>Email</th>
@@ -1054,7 +1349,7 @@ const CollegeAdminStudents = () => {
                   </thead>
                   <tbody>
                     {bulkData.map((row, idx) => (
-                      <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                      <tr key={idx} style={{ borderBottom: '1px solid var(--border-base)' }}>
                         <td style={{ padding: '6px 12px' }}>{row.Name}</td>
                         <td style={{ padding: '6px 12px' }}>{row.RollNumber}</td>
                         <td style={{ padding: '6px 12px' }}>{row.Email}</td>
@@ -1089,11 +1384,109 @@ const CollegeAdminStudents = () => {
           <AlertTriangle size={16} style={{ flexShrink: 0 }} />
           <div>
             <strong>Are you sure you want to deactivate {deleteModal.name} from the student database?</strong>
-            <p style={{ margin: '4px 0 0 0', fontSize: '13px', fontWeight: 400, color: '#fca5a5' }}>
+            <p style={{ margin: '4px 0 0 0', fontSize: '13px', fontWeight: 400, color: 'var(--danger)', opacity: 0.9 }}>
               This will permanently delete their student record and prevent them from logging in or submitting exam answer scripts.
             </p>
           </div>
         </div>
+      </Modal>
+
+      {/* MODAL 5: EDIT STUDENT DETAILS */}
+      <Modal
+        isOpen={editStudentModal.open}
+        onClose={() => !editStudentLoading && setEditStudentModal({ open: false, id: null, name: '', rollNumber: '', email: '', semester: '1', department: '', cgpa: '' })}
+        title="Edit Student Account"
+        footer={
+          <>
+            <button className={styles.cancelModalBtn} onClick={() => setEditStudentModal({ open: false, id: null, name: '', rollNumber: '', email: '', semester: '1', department: '', cgpa: '' })} disabled={editStudentLoading}>
+              Cancel
+            </button>
+            <button className={styles.successModalBtn} onClick={handleEditStudentSubmit} disabled={editStudentLoading}>
+              {editStudentLoading ? 'Saving...' : 'Save Changes'}
+            </button>
+          </>
+        }
+      >
+        <form onSubmit={handleEditStudentSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className={styles.modalField}>
+            <label className={styles.modalLabel}>Student Full Name <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <input
+              type="text"
+              className={styles.modalInput}
+              value={editStudentModal.name}
+              onChange={e => setEditStudentModal(p => ({ ...p, name: e.target.value }))}
+              disabled={editStudentLoading}
+              required
+            />
+          </div>
+          <div className={styles.modalField}>
+            <label className={styles.modalLabel}>Roll Number <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <input
+              type="text"
+              className={styles.modalInput}
+              value={editStudentModal.rollNumber}
+              onChange={e => setEditStudentModal(p => ({ ...p, rollNumber: e.target.value }))}
+              disabled={editStudentLoading}
+              required
+            />
+          </div>
+          <div className={styles.modalField}>
+            <label className={styles.modalLabel}>University Email <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <input
+              type="email"
+              className={styles.modalInput}
+              value={editStudentModal.email}
+              onChange={e => setEditStudentModal(p => ({ ...p, email: e.target.value }))}
+              disabled={editStudentLoading}
+              required
+            />
+          </div>
+          <div className={styles.modalField}>
+            <label className={styles.modalLabel}>Current Semester <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <select
+              className={styles.modalSelect}
+              value={editStudentModal.semester}
+              onChange={e => setEditStudentModal(p => ({ ...p, semester: e.target.value }))}
+              disabled={editStudentLoading}
+              style={{ background: 'var(--surface-2)', color: 'var(--text-1)', width: '100%', padding: '10px', border: '1px solid var(--border-2)', borderRadius: '6px' }}
+            >
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
+                <option key={sem} value={sem} style={{ background: 'var(--surface-1)' }}>Semester {sem}</option>
+              ))}
+            </select>
+          </div>
+          <div className={styles.modalField}>
+            <label className={styles.modalLabel}>Primary Department</label>
+            <select
+              className={styles.modalSelect}
+              value={editStudentModal.department}
+              onChange={e => setEditStudentModal(p => ({ ...p, department: e.target.value }))}
+              disabled={editStudentLoading}
+              style={{ background: 'var(--surface-2)', color: 'var(--text-1)', width: '100%', padding: '10px', border: '1px solid var(--border-2)', borderRadius: '6px' }}
+            >
+              <option value="" style={{ background: 'var(--surface-1)' }}>-- None --</option>
+              {departments.filter(d => d.status === 'Active' || d._id === editStudentModal.department).map(dept => (
+                <option key={dept._id} value={dept._id} style={{ background: 'var(--surface-1)' }}>
+                  {dept.name} ({dept.code})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className={styles.modalField}>
+            <label className={styles.modalLabel}>CGPA</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              max="10"
+              className={styles.modalInput}
+              placeholder="e.g. 8.5"
+              value={editStudentModal.cgpa}
+              onChange={e => setEditStudentModal(p => ({ ...p, cgpa: e.target.value }))}
+              disabled={editStudentLoading}
+            />
+          </div>
+        </form>
       </Modal>
     </div>
   );

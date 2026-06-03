@@ -2,9 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LogOut, BrainCircuit, LayoutDashboard,
-  ChevronDown, Repeat2, Shield, GraduationCap, Bell, KeyRound
+  ChevronDown, Repeat2, Shield, GraduationCap, Bell, KeyRound,
+  Sun, Moon, Laptop
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { facultyAPI } from '../../api/client';
 import { useToast } from '../Toast/Toast';
 import styles from './DashboardLayout.module.css';
@@ -34,6 +36,18 @@ const detectViewMode = (pathname) => {
 };
 
 /* ──────────────────────────────────────────────────────────
+   Helper to check if a navigation item's path is active
+────────────────────────────────────────────────────────── */
+const isPathActive = (itemPath, currentPath) => {
+  if (currentPath === itemPath) return true;
+  const isBaseRoot = ['/collegeadmin', '/hod', '/faculty', '/admin'].includes(itemPath);
+  if (isBaseRoot) {
+    return currentPath === itemPath || currentPath === `${itemPath}/`;
+  }
+  return currentPath.startsWith(itemPath + '/');
+};
+
+/* ──────────────────────────────────────────────────────────
    COMPONENT
 ────────────────────────────────────────────────────────── */
 const DashboardLayout = ({ navItems, children }) => {
@@ -41,6 +55,13 @@ const DashboardLayout = ({ navItems, children }) => {
   const location  = useLocation();
   const { user: profile, logout, loading } = useAuth();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
+
+  const toggleTheme = () => {
+    if (theme === 'system') setTheme('light');
+    else if (theme === 'light') setTheme('dark');
+    else setTheme('system');
+  };
 
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const switcherRef = useRef(null);
@@ -70,10 +91,7 @@ const DashboardLayout = ({ navItems, children }) => {
     navigate(view.base);
   };
 
-  const activeNavItem = navItems.find(n =>
-    location.pathname === n.path ||
-    (n.path.length > 8 && location.pathname.startsWith(n.path))
-  );
+  const activeNavItem = navItems.find(n => isPathActive(n.path, location.pathname));
   const activeLabel = activeNavItem?.label || navItems[0]?.label || 'Dashboard';
 
   const roleLabel = {
@@ -123,9 +141,7 @@ const DashboardLayout = ({ navItems, children }) => {
         <nav className={styles.nav}>
           <ul className={styles.navList}>
             {navItems.map((item, i) => {
-              const isActive =
-                location.pathname === item.path ||
-                (item.path.length > 8 && location.pathname.startsWith(item.path));
+              const isActive = isPathActive(item.path, location.pathname);
               return (
                 <li key={i}>
                   <button
@@ -262,6 +278,16 @@ const DashboardLayout = ({ navItems, children }) => {
                 <span className={styles.bellBadge}>{totalBadge > 9 ? '9+' : totalBadge}</span>
               </div>
             )}
+
+            {/* Theme toggle button */}
+            <button
+              className={styles.themeToggleBtn}
+              onClick={toggleTheme}
+              title={`Active Theme: ${theme.charAt(0).toUpperCase() + theme.slice(1)} (Click to toggle)`}
+              aria-label="Toggle Theme"
+            >
+              {theme === 'system' ? <Laptop size={16} /> : theme === 'light' ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
 
             <div className={styles.topbarMeta}>
               <span className={styles.topbarName}>{profile?.name}</span>

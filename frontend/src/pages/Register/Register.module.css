@@ -24,13 +24,13 @@
   z-index: 1;
   width: 100%;
   max-width: 640px;
-  background: rgba(10, 16, 32, 0.82);
+  background: var(--surface-elevated);
   backdrop-filter: blur(28px);
   -webkit-backdrop-filter: blur(28px);
-  border: 1px solid rgba(99,102,241,0.15);
+  border: 1px solid var(--border);
   border-radius: 20px;
   padding: 40px 40px;
-  box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03);
+  box-shadow: var(--shadow-lg);
 }
 
 .logoWrap {
@@ -73,9 +73,9 @@
 .alertError {
   padding: 11px 14px;
   border-radius: 9px;
-  background: rgba(239,68,68,0.1);
-  border: 1px solid rgba(239,68,68,0.25);
-  color: #fca5a5;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
   font-size: 0.85rem;
   margin-bottom: 18px;
   animation: alertIn 0.2s ease;
@@ -145,8 +145,8 @@
 
 .input {
   width: 100%;
-  background: rgba(0,0,0,0.28);
-  border: 1px solid var(--border-base);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
   color: var(--text-1);
   border-radius: 9px;
   padding: 11px 14px;
@@ -156,12 +156,12 @@
 }
 .inputPad    { padding-left: 38px; }
 .inputPadRight { padding-right: 38px; }
-
+ 
 .input::placeholder { color: var(--text-3); }
 .input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.16);
-  background: rgba(0,0,0,0.38);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+  background: var(--bg-surface-hover);
 }
 
 /* Dropdown */
@@ -170,13 +170,13 @@
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  background: #0d1526;
-  border: 1px solid rgba(99,102,241,0.25);
+  background: var(--modal-bg);
+  border: 1px solid var(--border);
   border-radius: 10px;
   z-index: 500;
   max-height: 200px;
   overflow-y: auto;
-  box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+  box-shadow: var(--shadow-lg);
   animation: dropIn 0.15s ease;
 }
 
@@ -194,7 +194,7 @@
 }
 .dropItem:hover,
 .dropActive {
-  background: rgba(99,102,241,0.1);
+  background: var(--primary-dim);
   color: var(--text-1);
 }
 
@@ -276,10 +276,10 @@
   gap: 8px;
   margin-top: 18px;
   padding: 11px 14px;
-  background: rgba(245,158,11,0.07);
-  border: 1px solid rgba(245,158,11,0.2);
+  background: var(--warning-dim);
+  border: 1px solid var(--warning-border);
   border-radius: 9px;
   font-size: 0.8rem;
-  color: #fbbf24;
+  color: var(--warning);
   line-height: 1.5;
 }

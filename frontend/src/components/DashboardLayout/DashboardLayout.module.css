@@ -350,7 +350,7 @@
   width: fit-content;
 }
 
-.badgeCA      { background: rgba(167,139,250,0.12); border-color: rgba(167,139,250,0.3); color: #c4b5fd; }
+.badgeCA      { background: var(--theme-violet-dim); border-color: rgba(139, 92, 246, 0.3); color: var(--theme-violet); }
 .badgeHOD     { background: rgba(99,102,241,0.12);  border-color: rgba(99,102,241,0.28); color: var(--accent-light); }
 .badgeFaculty { background: rgba(148,163,184,0.1);  border-color: rgba(148,163,184,0.2); color: var(--text-2); }
 
@@ -416,7 +416,7 @@
   justify-content: space-between;
   padding: 0 30px;
   border-bottom: 1px solid var(--border-base);
-  background: rgba(8, 14, 28, 0.88);
+  background: var(--topbar-bg);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   position: sticky;
@@ -498,10 +498,10 @@
   top: calc(100% + 8px);
   right: 0;
   width: 185px;
-  background: #0c1428;
-  border: 1px solid rgba(99, 102, 241, 0.25);
+  background: var(--modal-bg);
+  border: 1px solid var(--border);
   border-radius: 11px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
   z-index: 500;
   animation: dropIn 0.16s ease forwards;
@@ -584,6 +584,33 @@
   flex: 1;
   padding: 28px 30px;
   animation: pageIn 0.3s ease forwards;
+}
+
+/* Theme toggle button styling */
+.themeToggleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--bg-surface-hover);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out);
+}
+.themeToggleBtn:hover {
+  background: var(--border);
+  color: var(--text-primary);
+  border-color: var(--primary-light);
+  transform: scale(1.05);
+}
+.themeToggleBtn svg {
+  transition: transform 0.3s var(--ease-out);
+}
+.themeToggleBtn:active svg {
+  transform: rotate(30deg);
 }
 
 @keyframes pageIn {

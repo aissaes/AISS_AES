@@ -125,7 +125,13 @@ export const collegeAdminAPI = {
   updateDepartments: (departments) => client.put('/faculty/collegeadmin/update-departments', { departments }),
   makeHOD: (facultyId) => client.post('/faculty/collegeadmin/make-hod', { facultyId }),
   transfer: (facultyId, newDepartment) => client.post('/faculty/collegeadmin/transfer', { facultyId, newDepartment }),
+  updateFaculty: (facultyId, data) => client.put(`/faculty/collegeadmin/faculty/${facultyId}`, data),
   
+  // Department CRUD
+  createDepartment: (data) => client.post('/faculty/collegeadmin/departments', data),
+  updateDepartment: (departmentId, data) => client.put(`/faculty/collegeadmin/departments/${departmentId}`, data),
+  deleteDepartment: (departmentId) => client.delete(`/faculty/collegeadmin/departments/${departmentId}`),
+
   // Student CRUD (College Admin only)
   getStudents: () => client.get('/faculty/collegeadmin/students'),
   addStudent: (data) => client.post('/faculty/collegeadmin/students', data),

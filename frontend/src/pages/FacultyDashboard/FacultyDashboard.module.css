@@ -311,7 +311,7 @@
   border-radius: 10px;
   background: var(--danger-bg);
   border: 1px solid var(--danger-border);
-  color: #fca5a5;
+  color: var(--danger);
   font-size: 0.88rem;
 }
 
@@ -473,9 +473,9 @@
   border-radius: 9px;
   font-size: 0.84rem;
   line-height: 1.5;
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.22);
-  color: #fca5a5;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
 }
 
 /* ══ Paper Builder Specific Styles (NEW) ══ */

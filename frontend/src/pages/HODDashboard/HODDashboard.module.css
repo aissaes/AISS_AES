@@ -14,8 +14,8 @@
   width: 80px;
   height: 80px;
   border-radius: 20px;
-  background: rgba(245, 158, 11, 0.08);
-  border: 1px solid rgba(245, 158, 11, 0.22);
+  background: var(--warning-dim);
+  border: 1px solid var(--warning-border);
   color: var(--warning);
   display: flex;
   align-items: center;
@@ -42,10 +42,10 @@
   align-items: center;
   gap: 7px;
   padding: 6px 16px;
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.25);
+  background: var(--warning-dim);
+  border: 1px solid var(--warning-border);
   border-radius: 100px;
-  color: #fbbf24;
+  color: var(--warning);
   font-size: 0.8rem;
   font-weight: 600;
   margin-top: 4px;
@@ -53,14 +53,14 @@
 
 /* ══ Row Approving Highlight ══ */
 .rowApproving {
-  background: rgba(16, 185, 129, 0.06) !important;
+  background: var(--success-dim) !important;
   transition: background 0.4s ease;
 }
 
 /* ══ Approving badge variant ══ */
 .badgeApproving {
-  background: rgba(16, 185, 129, 0.12) !important;
-  border-color: rgba(16, 185, 129, 0.3) !important;
+  background: var(--success-bg) !important;
+  border-color: var(--success-border) !important;
   color: var(--success) !important;
   animation: pulse 1s ease infinite;
 }
@@ -75,7 +75,7 @@
   display: inline-block;
   width: 10px;
   height: 10px;
-  border: 1.5px solid rgba(16,185,129,0.3);
+  border: 1.5px solid var(--success-border);
   border-top-color: var(--success);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
@@ -87,7 +87,7 @@
   display: inline-block;
   width: 13px;
   height: 13px;
-  border: 2px solid rgba(255,255,255,0.25);
+  border: 2px solid var(--border-hover);
   border-top-color: currentColor;
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
@@ -98,8 +98,8 @@
 .approving {
   pointer-events: none;
   opacity: 0.85;
-  background: rgba(16, 185, 129, 0.12) !important;
-  border-color: rgba(16, 185, 129, 0.35) !important;
+  background: var(--success-bg) !important;
+  border-color: var(--success-border) !important;
   color: var(--success) !important;
 }
 
@@ -142,7 +142,7 @@
   align-items: center;
   gap: 7px;
   padding: 8px 16px;
-  background: rgba(255,255,255,0.04);
+  background: var(--bg-surface-hover);
   border: 1px solid var(--border-base);
   border-radius: 9px;
   color: var(--text-2);
@@ -153,7 +153,7 @@
   white-space: nowrap;
 }
 .refreshBtn:hover:not(:disabled) {
-  background: rgba(255,255,255,0.08);
+  background: var(--border);
   color: var(--text-1);
   border-color: var(--border-hover);
 }
@@ -181,7 +181,7 @@
 }
 .statCard:hover {
   transform: translateY(-3px);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  box-shadow: var(--shadow-md);
   border-color: var(--border-hover);
 }
 
@@ -195,10 +195,10 @@
   flex-shrink: 0;
 }
 
-.blue  .statIconWrap { background: rgba(99,102,241,0.12); color: var(--accent-light); }
-.green .statIconWrap { background: rgba(16,185,129,0.12); color: var(--success); }
-.amber .statIconWrap { background: rgba(245,158,11,0.12); color: var(--warning); }
-.red   .statIconWrap { background: rgba(239,68,68,0.12);  color: var(--danger); }
+.blue  .statIconWrap { background: var(--primary-dim); color: var(--accent-light); }
+.green .statIconWrap { background: var(--success-bg); color: var(--success); }
+.amber .statIconWrap { background: var(--warning-bg); color: var(--warning); }
+.red   .statIconWrap { background: var(--danger-bg);  color: var(--danger); }
 
 .statValue {
   font-size: 1.6rem;
@@ -229,7 +229,7 @@
   gap: 14px;
   padding: 18px 22px;
   border-bottom: 1px solid var(--border-1);
-  background: rgba(255,255,255,0.02);
+  background: var(--table-header-bg);
   flex-wrap: wrap;
 }
 
@@ -257,7 +257,7 @@
 .tabBar {
   display: flex;
   gap: 4px;
-  background: rgba(0,0,0,0.22);
+  background: var(--table-header-bg);
   border: 1px solid var(--border-base);
   border-radius: 8px;
   padding: 3px;
@@ -292,11 +292,11 @@
   min-width: 18px;
   height: 18px;
   border-radius: 100px;
-  background: rgba(255,255,255,0.15);
+  background: var(--bg-surface-hover);
   font-size: 0.7rem;
   padding: 0 4px;
 }
-.tabActive .tabCount { background: rgba(255,255,255,0.25); }
+.tabActive .tabCount { background: rgba(255,255,255,0.2); }
 
 /* Table */
 .tableWrap {
@@ -310,7 +310,7 @@
 }
 
 .table thead tr {
-  background: rgba(255,255,255,0.03);
+  background: var(--table-header-bg);
   border-bottom: 1px solid var(--border-1);
 }
 
@@ -333,10 +333,10 @@
 }
 
 .table tbody tr:last-child td { border-bottom: none; }
-.table tbody tr:hover { background: rgba(255,255,255,0.02); }
+.table tbody tr:hover { background: var(--bg-surface-hover); }
 
 .mutedCell { color: var(--text-3); font-size: 0.84rem; }
-.reasonCell { color: #fca5a5; font-size: 0.84rem; }
+.reasonCell { color: var(--danger); font-size: 0.84rem; }
 
 .nameCell {
   display: flex;
@@ -373,8 +373,8 @@
   white-space: nowrap;
 }
 
-.badgeHOD     { background: rgba(99,102,241,0.12); border-color: rgba(99,102,241,0.3);  color: var(--accent-light); }
-.badgeFaculty { background: rgba(148,163,184,0.1);  border-color: rgba(148,163,184,0.2); color: var(--text-2); }
+.badgeHOD     { background: var(--primary-dim); border-color: var(--primary-glow);  color: var(--accent-light); }
+.badgeFaculty { background: var(--bg-surface-hover);  border-color: var(--border); color: var(--text-2); }
 .badgeSuccess { background: var(--success-bg);      border-color: var(--success-border); color: var(--success); }
 .badgeWarning { background: var(--warning-bg);      border-color: var(--warning-border); color: var(--warning); }
 .badgeDanger  { background: var(--danger-bg);       border-color: var(--danger-border);  color: var(--danger); }
@@ -394,7 +394,7 @@
   border-radius: 7px;
   font-size: 0.78rem;
   font-weight: 600;
-  background: rgba(255,255,255,0.05);
+  background: var(--bg-surface-hover);
   border: 1px solid var(--border-base);
   color: var(--text-2);
   cursor: pointer;
@@ -402,16 +402,16 @@
   white-space: nowrap;
 }
 .actionBtn:hover {
-  background: rgba(255,255,255,0.09);
+  background: var(--border);
   border-color: var(--border-hover);
   color: var(--text-1);
 }
 
-.approveBtn { color: var(--success); border-color: rgba(16,185,129,0.25); background: rgba(16,185,129,0.07); }
-.approveBtn:hover { background: rgba(16,185,129,0.14); border-color: rgba(16,185,129,0.4); }
+.approveBtn { color: var(--success); border-color: var(--success-border); background: var(--success-bg); }
+.approveBtn:hover { background: var(--success-bg); border-color: var(--success-border); }
 
-.rejectBtn  { color: var(--danger); border-color: rgba(239,68,68,0.25); background: rgba(239,68,68,0.07); }
-.rejectBtn:hover { background: rgba(239,68,68,0.14); border-color: rgba(239,68,68,0.4); }
+.rejectBtn  { color: var(--danger); border-color: var(--danger-border); background: var(--danger-bg); }
+.rejectBtn:hover { background: var(--danger-bg); border-color: var(--danger-border); }
 
 /* Table loading */
 .tableLoader {
@@ -423,7 +423,7 @@
 .spinner {
   width: 34px;
   height: 34px;
-  border: 2.5px solid rgba(99,102,241,0.12);
+  border: 2.5px solid var(--primary-glow);
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
@@ -456,15 +456,15 @@
 }
 
 .modalAlertWarn {
-  background: rgba(245,158,11,0.08);
-  border: 1px solid rgba(245,158,11,0.22);
-  color: #fcd34d;
+  background: var(--warning-dim);
+  border: 1px solid var(--warning-border);
+  color: var(--warning);
 }
 
 .modalAlertDanger {
-  background: rgba(239,68,68,0.08);
-  border: 1px solid rgba(239,68,68,0.22);
-  color: #fca5a5;
+  background: var(--danger-dim);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
 }
 
 .modalField {
@@ -503,7 +503,7 @@
 
 .cancelModalBtn {
   padding: 9px 18px;
-  background: rgba(255,255,255,0.05);
+  background: var(--bg-surface-hover);
   border: 1px solid var(--border-base);
   border-radius: 8px;
   color: var(--text-2);
@@ -512,7 +512,7 @@
   cursor: pointer;
   transition: all 0.16s;
 }
-.cancelModalBtn:hover { background: rgba(255,255,255,0.09); color: var(--text-1); }
+.cancelModalBtn:hover { background: var(--border); color: var(--text-1); }
 
 .dangerModalBtn {
   padding: 9px 20px;
@@ -524,9 +524,9 @@
   font-weight: 700;
   cursor: pointer;
   transition: all 0.16s;
-  box-shadow: 0 3px 12px rgba(239,68,68,0.25);
+  box-shadow: var(--shadow-sm);
 }
-.dangerModalBtn:hover:not(:disabled) { box-shadow: 0 5px 18px rgba(239,68,68,0.4); transform: translateY(-1px); }
+.dangerModalBtn:hover:not(:disabled) { box-shadow: var(--shadow-md); transform: translateY(-1px); }
 .dangerModalBtn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.5); }
 
 /* ══ Additional missing classes ══ */
@@ -575,11 +575,11 @@
   font-weight: 700;
   cursor: pointer;
   transition: all 0.16s;
-  box-shadow: 0 3px 12px rgba(16,185,129,0.25);
+  box-shadow: var(--shadow-sm);
 }
 
 .successModalBtn:hover:not(:disabled) {
-  box-shadow: 0 5px 18px rgba(16,185,129,0.4);
+  box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }
 

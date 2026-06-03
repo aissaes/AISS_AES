@@ -302,7 +302,7 @@ const HODStudents = () => {
       const activeSemesters = (semRes.data.semesters || []).filter(s => s.status === 'Active');
       setSemestersList(activeSemesters);
 
-      const crsRes = await hodAPI.getCourses();
+      const crsRes = await hodAPI.getCourses({ allCollege: 'true' });
       const allCourses = crsRes.data.courses || [];
 
       setEditStudentModal({
@@ -531,7 +531,7 @@ const HODStudents = () => {
             <input
               type="text"
               className={styles.formInput}
-              style={{ paddingLeft: 36, height: 38, background: 'rgba(0,0,0,0.18)' }}
+              style={{ paddingLeft: 36, height: 38, background: 'var(--input-bg)' }}
               placeholder="Search by name or roll number..."
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -587,9 +587,9 @@ const HODStudents = () => {
                               key={course._id || idx}
                               className={styles.badge}
                               style={{
-                                background: 'rgba(99, 102, 241, 0.08)',
-                                borderColor: 'rgba(99, 102, 241, 0.25)',
-                                color: 'var(--accent-light)',
+                                background: 'var(--primary-dim)',
+                                borderColor: 'var(--primary-glow)',
+                                color: 'var(--accent)',
                                 fontSize: '11px',
                                 padding: '2px 8px'
                               }}
@@ -608,7 +608,7 @@ const HODStudents = () => {
                         <button
                           className={styles.actionBtn}
                           onClick={() => handleEditClick(student)}
-                          style={{ padding: '5px 12px', background: 'rgba(255,255,255,0.04)', color: 'var(--text-1)' }}
+                          style={{ padding: '5px 12px' }}
                         >
                           <Edit size={13} /> Edit
                         </button>
@@ -703,7 +703,7 @@ const HODStudents = () => {
                     width: 26,
                     height: 26,
                     borderRadius: '50%',
-                    background: wizardStep === step.num ? 'var(--accent)' : wizardStep > step.num ? 'var(--success)' : 'rgba(255,255,255,0.06)',
+                    background: wizardStep === step.num ? 'var(--accent)' : wizardStep > step.num ? 'var(--success)' : 'var(--bg-surface-hover)',
                     color: wizardStep >= step.num ? '#fff' : 'var(--text-3)',
                     display: 'flex',
                     alignItems: 'center',
@@ -756,7 +756,7 @@ const HODStudents = () => {
                       onClick={() => handleSemesterSelect(sem._id)}
                       style={{
                         padding: '16px 20px',
-                        background: 'rgba(255,255,255,0.02)',
+                        background: 'var(--surface-2)',
                         border: '1px solid var(--border-base)',
                         borderRadius: '12px',
                         cursor: 'pointer',
@@ -766,11 +766,11 @@ const HODStudents = () => {
                         gap: 8
                       }}
                       onMouseEnter={e => {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                        e.currentTarget.style.background = 'var(--bg-surface-hover)';
                         e.currentTarget.style.borderColor = 'var(--accent)';
                       }}
                       onMouseLeave={e => {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                        e.currentTarget.style.background = 'var(--surface-2)';
                         e.currentTarget.style.borderColor = 'var(--border-base)';
                       }}
                     >
@@ -809,7 +809,7 @@ const HODStudents = () => {
                         onClick={() => toggleCourseSelection(crs._id)}
                         style={{
                           padding: '14px 16px',
-                          background: isSelected ? 'rgba(99,102,241,0.05)' : 'rgba(255,255,255,0.02)',
+                          background: isSelected ? 'var(--primary-dim)' : 'var(--surface-2)',
                           border: isSelected ? '1px solid var(--accent)' : '1px solid var(--border-base)',
                           borderRadius: '10px',
                           cursor: 'pointer',
@@ -818,7 +818,7 @@ const HODStudents = () => {
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           gap: 12,
-                          boxShadow: isSelected ? '0 0 12px rgba(99,102,241,0.15)' : 'none'
+                          boxShadow: isSelected ? 'var(--theme-shadow-glow)' : 'none'
                         }}
                       >
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -862,7 +862,7 @@ const HODStudents = () => {
                 <Empty text="No student roster found." />
               ) : (
                 <div style={{ border: '1px solid var(--border-base)', borderRadius: '10px', overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', padding: '10px 14px', background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid var(--border-base)', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', padding: '10px 14px', background: 'var(--table-header-bg)', borderBottom: '1px solid var(--border-base)', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <input
                         type="checkbox"
@@ -875,7 +875,7 @@ const HODStudents = () => {
                     <span style={{ fontSize: '11px', color: 'var(--warning)', fontWeight: 'bold' }}>{selectedStudentIds.length} Selected</span>
                   </div>
 
-                  <div style={{ maxHeight: '200px', overflowY: 'auto', background: 'rgba(0,0,0,0.1)' }}>
+                  <div style={{ maxHeight: '200px', overflowY: 'auto', background: 'var(--surface-2)' }}>
                     {filteredWizardStudents.map(student => {
                       const isSelected = selectedStudentIds.includes(student._id);
                       return (
@@ -887,9 +887,9 @@ const HODStudents = () => {
                             alignItems: 'center',
                             justifyContent: 'space-between',
                             padding: '10px 14px',
-                            borderBottom: '1px solid rgba(255,255,255,0.02)',
+                            borderBottom: '1px solid var(--border-1)',
                             cursor: 'pointer',
-                            background: isSelected ? 'rgba(99,102,241,0.04)' : 'transparent',
+                            background: isSelected ? 'var(--primary-dim)' : 'transparent',
                             transition: 'all 0.1s'
                           }}
                         >
@@ -918,7 +918,7 @@ const HODStudents = () => {
           {/* STEP 4: REVIEW & CONFIRM */}
           {wizardStep === 4 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div className={styles.modalAlertWarn} style={{ margin: 0, background: 'rgba(16,185,129,0.06)', borderColor: 'rgba(16,185,129,0.22)', color: '#a7f3d0' }}>
+              <div className={styles.modalAlertWarn} style={{ margin: 0, background: 'var(--success-bg)', borderColor: 'var(--success-border)', color: 'var(--success)' }}>
                 <CheckCircle2 size={15} style={{ flexShrink: 0, color: 'var(--success)' }} />
                 <div>
                   Please review the assignment enrollment. Clicking <strong>Confirm & Save</strong> will update the students' active academic semesters and write structural course enrollment mappings in the database.
@@ -926,7 +926,7 @@ const HODStudents = () => {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                <div style={{ padding: 14, background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-base)', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ padding: 14, background: 'var(--surface-2)', border: '1px solid var(--border-base)', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-3)', textTransform: 'uppercase' }}>Target Semester</span>
                   <strong style={{ fontSize: '14px', color: 'var(--text-1)' }}>
                     {semestersList.find(s => s._id === selectedSemester)?.semesterName || 'Selected Semester'}
@@ -936,7 +936,7 @@ const HODStudents = () => {
                   </span>
                 </div>
 
-                <div style={{ padding: 14, background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-base)', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ padding: 14, background: 'var(--surface-2)', border: '1px solid var(--border-base)', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-3)', textTransform: 'uppercase' }}>Students Selected</span>
                   <strong style={{ fontSize: '18px', color: 'var(--success)' }}>
                     {selectedStudentIds.length} Students
@@ -947,7 +947,7 @@ const HODStudents = () => {
                 </div>
               </div>
 
-              <div style={{ padding: 14, background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-base)', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ padding: 14, background: 'var(--surface-2)', border: '1px solid var(--border-base)', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-3)', textTransform: 'uppercase' }}>Courses Mapped</span>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
                   {selectedCourses.map(cId => {
@@ -957,9 +957,9 @@ const HODStudents = () => {
                         key={cId}
                         className={styles.badge}
                         style={{
-                          background: 'rgba(99,102,241,0.08)',
-                          borderColor: 'rgba(99,102,241,0.22)',
-                          color: 'var(--accent-light)',
+                          background: 'var(--primary-dim)',
+                          borderColor: 'var(--primary-glow)',
+                          color: 'var(--accent)',
                           fontSize: '11.5px',
                           padding: '3px 10px'
                         }}
@@ -1044,7 +1044,7 @@ const HODStudents = () => {
         }
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div className={styles.modalAlertWarn} style={{ margin: 0, background: 'rgba(99, 102, 241, 0.06)', borderColor: 'rgba(99, 102, 241, 0.22)', color: '#c7d2fe' }}>
+          <div className={styles.modalAlertWarn} style={{ margin: 0, background: 'var(--primary-dim)', borderColor: 'var(--primary-glow)', color: 'var(--accent-light)' }}>
             <AlertCircle size={15} style={{ flexShrink: 0, color: 'var(--accent-light)' }} />
             <div>
               Manage active academic profiles for <strong>{editStudentModal.studentName}</strong>. 
@@ -1096,7 +1096,7 @@ const HODStudents = () => {
             {editStudentModal.availableCourses.length === 0 ? (
               <span style={{ fontSize: '12px', color: 'var(--text-3)', fontStyle: 'italic' }}>No active courses defined in this department yet.</span>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10, maxHeight: '200px', overflowY: 'auto', paddingRight: '4px', background: 'rgba(0,0,0,0.18)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-base)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 10, maxHeight: '200px', overflowY: 'auto', paddingRight: '4px', background: 'var(--surface-2)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-base)' }}>
                 {editStudentModal.availableCourses.map(crs => {
                   const isSelected = editStudentModal.selectedCourses.includes(crs._id);
                   return (
@@ -1115,7 +1115,7 @@ const HODStudents = () => {
                       }}
                       style={{
                         padding: '10px 12px',
-                        background: isSelected ? 'rgba(99,102,241,0.05)' : 'rgba(255,255,255,0.02)',
+                        background: isSelected ? 'var(--primary-dim)' : 'var(--surface-3)',
                         border: isSelected ? '1px solid var(--accent)' : '1px solid var(--border-base)',
                         borderRadius: '8px',
                         cursor: 'pointer',

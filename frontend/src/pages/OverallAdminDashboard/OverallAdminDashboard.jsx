@@ -157,7 +157,7 @@ const AdminHome = () => {
 
                   {college.departments?.length > 0 && (
                     <div className={styles.deptTags}>
-                      {college.departments.slice(0, 4).map(d => <span key={d} className={styles.deptTag}>{d}</span>)}
+                      {college.departments.slice(0, 4).map(d => <span key={typeof d === 'object' ? d._id : d} className={styles.deptTag}>{typeof d === 'object' ? d.name : d}</span>)}
                       {college.departments.length > 4 && <span className={styles.deptTag}>+{college.departments.length - 4}</span>}
                     </div>
                   )}
@@ -222,7 +222,7 @@ const AdminHome = () => {
                 </div>
                 {college.departments?.length > 0 && (
                   <div className={styles.deptTags}>
-                    {college.departments.slice(0, 5).map(d => <span key={d} className={styles.deptTag} style={{ background: 'var(--bg-3)', color: 'var(--text-2)' }}>{d}</span>)}
+                    {college.departments.slice(0, 5).map(d => <span key={typeof d === 'object' ? d._id : d} className={styles.deptTag} style={{ background: 'var(--bg-3)', color: 'var(--text-2)' }}>{typeof d === 'object' ? d.name : d}</span>)}
                     {college.departments.length > 5 && <span className={styles.deptTag}>+{college.departments.length - 5}</span>}
                   </div>
                 )}
@@ -259,8 +259,8 @@ const AdminHome = () => {
               </h4>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                 {selectedCollege.departments?.map(dept => (
-                  <span key={dept} style={{ padding: '6px 12px', background: 'var(--bg-2)', border: '1px solid var(--border)', color: 'var(--text-1)', borderRadius: '6px', fontSize: '13px' }}>
-                    {dept}
+                  <span key={typeof dept === 'object' ? dept._id : dept} style={{ padding: '6px 12px', background: 'var(--bg-2)', border: '1px solid var(--border)', color: 'var(--text-1)', borderRadius: '6px', fontSize: '13px' }}>
+                    {typeof dept === 'object' ? dept.name : dept}
                   </span>
                 ))}
                 {(!selectedCollege.departments || selectedCollege.departments.length === 0) && (

@@ -44,10 +44,10 @@
   align-items: center;
   gap: 7px;
   padding: 6px 16px;
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.25);
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
   border-radius: 100px;
-  color: #fbbf24;
+  color: var(--warning);
   font-size: 0.8rem;
   font-weight: 600;
   margin-top: 4px;
@@ -291,7 +291,7 @@
 .tabBar {
   display: flex;
   gap: 4px;
-  background: rgba(0,0,0,0.22);
+  background: var(--table-header-bg);
   border: 1px solid var(--border-base);
   border-radius: 8px;
   padding: 3px;
@@ -326,7 +326,7 @@
   min-width: 18px;
   height: 18px;
   border-radius: 100px;
-  background: rgba(255,255,255,0.15);
+  background: var(--bg-surface-hover);
   font-size: 0.69rem;
   padding: 0 4px;
 }
@@ -340,7 +340,7 @@
   color: var(--accent-light);
   text-transform: uppercase;
   letter-spacing: 0.10em;
-  background: rgba(99,102,241,0.05);
+  background: var(--primary-dim);
   border-bottom: 1px solid var(--border-base);
 }
 
@@ -380,7 +380,7 @@
 .table tbody tr:hover { background: rgba(255,255,255,0.02); }
 
 .mutedCell  { color: var(--text-3); font-size: 0.84rem; }
-.reasonCell { color: #fca5a5; font-size: 0.84rem; }
+.reasonCell { color: var(--danger); font-size: 0.84rem; }
 
 .nameCell {
   display: flex;
@@ -417,7 +417,7 @@
   white-space: nowrap;
 }
 
-.badgeCA      { background: rgba(167,139,250,0.12); border-color: rgba(167,139,250,0.3); color: #c4b5fd; }
+.badgeCA      { background: var(--theme-violet-dim); border-color: rgba(139, 92, 246, 0.3); color: var(--theme-violet); }
 .badgeHOD     { background: rgba(99,102,241,0.12);  border-color: rgba(99,102,241,0.3);  color: var(--accent-light); }
 .badgeFaculty { background: rgba(148,163,184,0.1);  border-color: rgba(148,163,184,0.2); color: var(--text-2); }
 .badgeSuccess { background: var(--success-bg);      border-color: var(--success-border); color: var(--success); }
@@ -454,11 +454,11 @@
 .rejectBtn   { color: var(--danger); border-color: rgba(239,68,68,0.25); background: rgba(239,68,68,0.06); }
 .rejectBtn:hover   { background: rgba(239,68,68,0.13); border-color: rgba(239,68,68,0.38); }
 
-.hodBtn      { color: #c4b5fd; border-color: rgba(167,139,250,0.25); background: rgba(167,139,250,0.06); }
-.hodBtn:hover      { background: rgba(167,139,250,0.13); border-color: rgba(167,139,250,0.38); }
+.hodBtn      { color: var(--theme-violet, #8b5cf6); border-color: var(--theme-violet-dim); background: var(--theme-violet-dim); }
+.hodBtn:hover      { background: rgba(139, 92, 246, 0.16); border-color: rgba(139, 92, 246, 0.35); }
 
-.transferBtn { color: #fca5a5; border-color: rgba(239,68,68,0.25); background: rgba(239,68,68,0.06); }
-.transferBtn:hover { background: rgba(239,68,68,0.13); border-color: rgba(239,68,68,0.38); }
+.transferBtn { color: var(--danger); border-color: var(--danger-border); background: var(--danger-bg); }
+.transferBtn:hover { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.38); }
 
 /* Loading */
 .tableLoader {
@@ -503,15 +503,15 @@
 }
 
 .modalAlertWarn {
-  background: rgba(245,158,11,0.08);
-  border: 1px solid rgba(245,158,11,0.22);
-  color: #fcd34d;
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  color: var(--warning);
 }
 
 .modalAlertDanger {
-  background: rgba(239,68,68,0.08);
-  border: 1px solid rgba(239,68,68,0.22);
-  color: #fca5a5;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
 }
 
 .modalField {
@@ -574,12 +574,12 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: rgba(167,139,250,0.12);
-  border: 1px solid rgba(167,139,250,0.25);
+  background: var(--theme-violet-dim);
+  border: 1px solid rgba(139, 92, 246, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #c4b5fd;
+  color: var(--theme-violet);
 }
 
 .modalConfirmText {
@@ -597,7 +597,7 @@
 /* Modal action buttons */
 .cancelModalBtn {
   padding: 9px 18px;
-  background: rgba(255,255,255,0.05);
+  background: var(--surface-2);
   border: 1px solid var(--border-base);
   border-radius: 8px;
   color: var(--text-2);
@@ -606,7 +606,7 @@
   cursor: pointer;
   transition: all 0.16s;
 }
-.cancelModalBtn:hover { background: rgba(255,255,255,0.09); color: var(--text-1); }
+.cancelModalBtn:hover { background: var(--surface-3); color: var(--text-1); }
 
 .dangerModalBtn {
   display: flex;

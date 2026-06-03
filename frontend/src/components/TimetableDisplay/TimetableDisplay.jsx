@@ -34,7 +34,7 @@ const TimetableDisplay = ({ timetables, role, onAddExam, onDeleteExam, onGenerat
                     <span className={styles.ttBadge}>{t.exams?.length || 0} Exams</span>
                   </h4>
                   <p className={styles.ttSub}>
-                    {t.semester?.department || 'Active Department'} — {t.semester?.semesterName || 'Semester'} ({t.semester?.academicYear || ''})
+                    {(typeof t.department === 'object' ? t.department?.name : t.department) || 'Active Department'} — {t.semester?.semesterName || 'Semester'} ({t.semester?.academicYear || ''})
                   </p>
                 </div>
               </div>

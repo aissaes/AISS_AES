@@ -53,7 +53,7 @@
 }
 
 .ttHeader:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-surface-hover);
 }
 
 .ttHeaderLeft {
@@ -108,7 +108,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255,255,255,0.1);
+  background: var(--surface-3);
   border: 1px solid var(--border-1);
   color: var(--text-1);
   padding: 6px 14px;
@@ -173,7 +173,7 @@
 }
 
 .table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-surface-hover);
 }
 
 .dateCell {
@@ -265,5 +265,5 @@
 }
 
 .deleteBtn:hover {
-  background: rgba(239, 68, 68, 0.1);
+  background: var(--danger-bg);
 }

@@ -466,7 +466,7 @@ const StudentGradingDetail = () => {
         title="HD Script Viewer"
         className={styles.wideModal}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#0f172a', padding: 20, borderRadius: 8, overflow: 'auto', maxHeight: '80vh', width: '100%', height: '70vh' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'var(--bg-page)', padding: 20, borderRadius: 8, overflow: 'auto', maxHeight: '80vh', width: '100%', height: '70vh' }}>
           {fileTypes[activeImage] === 'pdf' ? (
             <iframe 
               src={activeImage} 

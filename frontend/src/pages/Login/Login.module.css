@@ -25,13 +25,13 @@
   z-index: 1;
   width: 100%;
   max-width: 440px;
-  background: rgba(10, 16, 32, 0.82);
+  background: var(--surface-elevated);
   backdrop-filter: blur(28px);
   -webkit-backdrop-filter: blur(28px);
-  border: 1px solid rgba(99,102,241,0.15);
+  border: 1px solid var(--border);
   border-radius: 20px;
   padding: 44px 40px;
-  box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03);
+  box-shadow: var(--shadow-lg);
 }
 
 .logoWrap {
@@ -56,7 +56,7 @@
   font-size: 1.7rem;
   font-weight: 800;
   text-align: center;
-  background: linear-gradient(135deg, #fff 40%, var(--accent-light));
+  background: linear-gradient(135deg, var(--text-0) 40%, var(--accent-light));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -91,9 +91,9 @@
 }
 
 .alertError {
-  background: rgba(239,68,68,0.1);
-  border: 1px solid rgba(239,68,68,0.25);
-  color: #fca5a5;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
 }
 
 .alertInfo {
@@ -218,7 +218,7 @@
   width: 100%;
 }
 .ghostBtn:hover {
-  background: rgba(255,255,255,0.04);
+  background: var(--bg-surface-hover);
   color: var(--text-1);
   border-color: var(--border-hover);
 }
@@ -248,7 +248,7 @@
   text-align: center;
   font-size: 1.5rem;
   font-weight: 700;
-  background: rgba(0,0,0,0.3);
+  background: var(--input-bg);
   border: 1.5px solid var(--border-base);
   border-radius: 10px;
   color: var(--text-1);
@@ -280,4 +280,4 @@
   text-decoration: none;
   transition: color 0.15s;
 }
-.footerLink:hover { color: #fff; }
+.footerLink:hover { color: var(--primary); }
