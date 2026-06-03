@@ -617,3 +617,132 @@
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0);   }
 }
+
+/* ══════════════════════════════════════════════════════
+   MOBILE SIDEBAR DRAWER & RESPONSIVE OVERRIDES
+══════════════════════════════════════════════════════ */
+
+/* Hamburger toggle — hidden on desktop, shown on mobile */
+.menuToggleBtn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--border-base);
+  color: var(--text-2);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.18s ease;
+}
+.menuToggleBtn:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-1);
+  border-color: var(--border-hover);
+}
+
+/* Close button inside sidebar — hidden on desktop */
+.sidebarCloseBtn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-3);
+  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  margin-left: auto;
+  transition: all 0.15s;
+}
+.sidebarCloseBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-1);
+}
+
+/* Backdrop overlay */
+.sidebarBackdrop {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  /* Sidebar: offscreen drawer */
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: none;
+  }
+  .sidebarActive {
+    transform: translateX(0);
+    box-shadow: 8px 0 40px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Show hamburger & close buttons */
+  .menuToggleBtn  { display: flex; }
+  .sidebarCloseBtn { display: flex; }
+
+  /* Show backdrop */
+  .sidebarBackdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 150;
+    animation: fadeIn 0.2s ease forwards;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* Remove sidebar margin from main area */
+  .main {
+    margin-left: 0;
+  }
+
+  /* Reduce topbar padding */
+  .topbar {
+    padding: 0 16px;
+  }
+
+  /* Hide user meta text, keep avatar only */
+  .topbarMeta {
+    display: none;
+  }
+
+  /* Reduce content padding */
+  .content {
+    padding: 20px 16px;
+  }
+}
+
+@media (max-width: 600px) {
+  .topbar {
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .content {
+    padding: 16px 12px;
+  }
+
+  .pageTitle {
+    font-size: 0.88rem;
+  }
+
+  /* Hide college name badge on very small screens */
+  .topbarLeft > div > span[style] {
+    display: none;
+  }
+
+  /* Stack quick-switch dropdown for narrower viewports */
+  .quickSwitchBtn span {
+    display: none;
+  }
+}

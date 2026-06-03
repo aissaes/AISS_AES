@@ -58,7 +58,7 @@
 
 /* Header */
 .header {
-  max-width: 1200px;
+  max-width: 1300px;
   margin: 0 auto 48px auto;
   display: flex;
   justify-content: space-between;
@@ -97,7 +97,7 @@
 
 /* Container */
 .container {
-  max-width: 1200px;
+  max-width: 1300px;
   margin: 0 auto;
   position: relative;
   z-index: 1;
@@ -105,15 +105,40 @@
 
 .contentWrap {
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: 60px;
-  align-items: center;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 40px;
+  align-items: flex-start;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
+  .contentWrap {
+    grid-template-columns: 1fr 1fr;
+  }
+  .phoneMockupContainer {
+    grid-column: 1 / -1;
+    justify-self: center;
+    transform: scale(0.9);
+    transform-origin: top center;
+  }
+}
+
+@media (max-width: 768px) {
   .contentWrap {
     grid-template-columns: 1fr;
-    gap: 40px;
+    gap: 32px;
+  }
+  .phoneMockupContainer {
+    transform: scale(0.8);
+    transform-origin: top center;
+  }
+  .title {
+    font-size: 2.2rem;
+  }
+  .downloadCard {
+    padding: 24px;
+  }
+  .guideCard {
+    padding: 20px;
   }
 }
 
@@ -220,6 +245,309 @@
   max-width: 440px;
 }
 
+/* Phone Mockup Container & Device Styling */
+.phoneMockupContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  animation: pageIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.phoneDevice {
+  width: 310px;
+  height: 600px;
+  border-radius: 40px;
+  background: #000;
+  border: 12px solid #1a1a1f;
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.7),
+    0 0 0 2px rgba(255,255,255,0.06),
+    0 0 35px var(--accent-glow);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.phoneSpeaker {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 4px;
+  background: #2f2f33;
+  border-radius: 20px;
+  z-index: 100;
+}
+
+.phoneScreen {
+  flex: 1;
+  background: #09090b;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  font-family: var(--font-sans);
+  user-select: none;
+}
+
+/* Status Bar */
+.statusBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px 12px 12px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-3);
+  z-index: 10;
+}
+
+.statusIcons {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* App Area */
+.appArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  padding-bottom: 24px;
+}
+
+.appArea::-webkit-scrollbar {
+  display: none;
+}
+
+/* App Header */
+.appHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.appUser {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.appAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px var(--accent-glow);
+}
+
+.appUser h4 {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-1);
+  margin: 0;
+}
+
+.appUser span {
+  font-size: 9px;
+  color: var(--text-3);
+  display: block;
+}
+
+.appBell {
+  font-size: 14px;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+/* App Stats */
+.appStats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.appStatItem {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-base);
+  border-radius: 12px;
+  padding: 10px 4px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.statVal {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-1);
+}
+
+.statLbl {
+  font-size: 8px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Active Exam Card */
+.activeExamCard {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.08) 0%, rgba(234, 88, 12, 0.03) 100%);
+  border: 1px solid var(--primary-glow);
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 4px 15px rgba(249,115,22,0.05);
+}
+
+.activeExamHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 7.5px;
+  letter-spacing: 0.06em;
+  color: var(--accent-light);
+  margin-bottom: 10px;
+}
+
+.activeDot {
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--accent);
+  animation: pulse 1.8s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.2); }
+}
+
+.activeExamBody h5 {
+  font-size: 13px;
+  font-weight: 750;
+  color: var(--text-1);
+  margin: 0 0 6px 0;
+}
+
+.timerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 9.5px;
+  color: var(--text-2);
+  margin-bottom: 12px;
+}
+
+.timerText {
+  color: var(--accent-light);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.appCameraBtn {
+  width: 100%;
+  padding: 10px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s;
+  box-shadow: 0 3px 8px var(--accent-glow);
+}
+
+.appCameraBtn:hover {
+  background: var(--accent-light);
+}
+
+/* Recent Exam Card */
+.recentExamCard {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-base);
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.recentExamHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 8px;
+  color: var(--text-3);
+  margin-bottom: 10px;
+  letter-spacing: 0.05em;
+}
+
+.marksBadge {
+  background: var(--success-dim);
+  border: 1px solid var(--success-border);
+  color: var(--success);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+}
+
+.recentExamBody h5 {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-1);
+  margin: 0 0 6px 0;
+}
+
+.feedbackText {
+  font-size: 8.5px;
+  color: var(--text-2);
+  line-height: 1.45;
+  margin: 0 0 10px 0;
+  font-style: italic;
+}
+
+.aiTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 7.5px;
+  font-weight: 700;
+  color: var(--info);
+  background: var(--info-dim);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.homeIndicator {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 4px;
+  background: #2a2a2d;
+  border-radius: 20px;
+  z-index: 100;
+}
+
 /* Action Section & Cards */
 .actionSection {
   display: flex;
@@ -282,7 +610,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.15);
   padding: 16px;
   border-radius: 12px;
   border: 1px solid var(--border-base);
@@ -428,3 +756,234 @@
   color: var(--warning);
   line-height: 1.4;
 }
+
+/* Version Badge Container */
+.badgeContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.badgeStable {
+  background: var(--success-dim) !important;
+  border: 1px solid var(--success-border) !important;
+  color: var(--success) !important;
+}
+
+.badgeDotGreen {
+  width: 6px;
+  height: 6px;
+  background: var(--success);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--success);
+}
+
+/* Bottom Section */
+.bottomSection {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1.25fr 0.75fr;
+  gap: 40px;
+  margin-top: 40px;
+  border-top: 1px solid var(--border-base);
+  padding-top: 40px;
+  animation: pageIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (max-width: 1024px) {
+  .bottomSection {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
+
+/* Release Notes & Version History Cards */
+.releaseNotesCard, .historyCard {
+  background: var(--surface-1);
+  border: 1px solid var(--border-base);
+  border-radius: 20px;
+  padding: 32px;
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  box-shadow: var(--shadow-lg);
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text-1);
+  margin: 0 0 24px 0;
+}
+
+.titleIcon {
+  color: var(--accent);
+}
+
+.releaseVersionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-base);
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+
+.releaseVersionHeader h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-1);
+  margin: 0;
+}
+
+.releaseDateBadge {
+  font-size: 0.8rem;
+  color: var(--text-3);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.releaseNotesList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .releaseNotesList {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+.releaseNotesList li {
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.02);
+  padding: 16px;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.releaseNotesList li:hover {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: var(--border-hover);
+}
+
+.releaseNotesList strong {
+  font-size: 0.95rem;
+  color: var(--text-1);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.releaseNotesList p {
+  font-size: 0.82rem;
+  color: var(--text-2);
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* History Card */
+.historyList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.historyItem {
+  border: 1px solid var(--border-base);
+  background: rgba(255, 255, 255, 0.01);
+  padding: 18px;
+  border-radius: 14px;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.historyItem:hover {
+  border-color: var(--border-hover);
+}
+
+.historyActive {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.04) 0%, rgba(234, 88, 12, 0.01) 100%);
+  border-color: var(--primary-glow);
+}
+
+.historyMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.historyMeta strong {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+.activeLabel {
+  font-size: 0.72rem;
+  background: var(--success-dim);
+  color: var(--success);
+  border: 1px solid var(--success-border);
+  padding: 2px 8px;
+  border-radius: 100px;
+  font-weight: 600;
+}
+
+.plannedLabel {
+  font-size: 0.72rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-3);
+  border: 1px solid var(--border-base);
+  padding: 2px 8px;
+  border-radius: 100px;
+  font-weight: 600;
+}
+
+.historyDate {
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
+
+.historySummary {
+  font-size: 0.8rem;
+  color: var(--text-2);
+  line-height: 1.4;
+  margin: 4px 0 0 0;
+}
+
+/* Fallback Card */
+.fallbackCard {
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid var(--border-base);
+  border-radius: 14px;
+  padding: 16px;
+  margin-top: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.fallbackCard h4 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-1);
+  margin: 0 0 4px 0;
+}
+
+.fallbackCard p {
+  font-size: 0.78rem;
+  color: var(--text-2);
+  line-height: 1.4;
+  margin: 0;
+}
+

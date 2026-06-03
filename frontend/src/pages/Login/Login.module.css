@@ -281,3 +281,18 @@
   transition: color 0.15s;
 }
 .footerLink:hover { color: var(--primary); }
+
+@media (max-width: 480px) {
+  .box {
+    padding: 30px 20px;
+    border-radius: 16px;
+  }
+  .title {
+    font-size: 1.4rem;
+  }
+  .otpBox {
+    width: 42px;
+    height: 50px;
+    font-size: 1.3rem;
+  }
+}

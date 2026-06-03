@@ -6,7 +6,7 @@ import {
   BrainCircuit, ArrowRight, Shield, GraduationCap,
   Building2, Users, Crown, Calendar, Upload, Play, FileText, Check,
   ChevronRight, ChevronLeft, Cpu, Activity, Server, Database, Share2,
-  CheckCircle2, Laptop, Sun, Moon, Zap, Info, Award, BookOpen
+  CheckCircle2, Laptop, Sun, Moon, Zap, Info, Award, BookOpen, Menu, X
 } from 'lucide-react';
 import { collegeAPI } from '../../api/client';
 import { useToast } from '../../components/Toast/Toast';
@@ -294,6 +294,7 @@ const Landing = () => {
 
   // Soft mount animation state to handle reload/landing entrance elegantly
   const [isMounted, setIsMounted] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -419,6 +420,39 @@ const Landing = () => {
             Get Started
           </button>
         </div>
+
+        {/* Mobile nav controls */}
+        <div className={styles.mobileNavControls}>
+          <button
+            className={styles.themeToggleBtn}
+            onClick={toggleTheme}
+            aria-label="Toggle Theme"
+          >
+            {theme === 'system' ? <Laptop size={16} /> : theme === 'light' ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+          <button
+            className={styles.hamburgerBtn}
+            onClick={() => setIsMobileMenuOpen(v => !v)}
+            aria-label="Toggle menu"
+          >
+            {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
+
+        {/* Mobile dropdown menu */}
+        {isMobileMenuOpen && (
+          <div className={styles.mobileMenu}>
+            <button className={styles.mobileNavLink} onClick={() => { document.getElementById('workflows')?.scrollIntoView({ behavior: 'smooth' }); setIsMobileMenuOpen(false); }}>Workflows</button>
+            <button className={styles.mobileNavLink} onClick={() => { document.getElementById('roles')?.scrollIntoView({ behavior: 'smooth' }); setIsMobileMenuOpen(false); }}>Roles</button>
+            <button className={styles.mobileNavLink} onClick={() => { document.getElementById('ai-eval')?.scrollIntoView({ behavior: 'smooth' }); setIsMobileMenuOpen(false); }}>AI Evaluation</button>
+            <button className={styles.mobileNavLink} onClick={() => { document.getElementById('academic-lifecycle')?.scrollIntoView({ behavior: 'smooth' }); setIsMobileMenuOpen(false); }}>Lifecycle</button>
+            <button className={styles.mobileNavLink} onClick={() => { setCollegeModalOpen(true); setIsMobileMenuOpen(false); }}>Register Institution</button>
+            <button className={styles.mobileNavLink} onClick={() => { navigate('/login'); setIsMobileMenuOpen(false); }}>Sign In</button>
+            <button className={styles.navCta} onClick={() => { navigate('/register'); setIsMobileMenuOpen(false); }} style={{ marginTop: 8 }}>
+              Get Started
+            </button>
+          </div>
+        )}
       </nav>
 
       {/* ════ HERO ════ */}

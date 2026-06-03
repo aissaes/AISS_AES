@@ -27,6 +27,7 @@ const CollegeAdminDepartments = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [editDeptModal, setEditDeptModal] = useState({ open: false, id: null, name: '', code: '', status: '' });
   const [addDeptModalOpen, setAddDeptModalOpen] = useState(false);
+  const [deleteDeptConfirm, setDeleteDeptConfirm] = useState({ open: false, id: null, name: '' });
 
   const fetchDepartments = useCallback(async () => {
     if (user?.collegeId) {
@@ -97,12 +98,17 @@ const CollegeAdminDepartments = () => {
     }
   };
 
-  const handleDelete = async (dept) => {
-    if (!window.confirm(`Are you sure you want to permanently delete the department: ${dept.name}? This will check for active references first.`)) return;
+  const handleDelete = (dept) => {
+    setDeleteDeptConfirm({ open: true, id: dept._id, name: dept.name });
+  };
+
+  const confirmDeleteDept = async () => {
+    const { id, name } = deleteDeptConfirm;
+    setDeleteDeptConfirm({ open: false, id: null, name: '' });
     try {
-      await collegeAdminAPI.deleteDepartment(dept._id);
-      setDepartments(p => p.filter(d => d._id !== dept._id));
-      toast('Department deleted successfully!', 'success');
+      await collegeAdminAPI.deleteDepartment(id);
+      setDepartments(p => p.filter(d => d._id !== id));
+      toast(`Department '${name}' deleted successfully!`, 'success');
     } catch (err) {
       toast(err.response?.data?.message || 'Failed to delete department', 'error');
     }
@@ -276,6 +282,34 @@ const CollegeAdminDepartments = () => {
             />
           </div>
         </div>
+      </Modal>
+
+      {/* Delete Department Confirmation Modal */}
+      <Modal
+        isOpen={deleteDeptConfirm.open}
+        onClose={() => setDeleteDeptConfirm({ open: false, id: null, name: '' })}
+        title="Delete Department"
+        size="sm"
+        footer={
+          <>
+            <button
+              style={{ padding: '9px 20px', borderRadius: 8, background: 'none', border: '1px solid var(--border-2)', color: 'var(--text-2)', fontWeight: 600, cursor: 'pointer', fontSize: '0.88rem' }}
+              onClick={() => setDeleteDeptConfirm({ open: false, id: null, name: '' })}
+            >
+              Cancel
+            </button>
+            <button
+              style={{ padding: '9px 20px', borderRadius: 8, background: 'var(--danger)', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.88rem', boxShadow: '0 4px 14px rgba(239,68,68,0.3)' }}
+              onClick={confirmDeleteDept}
+            >
+              Delete
+            </button>
+          </>
+        }
+      >
+        <p style={{ color: 'var(--text-2)', fontSize: '0.92rem', lineHeight: 1.5 }}>
+          Are you sure you want to permanently delete the department <strong>"{deleteDeptConfirm.name}"</strong>? This will check for active references first.
+        </p>
       </Modal>
     </div>
   );

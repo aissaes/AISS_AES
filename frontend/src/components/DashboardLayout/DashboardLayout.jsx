@@ -3,8 +3,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LogOut, BrainCircuit, LayoutDashboard,
   ChevronDown, Repeat2, Shield, GraduationCap, Bell, KeyRound,
-  Sun, Moon, Laptop
+  Sun, Moon, Laptop, Menu, X
 } from 'lucide-react';
+import Modal from '../Modal/Modal';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { facultyAPI } from '../../api/client';
@@ -66,6 +67,12 @@ const DashboardLayout = ({ navItems, children }) => {
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const switcherRef = useRef(null);
 
+  /* ── Mobile sidebar drawer state ── */
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  /* ── Logout confirmation modal ── */
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+
   const actualRole  = profile?.role || 'faculty';
   const currentView = detectViewMode(location.pathname);
   const availViews  = ROLE_VIEWS[actualRole] || [];
@@ -81,7 +88,17 @@ const DashboardLayout = ({ navItems, children }) => {
     return () => document.removeEventListener('mousedown', h);
   }, []);
 
-  const handleLogout = async () => {
+  /* ── Auto-close sidebar drawer on route change ── */
+  useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [location.pathname]);
+
+  const handleLogout = () => {
+    setLogoutConfirmOpen(true);
+  };
+
+  const confirmLogout = async () => {
+    setLogoutConfirmOpen(false);
     await logout();
   };
 
@@ -116,8 +133,13 @@ const DashboardLayout = ({ navItems, children }) => {
 
   return (
     <div className={styles.layout}>
+      {/* ════ Sidebar Backdrop (mobile) ════ */}
+      {isSidebarOpen && (
+        <div className={styles.sidebarBackdrop} onClick={() => setIsSidebarOpen(false)} />
+      )}
+
       {/* ════ Sidebar ════ */}
-      <aside className={styles.sidebar}>
+      <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarActive : ''}`}>
         {/* Brand */}
         <div className={styles.brand}>
           <div className={styles.brandIcon}>
@@ -127,6 +149,9 @@ const DashboardLayout = ({ navItems, children }) => {
             <p className={styles.brandName}>AISS_AES</p>
             <p className={styles.brandSub}>Evaluation System</p>
           </div>
+          <button className={styles.sidebarCloseBtn} onClick={() => setIsSidebarOpen(false)} aria-label="Close sidebar">
+            <X size={18} />
+          </button>
         </div>
 
         {/* Viewing-other-role banner */}
@@ -214,6 +239,9 @@ const DashboardLayout = ({ navItems, children }) => {
         {/* Topbar */}
         <header className={styles.topbar}>
           <div className={styles.topbarLeft}>
+            <button className={styles.menuToggleBtn} onClick={() => setIsSidebarOpen(v => !v)} aria-label="Toggle sidebar">
+              <Menu size={20} />
+            </button>
             <LayoutDashboard size={17} className={styles.topbarIcon} />
             <div>
               <span className={styles.pageTitle}>{activeLabel}</span>
@@ -305,7 +333,33 @@ const DashboardLayout = ({ navItems, children }) => {
         </main>
       </div>
 
-
+      {/* ════ Logout Confirmation Modal ════ */}
+      <Modal
+        isOpen={logoutConfirmOpen}
+        onClose={() => setLogoutConfirmOpen(false)}
+        title="Sign Out"
+        size="sm"
+        footer={
+          <>
+            <button
+              style={{ padding: '9px 20px', borderRadius: 8, background: 'none', border: '1px solid var(--border-2)', color: 'var(--text-2)', fontWeight: 600, cursor: 'pointer', fontSize: '0.88rem' }}
+              onClick={() => setLogoutConfirmOpen(false)}
+            >
+              Cancel
+            </button>
+            <button
+              style={{ padding: '9px 20px', borderRadius: 8, background: 'var(--danger)', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.88rem', boxShadow: '0 4px 14px rgba(239,68,68,0.3)' }}
+              onClick={confirmLogout}
+            >
+              Sign Out
+            </button>
+          </>
+        }
+      >
+        <p style={{ color: 'var(--text-2)', fontSize: '0.92rem', lineHeight: 1.5 }}>
+          Are you sure you want to sign out? You will need to log in again to access your dashboard.
+        </p>
+      </Modal>
     </div>
   );
 };

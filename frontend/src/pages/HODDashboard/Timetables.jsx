@@ -38,6 +38,7 @@ const Timetables = () => {
   });
 
   const [qrModal, setQrModal] = useState({ open: false, qrUrl: '', title: '', token: '' });
+  const [deleteExamConfirm, setDeleteExamConfirm] = useState({ open: false, id: null, subjectName: '' });
 
   /* ── Fetch data ── */
   const fetchData = useCallback(async () => {
@@ -153,7 +154,12 @@ const Timetables = () => {
 
   /* ── Delete exam ── */
   const handleDeleteExam = async (examId, subjectName) => {
-    if (!window.confirm(`Delete "${subjectName}"? This will also delete any uploaded question paper for this exam.`)) return;
+    setDeleteExamConfirm({ open: true, id: examId, subjectName });
+  };
+
+  const confirmDeleteExam = async () => {
+    const { id: examId, subjectName } = deleteExamConfirm;
+    setDeleteExamConfirm({ open: false, id: null, subjectName: '' });
     try {
       await timetableAPI.deleteExam(examId);
       toast(`${subjectName} deleted.`, 'info');
@@ -360,6 +366,34 @@ const Timetables = () => {
             <span style={{ fontSize: 24, fontWeight: '900', color: 'var(--primary)', letterSpacing: 1 }}>{qrModal.token}</span>
           </div>
         </div>
+      </Modal>
+
+      {/* ── Delete Exam Confirmation Modal ── */}
+      <Modal
+        isOpen={deleteExamConfirm.open}
+        onClose={() => setDeleteExamConfirm({ open: false, id: null, subjectName: '' })}
+        title="Delete Exam"
+        size="sm"
+        footer={
+          <>
+            <button
+              style={{ padding: '9px 20px', borderRadius: 8, background: 'none', border: '1px solid var(--border-2)', color: 'var(--text-2)', fontWeight: 600, cursor: 'pointer', fontSize: '0.88rem' }}
+              onClick={() => setDeleteExamConfirm({ open: false, id: null, subjectName: '' })}
+            >
+              Cancel
+            </button>
+            <button
+              style={{ padding: '9px 20px', borderRadius: 8, background: 'var(--danger)', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.88rem', boxShadow: '0 4px 14px rgba(239,68,68,0.3)' }}
+              onClick={confirmDeleteExam}
+            >
+              Delete Exam
+            </button>
+          </>
+        }
+      >
+        <p style={{ color: 'var(--text-2)', fontSize: '0.92rem', lineHeight: 1.5 }}>
+          Are you sure you want to delete <strong>"{deleteExamConfirm.subjectName}"</strong>? This will also delete any uploaded question paper for this exam.
+        </p>
       </Modal>
     </div>
   );

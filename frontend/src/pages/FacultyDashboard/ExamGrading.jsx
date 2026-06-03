@@ -23,6 +23,7 @@ const ExamGrading = () => {
   const [materialsFile, setMaterialsFile] = useState(null);
   const [uploadingMaterials, setUploadingMaterials] = useState(false);
   const [availableQuestionIds, setAvailableQuestionIds] = useState([]);
+  const [publishConfirm, setPublishConfirm] = useState({ open: false, isCurrentlyPublished: false });
 
 
 
@@ -84,15 +85,15 @@ const ExamGrading = () => {
     }
   };
 
-  const handleTogglePublishResults = async () => {
+  const handleTogglePublishResults = () => {
     if (!exam) return;
-    const isCurrentlyPublished = exam.resultsPublished === true;
-    const action = isCurrentlyPublished ? "unpublish" : "publish";
-    
-    if (!window.confirm(`Are you sure you want to ${action} the results for this exam? Students will ${isCurrentlyPublished ? 'no longer' : 'now'} be able to view their scores and feedback.`)) {
-      return;
-    }
+    setPublishConfirm({ open: true, isCurrentlyPublished: exam.resultsPublished === true });
+  };
 
+  const confirmTogglePublish = async () => {
+    const isCurrentlyPublished = publishConfirm.isCurrentlyPublished;
+    const action = isCurrentlyPublished ? "unpublish" : "publish";
+    setPublishConfirm({ open: false, isCurrentlyPublished: false });
     try {
       toast(`${isCurrentlyPublished ? 'Unpublishing' : 'Publishing'} results...`, 'info');
       const res = await evaluationAPI.publishResults(examId, !isCurrentlyPublished);
@@ -543,6 +544,35 @@ const ExamGrading = () => {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* ── Publish/Unpublish Results Confirmation Modal ── */}
+      <Modal
+        isOpen={publishConfirm.open}
+        onClose={() => setPublishConfirm({ open: false, isCurrentlyPublished: false })}
+        title={publishConfirm.isCurrentlyPublished ? "Unpublish Results" : "Publish Results"}
+        size="sm"
+        footer={
+          <>
+            <button
+              style={{ padding: '9px 20px', borderRadius: 8, background: 'none', border: '1px solid var(--border-2)', color: 'var(--text-2)', fontWeight: 600, cursor: 'pointer', fontSize: '0.88rem' }}
+              onClick={() => setPublishConfirm({ open: false, isCurrentlyPublished: false })}
+            >
+              Cancel
+            </button>
+            <button
+              style={{ padding: '9px 20px', borderRadius: 8, background: publishConfirm.isCurrentlyPublished ? 'var(--warning)' : 'var(--success)', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.88rem', boxShadow: publishConfirm.isCurrentlyPublished ? '0 4px 14px rgba(245,158,11,0.3)' : '0 4px 14px rgba(16,185,129,0.3)' }}
+              onClick={confirmTogglePublish}
+            >
+              {publishConfirm.isCurrentlyPublished ? 'Unpublish' : 'Publish'}
+            </button>
+          </>
+        }
+      >
+        <p style={{ color: 'var(--text-2)', fontSize: '0.92rem', lineHeight: 1.5 }}>
+          Are you sure you want to {publishConfirm.isCurrentlyPublished ? 'unpublish' : 'publish'} the results for this exam?
+          Students will {publishConfirm.isCurrentlyPublished ? 'no longer' : 'now'} be able to view their scores and feedback.
+        </p>
       </Modal>
 
     </div>

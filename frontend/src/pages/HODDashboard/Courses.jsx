@@ -17,6 +17,7 @@ const Courses = () => {
   const [editModal, setEditModal] = useState({ open: false, id: null, courseName: '', credits: 3 });
   const [assignModal, setAssignModal] = useState({ open: false, courseId: null, courseName: '', facultyId: '', academicYear: '2026-2027' });
   const [submitting, setSubmitting] = useState(false);
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState({ open: false, id: null });
 
   // Form states for creation
   const [courseCode, setCourseCode] = useState('');
@@ -93,7 +94,12 @@ const Courses = () => {
   };
 
   const handleDelete = async (courseId) => {
-    if (!window.confirm('Are you sure you want to archive/delete this course?')) return;
+    setDeleteConfirmModal({ open: true, id: courseId });
+  };
+
+  const confirmDelete = async () => {
+    const courseId = deleteConfirmModal.id;
+    setDeleteConfirmModal({ open: false, id: null });
     try {
       await hodAPI.deleteCourse(courseId);
       toast('Course archived successfully.', 'info');
@@ -363,6 +369,34 @@ const Courses = () => {
             />
           </div>
         </div>
+      </Modal>
+
+      {/* ── Delete/Archive Confirmation Modal ── */}
+      <Modal
+        isOpen={deleteConfirmModal.open}
+        onClose={() => setDeleteConfirmModal({ open: false, id: null })}
+        title="Archive Course"
+        size="sm"
+        footer={
+          <>
+            <button
+              style={{ padding: '9px 20px', borderRadius: 8, background: 'none', border: '1px solid var(--border-2)', color: 'var(--text-2)', fontWeight: 600, cursor: 'pointer', fontSize: '0.88rem' }}
+              onClick={() => setDeleteConfirmModal({ open: false, id: null })}
+            >
+              Cancel
+            </button>
+            <button
+              style={{ padding: '9px 20px', borderRadius: 8, background: 'var(--danger)', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.88rem', boxShadow: '0 4px 14px rgba(239,68,68,0.3)' }}
+              onClick={confirmDelete}
+            >
+              Archive Course
+            </button>
+          </>
+        }
+      >
+        <p style={{ color: 'var(--text-2)', fontSize: '0.92rem', lineHeight: 1.5 }}>
+          Are you sure you want to archive this course? This action may affect student enrollments and faculty assignments.
+        </p>
       </Modal>
     </div>
   );
