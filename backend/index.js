@@ -4,6 +4,11 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import connectDB from "./configurations/database.js";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // --- ROUTES ---
 import uploadRouter from "./routes/uploadRoutes.js";
@@ -44,7 +49,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Serve static APK download
-app.use('/downloads', express.static('public/downloads'));
+app.use('/downloads', express.static(path.join(__dirname, 'public/downloads')));
 
 //  Vercel Fix: Connect DB inside request lifecycle
 app.use(async (req, res, next) => {
