@@ -20,14 +20,28 @@ class ExamsListScreen extends ConsumerStatefulWidget {
   ConsumerState<ExamsListScreen> createState() => _ExamsListScreenState();
 }
 
-class _ExamsListScreenState extends ConsumerState<ExamsListScreen> {
+class _ExamsListScreenState extends ConsumerState<ExamsListScreen> with WidgetsBindingObserver {
   final TextEditingController _tokenController = TextEditingController();
-  DateTime? _selectedDate;
+  String _selectedTab = '';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _tokenController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.invalidate(studentTimetableAndExamsProvider);
+    }
   }
 
   void _unlockExamWithToken(String token) async {
@@ -182,9 +196,19 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> {
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 600),
-              child: CustomScrollView(
-                slivers: [
-                  _buildAppBar(context),
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  ref.invalidate(studentTimetableAndExamsProvider);
+                  try {
+                    await ref.read(studentTimetableAndExamsProvider.future);
+                  } catch (_) {}
+                },
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  slivers: [
+                    _buildAppBar(context),
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                     sliver: SliverList(
@@ -198,136 +222,127 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> {
                               return _buildNoExamsPlaceholder();
                             }
                             
-                            // Collect all unique exam dates for the horizontal timeline strip
-                            final sortedDates = exams.map((exam) {
-                              final parsedDate = exam.date ?? DateTime.now();
-                              return DateTime(parsedDate.year, parsedDate.month, parsedDate.day);
-                            }).toSet().toList()..sort();
+                            // Calculate status categories on the fly
+                            final now = DateTime.now();
                             
-                            // Filter exams by selected date
-                            final filteredExams = _selectedDate == null
-                                ? exams
-                                : exams.where((exam) {
-                                    final parsedDate = exam.date ?? DateTime.now();
-                                    final examDay = DateTime(parsedDate.year, parsedDate.month, parsedDate.day);
-                                    return examDay.isAtSameMomentAs(_selectedDate!);
-                                  }).toList();
+                            String getExamStatus(ExamModel exam) {
+                              final startTime = exam.startTime;
+                              final endTime = exam.endTime;
+
+                              if (startTime != null && now.isBefore(startTime)) {
+                                return 'upcoming';
+                              } else if (startTime != null && endTime != null && now.isAfter(startTime) && now.isBefore(endTime)) {
+                                return 'live';
+                              } else if (endTime != null && now.isAfter(endTime)) {
+                                return exam.hasSubmitted ? 'completed' : 'missed';
+                              } else if (exam.date != null) {
+                                if (exam.date!.isAfter(now)) {
+                                  return 'upcoming';
+                                } else {
+                                  return exam.hasSubmitted ? 'completed' : 'missed';
+                                }
+                              }
+                              return 'upcoming';
+                            }
+
+                            final liveExams = exams.where((e) => getExamStatus(e) == 'live').toList();
+                            final upcomingExams = exams.where((e) => getExamStatus(e) == 'upcoming').toList();
+                            final completedExams = exams.where((e) => getExamStatus(e) == 'completed').toList();
+                            final missedExams = exams.where((e) => getExamStatus(e) == 'missed').toList();
+
+                            // Set default tab key on first load
+                            if (_selectedTab.isEmpty) {
+                              if (liveExams.isNotEmpty) {
+                                _selectedTab = 'live';
+                              } else if (upcomingExams.isNotEmpty) {
+                                _selectedTab = 'upcoming';
+                              } else if (completedExams.isNotEmpty) {
+                                _selectedTab = 'completed';
+                              } else {
+                                _selectedTab = 'upcoming';
+                              }
+                            }
+
+                            List<ExamModel> activeList = [];
+                            Color tabThemeColor = AppTheme.primaryColor;
+                            String sectionHeader = 'UPCOMING EXAMS';
+                            
+                            if (_selectedTab == 'live') {
+                              activeList = liveExams;
+                              tabThemeColor = AppTheme.errorColor;
+                              sectionHeader = 'LIVE EXAMS NOW';
+                            } else if (_selectedTab == 'upcoming') {
+                              activeList = upcomingExams;
+                              tabThemeColor = AppTheme.primaryColor;
+                              sectionHeader = 'UPCOMING EXAMS';
+                            } else if (_selectedTab == 'completed') {
+                              activeList = completedExams;
+                              tabThemeColor = AppTheme.successColor;
+                              sectionHeader = 'COMPLETED EXAMS';
+                            } else if (_selectedTab == 'missed') {
+                              activeList = missedExams;
+                              tabThemeColor = Colors.orange;
+                              sectionHeader = 'MISSED EXAMS';
+                            }
+
+                            // Sort active list: upcoming sorted by date ascending; others sorted by date descending (most recent first)
+                            if (_selectedTab == 'upcoming') {
+                              activeList.sort((a, b) => (a.startTime ?? a.date ?? DateTime.now()).compareTo(b.startTime ?? b.date ?? DateTime.now()));
+                            } else {
+                              activeList.sort((a, b) => (b.startTime ?? b.date ?? DateTime.now()).compareTo(a.startTime ?? a.date ?? DateTime.now()));
+                            }
   
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Gorgeous Horizontal Date timeline scroll selector
-                                const Text(
-                                  'SELECT DATE FILTER',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w900,
-                                    color: AppTheme.textSecondary,
-                                    letterSpacing: 1,
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
+                                // Gmail-style tabs row
                                 SizedBox(
-                                  height: 64,
-                                  child: ListView.separated(
+                                  height: 40,
+                                  child: ListView(
                                     scrollDirection: Axis.horizontal,
-                                    itemCount: sortedDates.length + 1, // +1 for "ALL"
-                                    separatorBuilder: (context, index) => const SizedBox(width: 8),
-                                    itemBuilder: (context, index) {
-                                      final isAll = index == 0;
-                                      final isSelected = isAll 
-                                          ? _selectedDate == null 
-                                          : _selectedDate?.isAtSameMomentAs(sortedDates[index - 1]) ?? false;
-                                          
-                                      final cardColor = isSelected ? AppTheme.primaryColor : AppTheme.surfaceColor;
-                                      final textColor = isSelected ? Colors.white : AppTheme.textPrimary;
-                                      final subColor = isSelected ? Colors.white70 : AppTheme.textSecondary;
-  
-                                      if (isAll) {
-                                        return GestureDetector(
-                                          onTap: () => setState(() => _selectedDate = null),
-                                          child: Container(
-                                            width: 64,
-                                            decoration: BoxDecoration(
-                                              color: cardColor,
-                                              borderRadius: BorderRadius.circular(16),
-                                              boxShadow: AppTheme.softShadow,
-                                              border: Border.all(
-                                                color: isSelected ? Colors.transparent : AppTheme.outlineColor.withValues(alpha: 0.15),
-                                              ),
-                                            ),
-                                            child: Center(
-                                              child: Text(
-                                                'ALL',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.w900,
-                                                  color: textColor,
-                                                  fontSize: 12,
-                                                  letterSpacing: 0.5,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      }
-  
-                                      final date = sortedDates[index - 1];
-                                      final dayLabel = _getDayAbbreviation(date.weekday);
-                                      final dayNumber = date.day.toString();
-  
-                                      return GestureDetector(
-                                        onTap: () => setState(() => _selectedDate = date),
-                                        child: Container(
-                                          width: 58,
-                                          decoration: BoxDecoration(
-                                            color: cardColor,
-                                            borderRadius: BorderRadius.circular(16),
-                                            boxShadow: AppTheme.softShadow,
-                                            border: Border.all(
-                                              color: isSelected ? Colors.transparent : AppTheme.outlineColor.withValues(alpha: 0.15),
-                                            ),
-                                          ),
-                                          child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                dayLabel,
-                                                style: TextStyle(
-                                                  fontSize: 9,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: subColor,
-                                                  letterSpacing: 0.5,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                dayNumber,
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w900,
-                                                  color: textColor,
-                                                  height: 1.1,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      );
-                                    },
+                                    physics: const BouncingScrollPhysics(),
+                                    children: [
+                                      _buildTabButton('Live Now', 'live', liveExams.length, AppTheme.errorColor),
+                                      const SizedBox(width: 8),
+                                      _buildTabButton('Upcoming', 'upcoming', upcomingExams.length, AppTheme.primaryColor),
+                                      const SizedBox(width: 8),
+                                      _buildTabButton('Completed', 'completed', completedExams.length, AppTheme.successColor),
+                                      const SizedBox(width: 8),
+                                      _buildTabButton('Missed', 'missed', missedExams.length, Colors.orange),
+                                    ],
                                   ),
                                 ),
                                 const SizedBox(height: 28),
                                 
-                                _buildSectionDivider('EXAM TIMETABLE'),
+                                _buildSectionDivider(sectionHeader),
                                 const SizedBox(height: 16),
   
-                                if (filteredExams.isEmpty)
-                                  const Center(
+                                if (activeList.isEmpty)
+                                  Center(
                                     child: Padding(
-                                      padding: EdgeInsets.symmetric(vertical: 32.0),
-                                      child: Text(
-                                        'No exams scheduled on this date.',
-                                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
+                                      padding: const EdgeInsets.symmetric(vertical: 48.0),
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            _selectedTab == 'live' 
+                                                ? Icons.notifications_none_rounded 
+                                                : (_selectedTab == 'completed' 
+                                                    ? Icons.assignment_turned_in_outlined 
+                                                    : Icons.event_available_rounded),
+                                            size: 40,
+                                            color: AppTheme.textSecondary.withValues(alpha: 0.5),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Text(
+                                            'No exams in this category.',
+                                            style: TextStyle(
+                                              color: AppTheme.textSecondary.withValues(alpha: 0.8),
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   )
@@ -335,12 +350,12 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> {
                                   ListView.separated(
                                     shrinkWrap: true,
                                     physics: const NeverScrollableScrollPhysics(),
-                                    itemCount: filteredExams.length,
+                                    itemCount: activeList.length,
                                     separatorBuilder: (context, index) => const SizedBox(height: 14),
                                     itemBuilder: (context, index) {
-                                      final exam = filteredExams[index];
+                                      final exam = activeList[index];
                                       final dateStr = exam.date != null 
-                                          ? exam.date!.toLocal().toString().split(' ').first 
+                                          ? DateFormat('EEE, MMM d, yyyy').format(exam.date!.toLocal())
                                           : 'N/A';
                                       final subjectName = exam.subjectName;
                                       final subjectCode = exam.subjectCode;
@@ -348,15 +363,10 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> {
                                       final maxMarks = exam.maxMarks;
                                       final facultyName = exam.facultyName;
                                       
-                                      // Check if exam is live
-                                      final now = DateTime.now();
                                       final startTime = exam.startTime;
                                       final endTime = exam.endTime;
                                       
-                                      bool isLive = false;
-                                      if (startTime != null && endTime != null) {
-                                        isLive = now.isAfter(startTime) && now.isBefore(endTime);
-                                      }
+                                      final isLive = getExamStatus(exam) == 'live';
   
                                       String timingsStr = 'N/A';
                                       if (startTime != null && endTime != null) {
@@ -366,6 +376,11 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> {
                                           timingsStr = '$startFormatted - $endFormatted';
                                         } catch (_) {}
                                       }
+                                      
+                                      String statusLabel = 'UPCOMING';
+                                      if (_selectedTab == 'live') statusLabel = 'LIVE NOW';
+                                      if (_selectedTab == 'completed') statusLabel = 'COMPLETED';
+                                      if (_selectedTab == 'missed') statusLabel = 'MISSED';
                                       
                                       return Container(
                                         padding: const EdgeInsets.all(18),
@@ -388,15 +403,13 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> {
                                                 Container(
                                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                                   decoration: BoxDecoration(
-                                                    color: isLive 
-                                                        ? AppTheme.successColor.withValues(alpha: 0.1) 
-                                                        : AppTheme.primaryColor.withValues(alpha: 0.08),
+                                                    color: tabThemeColor.withValues(alpha: 0.08),
                                                     borderRadius: BorderRadius.circular(6),
                                                   ),
                                                   child: Text(
-                                                    isLive ? 'LIVE' : 'SCHEDULED',
+                                                    statusLabel,
                                                     style: TextStyle(
-                                                      color: isLive ? AppTheme.successColor : AppTheme.primaryColor,
+                                                      color: tabThemeColor,
                                                       fontSize: 9,
                                                       fontWeight: FontWeight.w900,
                                                       letterSpacing: 0.5,
@@ -518,21 +531,72 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> {
           ),
         ),
       ),
+      ),
     );
   }
 
-  String _getDayAbbreviation(int weekday) {
-    switch (weekday) {
-      case DateTime.monday: return 'MON';
-      case DateTime.tuesday: return 'TUE';
-      case DateTime.wednesday: return 'WED';
-      case DateTime.thursday: return 'THU';
-      case DateTime.friday: return 'FRI';
-      case DateTime.saturday: return 'SAT';
-      case DateTime.sunday: return 'SUN';
-      default: return '';
-    }
+  Widget _buildTabButton(String label, String tabKey, int count, Color activeColor) {
+    final isSelected = _selectedTab == tabKey;
+    final cardColor = isSelected ? activeColor : AppTheme.surfaceColor;
+    final textColor = isSelected ? Colors.white : AppTheme.textPrimary;
+    final dotColor = isSelected ? Colors.white : activeColor;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedTab = tabKey),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected 
+                ? Colors.transparent 
+                : AppTheme.outlineColor.withValues(alpha: 0.15),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: dotColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: textColor,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: isSelected 
+                    ? Colors.white.withValues(alpha: 0.2) 
+                    : AppTheme.outlineColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '$count',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: isSelected ? Colors.white : AppTheme.textSecondary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
+
 
   Widget _buildAppBar(BuildContext context) {
     return SliverAppBar(

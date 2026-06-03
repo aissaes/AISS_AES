@@ -157,7 +157,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
             
             // Bottom Loading or Connection Retry Indicator
             Positioned(
-              bottom: 80,
+              bottom: MediaQuery.of(context).padding.bottom > 0
+                  ? MediaQuery.of(context).padding.bottom + 56
+                  : 80,
               child: authState.isOffline 
                   ? Column(
                       children: [
@@ -226,7 +228,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
             
             // Security Badge
             Positioned(
-              bottom: 40,
+              bottom: MediaQuery.of(context).padding.bottom > 0
+                  ? MediaQuery.of(context).padding.bottom + 16
+                  : 40,
               child: Row(
                 children: [
                   const Icon(Icons.verified_user_rounded, color: Color(0xFF47D6FF), size: 14),

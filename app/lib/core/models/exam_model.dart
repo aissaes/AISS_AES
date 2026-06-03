@@ -16,6 +16,7 @@ class ExamModel extends Equatable {
   final DateTime? endTime;
   final String facultyName;
   final List<SectionModel> sections;
+  final bool hasSubmitted;
 
   const ExamModel({
     required this.id,
@@ -32,6 +33,7 @@ class ExamModel extends Equatable {
     this.endTime,
     required this.facultyName,
     required this.sections,
+    this.hasSubmitted = false,
   });
 
   factory ExamModel.fromJson(Map<String, dynamic> json) {
@@ -91,6 +93,7 @@ class ExamModel extends Equatable {
       endTime: json['endTime'] != null ? DateTime.tryParse(json['endTime'])?.toLocal() : null,
       facultyName: resolvedFaculty,
       sections: parsedSections,
+      hasSubmitted: json['hasSubmitted'] ?? false,
     );
   }
 
@@ -109,6 +112,7 @@ class ExamModel extends Equatable {
       'startTime': startTime?.toUtc().toIso8601String(),
       'endTime': endTime?.toUtc().toIso8601String(),
       'assignedFaculty': {'name': facultyName},
+      'hasSubmitted': hasSubmitted,
       'questionPaper': {
         'sections': sections.map((s) => s.questions.map((q) => q.toJson()).toList()).toList(),
       },
@@ -130,6 +134,7 @@ class ExamModel extends Equatable {
     DateTime? endTime,
     String? facultyName,
     List<SectionModel>? sections,
+    bool? hasSubmitted,
   }) {
     return ExamModel(
       id: id ?? this.id,
@@ -146,6 +151,7 @@ class ExamModel extends Equatable {
       endTime: endTime ?? this.endTime,
       facultyName: facultyName ?? this.facultyName,
       sections: sections ?? this.sections,
+      hasSubmitted: hasSubmitted ?? this.hasSubmitted,
     );
   }
 
@@ -165,5 +171,6 @@ class ExamModel extends Equatable {
         endTime,
         facultyName,
         sections,
+        hasSubmitted,
       ];
 }

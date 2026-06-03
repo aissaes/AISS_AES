@@ -12,14 +12,28 @@ class AcademicsScreen extends ConsumerStatefulWidget {
   ConsumerState<AcademicsScreen> createState() => _AcademicsScreenState();
 }
 
-class _AcademicsScreenState extends ConsumerState<AcademicsScreen> {
+class _AcademicsScreenState extends ConsumerState<AcademicsScreen> with WidgetsBindingObserver {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _searchController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.invalidate(semestersProvider);
+    }
   }
 
   @override
@@ -90,53 +104,76 @@ class _AcademicsScreenState extends ConsumerState<AcademicsScreen> {
                 const SizedBox(height: 20),
   
                 Expanded(
-                  child: semestersAsync.when(
-                    data: (semesters) {
-                      if (semesters.isEmpty) {
-                        return const Center(
-                          child: Text('No academic records found.'),
-                        );
-                      }
-  
-                      if (_searchQuery.isNotEmpty) {
-                        return _buildSearchResults(semesters);
-                      }
-  
-                      return RefreshIndicator(
-                        onRefresh: () => ref.refresh(semestersProvider.future),
-                        child: ListView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(),
+                  child: RefreshIndicator(
+                    onRefresh: () => ref.refresh(semestersProvider.future),
+                    child: semestersAsync.when(
+                      data: (semesters) {
+                        if (semesters.isEmpty) {
+                          return const SingleChildScrollView(
+                            physics: AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                            child: SizedBox(
+                              height: 300,
+                              child: Center(
+                                child: Text('No academic records found.'),
+                              ),
+                            ),
+                          );
+                        }
+
+                        if (_searchQuery.isNotEmpty) {
+                          return ListView(
+                            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                            children: [
+                              _buildSearchResults(semesters),
+                            ],
+                          );
+                        }
+
+                        return ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
                           itemCount: semesters.length,
                           itemBuilder: (context, index) {
                             final semester = semesters[index];
                             return _SemesterCard(semester: semester);
                           },
+                        );
+                      },
+                      loading: () => const SingleChildScrollView(
+                        physics: AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                        child: SizedBox(
+                          height: 300,
+                          child: Center(
+                            child: CircularProgressIndicator(),
+                          ),
                         ),
-                      );
-                    },
-                    loading: () => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                    error: (err, stack) => Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.errorColor),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Failed to load academic records.',
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
+                      ),
+                      error: (err, stack) => SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                        child: SizedBox(
+                          height: 400,
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.errorColor),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Failed to load academic records.',
+                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                 ),
+                                const SizedBox(height: 8),
+                                Text(err.toString(), textAlign: TextAlign.center, style: const TextStyle(fontSize: 12)),
+                                const SizedBox(height: 16),
+                                ElevatedButton(
+                                  onPressed: () => ref.refresh(semestersProvider.future),
+                                  child: const Text('Retry'),
+                                ),
+                              ],
+                            ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(err.toString(), textAlign: TextAlign.center, style: const TextStyle(fontSize: 12)),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () => ref.refresh(semestersProvider.future),
-                            child: const Text('Retry'),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),

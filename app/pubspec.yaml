@@ -1,7 +1,7 @@
 name: aiss_aes
 description: A Student Exam Upload App.
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -28,6 +28,7 @@ dependencies:
   mobile_scanner: ^7.2.0
   image: ^4.8.0
   equatable: ^2.0.8
+  package_info_plus: ^9.0.1
 
 dev_dependencies:
   flutter_test:

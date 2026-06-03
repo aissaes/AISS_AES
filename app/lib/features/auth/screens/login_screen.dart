@@ -268,7 +268,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
           // Bottom Security Badge
           if (!isKeyboardOpen)
             Positioned(
-              bottom: 40,
+              bottom: MediaQuery.of(context).padding.bottom > 0
+                  ? MediaQuery.of(context).padding.bottom + 16
+                  : 40,
               left: 0,
               right: 0,
               child: Row(

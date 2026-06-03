@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/primary_button.dart';
@@ -10,6 +11,15 @@ import '../../../core/widgets/app_logo.dart';
 import '../../../core/widgets/app_loading_indicator.dart';
 import '../../../core/models/student_model.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
+
+final versionStringProvider = FutureProvider<String>((ref) async {
+  try {
+    final packageInfo = await PackageInfo.fromPlatform();
+    return 'Version ${packageInfo.version} (Build ${packageInfo.buildNumber})';
+  } catch (e) {
+    return 'Version 1.0.1 (Build 2)';
+  }
+});
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -97,6 +107,7 @@ class ProfileScreen extends ConsumerWidget {
     final String email = student.email;
     final String collegeName = student.collegeName;
     final String initials = student.initials;
+    final versionAsync = ref.watch(versionStringProvider);
 
     return Column(
       children: [
@@ -185,7 +196,28 @@ class ProfileScreen extends ConsumerWidget {
 
         // Account & Security Section Directly on Screen
         _buildAccountSecuritySection(context, ref),
-        
+        const SizedBox(height: 24),
+        Center(
+          child: versionAsync.when(
+            data: (version) => Text(
+              version,
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppTheme.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            loading: () => const SizedBox(height: 14),
+            error: (err, stack) => const Text(
+              'Version 1.0.1 (Build 2)',
+              style: TextStyle(
+                fontSize: 11,
+                color: AppTheme.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
         const SizedBox(height: 120), // Bottom padding for floating nav
       ],
     );
