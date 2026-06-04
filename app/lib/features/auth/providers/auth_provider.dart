@@ -5,6 +5,7 @@ import '../../profile/repositories/student_repository.dart';
 import '../../profile/repositories/student_repository_impl.dart';
 import '../../../../core/errors/app_exception.dart';
 import '../../../core/models/student_model.dart';
+import '../../../../core/network/base_api_client.dart';
 
 class AuthState {
   final bool isAuthenticated;
@@ -142,6 +143,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   final authRepository = ref.watch(authRepositoryProvider);
   final studentRepository = ref.watch(studentRepositoryProvider);
-  return AuthNotifier(authRepository, studentRepository);
+  final client = ref.watch(baseApiClientProvider);
+  
+  final notifier = AuthNotifier(authRepository, studentRepository);
+  client.onUnauthorized = () {
+    notifier.logout();
+  };
+  return notifier;
 });
 

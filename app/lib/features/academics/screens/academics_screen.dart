@@ -42,7 +42,7 @@ class _AcademicsScreenState extends ConsumerState<AcademicsScreen> with WidgetsB
     final semestersAsync = ref.watch(semestersProvider);
 
     return PopScope(
-      canPop: false,
+      canPop: Navigator.of(context).canPop(),
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         if (context.mounted) {

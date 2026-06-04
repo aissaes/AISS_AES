@@ -160,7 +160,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
               bottom: MediaQuery.of(context).padding.bottom > 0
                   ? MediaQuery.of(context).padding.bottom + 56
                   : 80,
-              child: authState.isOffline 
+              child: (authState.isOffline && !authState.isAuthenticated) 
                   ? Column(
                       children: [
                         const Icon(Icons.wifi_off_rounded, color: Colors.orange, size: 36),

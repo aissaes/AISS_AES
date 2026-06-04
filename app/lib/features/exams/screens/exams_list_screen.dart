@@ -724,7 +724,7 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> with WidgetsB
     final resultsAsync = ref.watch(studentResultsProvider);
 
     return PopScope(
-      canPop: false,
+      canPop: Navigator.of(context).canPop(),
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         if (context.mounted) {

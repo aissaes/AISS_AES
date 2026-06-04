@@ -30,7 +30,7 @@ class ProfileScreen extends ConsumerWidget {
     final cachedProfile = ref.watch(studentRepositoryProvider).getCachedProfile();
 
     return PopScope(
-      canPop: false,
+      canPop: Navigator.of(context).canPop(),
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         if (context.mounted) {

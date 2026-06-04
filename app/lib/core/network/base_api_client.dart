@@ -8,6 +8,7 @@ import '../errors/app_exception.dart';
 class BaseApiClient {
   final Dio dio;
   final LocalStorageService _storageService;
+  void Function()? onUnauthorized;
 
   BaseApiClient(this._storageService) : dio = Dio(BaseOptions(
     baseUrl: AppConfig.apiBaseUrl,
@@ -25,6 +26,9 @@ class BaseApiClient {
         return handler.next(options);
       },
       onError: (error, handler) {
+        if (error.response?.statusCode == 401) {
+          onUnauthorized?.call();
+        }
         if (error.type == DioExceptionType.connectionTimeout ||
             error.type == DioExceptionType.sendTimeout ||
             error.type == DioExceptionType.receiveTimeout ||
