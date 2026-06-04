@@ -60,9 +60,11 @@ import {
   getTimetableCategoryExams, 
   getCourseDetail 
 } from "../controllers/academicsController.js";
+import { getStudentDashboard } from "../controllers/dashboardController.js";
 
 const studentRouter = express.Router();
 
+studentRouter.get("/dashboard", verifyToken, isStudent, getStudentDashboard);
 studentRouter.post("/get-exam", verifyToken, isStudent, getExamByIdByToken);
 studentRouter.post("/start-session", verifyToken, isStudent, startUploadSession);
 studentRouter.get("/exam-submissions/:examId/answers", verifyToken, isStudent, getStudentSubmissions);
