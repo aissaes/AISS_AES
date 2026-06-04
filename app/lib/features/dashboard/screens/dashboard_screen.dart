@@ -2,15 +2,14 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../exams/providers/exam_provider.dart';
-import '../../exams/providers/student_results_provider.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../profile/repositories/student_repository_impl.dart';
 import '../../../core/widgets/app_logo.dart';
 import '../../../core/widgets/app_loading_indicator.dart';
-import '../../../core/models/student_model.dart';
-import '../../../core/models/exam_model.dart';
+import '../../profile/repositories/student_repository_impl.dart';
+import '../providers/dashboard_provider.dart';
+import '../models/dashboard_data_model.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -18,187 +17,78 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
-    final activeExamState = ref.watch(activeExamProvider);
-    final activeExam = activeExamState.exam;
-    
+    final dashboardState = ref.watch(dashboardDataProvider);
+
     // Resolve actual cached student details for high-fidelity personalized experience
     final studentProfile = ref.watch(studentRepositoryProvider).getCachedProfile() ?? authState.student;
     final String displayName = studentProfile?.name ?? 'Student';
-    
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: CustomScrollView(
-              slivers: [
-                _buildAppBar(context, displayName),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      _buildHeader(context, displayName),
-                      const SizedBox(height: 16),
-                      _buildAcademicCard(context, studentProfile),
-                      const SizedBox(height: 32),
-                      
-                      // Dynamic Section: Unlocked Active Exam Script Checklist
-                      if (activeExam != null) ...[
-                        _buildSectionHeader(
-                          context,
-                          title: 'Active Examination',
-                          actionText: 'View Details',
-                          onActionTap: () => context.go('/exams'),
-                        ),
-                        const SizedBox(height: 16),
-                        _buildActiveExamCard(context, activeExam),
-                        const SizedBox(height: 32),
-                      ],
+        child: RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(dashboardDataProvider);
+            await ref.read(dashboardDataProvider.future);
+          },
+          color: AppTheme.primaryColor,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  _buildAppBar(context, displayName),
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        _buildWelcomeHeader(context, displayName, authState.isOffline),
+                        const SizedBox(height: 24),
+                        
+                        dashboardState.when(
+                          data: (data) => Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Hero Priority Card (Section 1)
+                              _SmartPriorityCard(priorityCard: data.priorityCard),
+                              const SizedBox(height: 28),
 
-                      // Grid of Quick Actions
-                      _buildSectionDivider('QUICK ACTIONS'),
-                      const SizedBox(height: 20),
-                      _buildQuickActionsGrid(context, activeExam != null),
-                      const SizedBox(height: 32),
-                      
-                      if (studentProfile != null) ...[
-                        _buildEnrolledCoursesList(context, studentProfile),
-                        const SizedBox(height: 32),
-                      ],
+                              // Semester Snapshot Grid (Section 2)
+                              const _SectionHeader(title: 'SEMESTER SNAPSHOT'),
+                              const SizedBox(height: 16),
+                              _SemesterSnapshotGrid(snapshot: data.semesterSnapshot),
+                              const SizedBox(height: 28),
 
-                      // If no active exam, render timetable and upcoming exams overview
-                      if (activeExam == null) ...[
-                        _buildSectionDivider('TIMETABLE & UPCOMING EXAMS'),
-                        const SizedBox(height: 16),
-                        ref.watch(studentTimetableAndExamsProvider).when(
-                          data: (exams) {
-                            if (exams.isEmpty) {
-                              return _buildEmptyState(context, displayName);
-                            }
-                            
-                            // Let's filter upcoming exams (where date is in the future or today)
-                            final now = DateTime.now();
-                            final today = DateTime(now.year, now.month, now.day);
-                            final upcomingExams = exams.where((exam) {
-                              if (exam.date == null) return false;
-                              final examDate = exam.date!;
-                              return examDate.isAfter(today) || examDate.isAtSameMomentAs(today);
-                            }).toList();
-                            
-                            if (upcomingExams.isEmpty) {
-                              return _buildEmptyState(context, displayName);
-                            }
-                            
-                            return ListView.separated(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: upcomingExams.length.clamp(0, 3), // Show max 3
-                              separatorBuilder: (context, index) => const SizedBox(height: 12),
-                              itemBuilder: (context, index) {
-                                final exam = upcomingExams[index];
-                                final dateStr = exam.date != null 
-                                    ? exam.date!.toLocal().toString().split(' ').first 
-                                    : 'N/A';
-                                final subjectName = exam.subjectName;
-                                final subjectCode = exam.subjectCode;
-                                final examType = exam.examType;
-                                
-                                return Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.surfaceColor,
-                                    borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
-                                    border: Border.all(color: AppTheme.outlineColor.withValues(alpha: 0.15)),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(10),
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.calendar_today_rounded,
-                                          color: AppTheme.primaryColor,
-                                          size: 20,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              subjectName,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w700,
-                                                fontSize: 14,
-                                                color: AppTheme.textPrimary,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              '$subjectCode • $examType',
-                                              style: const TextStyle(
-                                                color: AppTheme.textSecondary,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.end,
-                                        children: [
-                                          Text(
-                                            dateStr,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 13,
-                                              color: AppTheme.primaryColor,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          const Text(
-                                            'Upcoming',
-                                            style: TextStyle(
-                                              color: AppTheme.textSecondary,
-                                              fontSize: 11,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            );
-                          },
+                              // Latest Result Preview (Section 4)
+                              if (data.latestResult != null) ...[
+                                const _SectionHeader(title: 'LATEST RESULT'),
+                                const SizedBox(height: 16),
+                                _LatestResultPreviewCard(result: data.latestResult!),
+                                const SizedBox(height: 28),
+                              ],
+
+                              // Recent Activity Timeline (Section 3)
+                              const _SectionHeader(title: 'RECENT ACTIVITY'),
+                              const SizedBox(height: 16),
+                              _RecentActivityTimeline(activities: data.recentActivity),
+                            ],
+                          ),
                           loading: () => const Center(
                             child: Padding(
-                              padding: EdgeInsets.all(24.0),
-                              child: AppLoadingIndicator(size: 50, logoSize: 24),
+                              padding: EdgeInsets.symmetric(vertical: 80.0),
+                              child: AppLoadingIndicator(size: 60, logoSize: 28),
                             ),
                           ),
-                          error: (err, stack) => Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(24.0),
-                              child: Text(
-                                'Error loading schedule: $err',
-                                style: const TextStyle(color: Colors.red),
-                              ),
-                            ),
-                          ),
+                          error: (error, stackTrace) => _buildErrorState(context, ref, error),
                         ),
-                      ],
-                      
-                      const SizedBox(height: 120), // Bottom padding for floating navigation bar
-                    ]),
+                        
+                        const SizedBox(height: 100), // Bottom padding for floating navigation bar
+                      ]),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -261,65 +151,355 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, String displayName) {
+  Widget _buildWelcomeHeader(BuildContext context, String displayName, bool isOffline) {
     final firstName = displayName.split(' ').first;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Welcome, $firstName 👋',
-          style: Theme.of(context).textTheme.displayLarge?.copyWith(
-            fontSize: 28,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -0.5,
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'University Script Scanning & Evaluation Portal',
-          style: TextStyle(
-            color: AppTheme.textSecondary,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSectionHeader(BuildContext context, {required String title, required String actionText, required VoidCallback onActionTap}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Welcome, $firstName 👋',
+              style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              isOffline ? 'Offline — Viewing Cached Data' : 'System Secure & Online',
+              style: TextStyle(
+                color: isOffline ? Colors.orange.shade800 : AppTheme.textSecondary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
-        TextButton(
-          onPressed: onActionTap,
-          style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            minimumSize: Size.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: AppTheme.successColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(100),
           ),
-          child: Text(actionText),
+          child: const Row(
+            children: [
+              Icon(Icons.shield_rounded, color: AppTheme.successColor, size: 12),
+              SizedBox(width: 4),
+              Text(
+                'VERIFIED',
+                style: TextStyle(
+                  color: AppTheme.successColor,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildActiveExamCard(BuildContext context, ExamModel exam) {
-    final subjectName = exam.subjectName;
-    final subjectCode = exam.subjectCode;
-    final examType = exam.examType;
-    
+  Widget _buildErrorState(BuildContext context, WidgetRef ref, Object error) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.only(top: 20),
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
-        boxShadow: AppTheme.premiumShadow,
-        border: Border.all(color: AppTheme.successColor.withValues(alpha: 0.2), width: 1.5),
+        borderRadius: BorderRadius.circular(AppTheme.borderRadius2XL),
+        border: Border.all(color: AppTheme.errorColor.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.error_outline_rounded, color: AppTheme.errorColor, size: 48),
+          const SizedBox(height: 16),
+          const Text(
+            'Failed to sync Control Center',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppTheme.textPrimary),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            error.toString(),
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: () => ref.invalidate(dashboardDataProvider),
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            label: const Text('Try Refreshing'),
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(180, 44),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w900,
+            color: AppTheme.outlineColor,
+            letterSpacing: 1.2,
+          ),
+        ),
+        const SizedBox(width: 12),
+        const Expanded(child: Divider(color: AppTheme.outlineVariant, height: 1, thickness: 0.5)),
+      ],
+    );
+  }
+}
+
+// ==========================================
+// 1. SMART PRIORITY CARD
+// ==========================================
+class _SmartPriorityCard extends StatelessWidget {
+  final DashboardPriorityCard priorityCard;
+
+  const _SmartPriorityCard({required this.priorityCard});
+
+  @override
+  Widget build(BuildContext context) {
+    switch (priorityCard.type) {
+      case 'live_exam':
+        return _buildLiveExamCard(context, priorityCard.data);
+      case 'upcoming_exam':
+        return _buildUpcomingExamCard(context, priorityCard.data);
+      case 'result':
+        return _buildResultPublishedCard(context, priorityCard.data);
+      case 'overview':
+      default:
+        return _buildDefaultOverviewCard(context, priorityCard.data);
+    }
+  }
+
+  Widget _buildLiveExamCard(BuildContext context, Map<String, dynamic> data) {
+    final remainingMins = data['remainingMinutes'] ?? 0;
+    
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppTheme.borderRadius2XL),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFBA1A1A), // Crimson Red
+            Color(0xFFE23C3C),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFBA1A1A).withValues(alpha: 0.35),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Row(
+                  children: [
+                    _LivePulseIndicator(),
+                    SizedBox(width: 6),
+                    Text(
+                      'LIVE NOW',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              Text(
+                data['subjectCode'] ?? '',
+                style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            data['subjectName'] ?? 'Examination',
+            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 22, color: Colors.white, height: 1.2),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            data['examType'] ?? '',
+            style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'TIME REMAINING',
+                    style: TextStyle(color: Colors.white54, fontSize: 9, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$remainingMins Minutes Left',
+                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              ElevatedButton(
+                onPressed: () => context.go('/exams'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFFBA1A1A),
+                  minimumSize: const Size(120, 46),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge)),
+                  elevation: 0,
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Join Exam'),
+                    SizedBox(width: 4),
+                    Icon(Icons.arrow_forward_rounded, size: 14),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUpcomingExamCard(BuildContext context, Map<String, dynamic> data) {
+    final startsInHours = data['startsInHours'] ?? 0;
+    final startTimeStr = data['startTime'] != null 
+        ? DateFormat('hh:mm a').format(DateTime.parse(data['startTime']).toLocal())
+        : '09:00 AM';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.borderRadius2XL),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.3), width: 1.5),
+        boxShadow: AppTheme.softShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.access_time_filled_rounded, color: Colors.orange, size: 10),
+                    SizedBox(width: 4),
+                    Text(
+                      'NEXT EXAM',
+                      style: TextStyle(
+                        color: Colors.orange,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              Text(
+                data['subjectCode'] ?? '',
+                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            data['subjectName'] ?? '',
+            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20, color: AppTheme.textPrimary, height: 1.2),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Tomorrow • $startTimeStr',
+            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+          ),
+          const Divider(height: 32, color: AppTheme.outlineVariant, thickness: 0.5),
+          Row(
+            children: [
+              const Icon(Icons.timer_outlined, color: AppTheme.textSecondary, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                'Starts in $startsInHours Hours',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textPrimary),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: () => context.go('/exams'),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text('View Token Details'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResultPublishedCard(BuildContext context, Map<String, dynamic> data) {
+    final marksObtained = data['marksObtained'] ?? 0;
+    final maxMarks = data['maxMarks'] ?? 100;
+    final examId = data['examId'] ?? '';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.borderRadius2XL),
+        border: Border.all(color: AppTheme.successColor.withValues(alpha: 0.3), width: 1.5),
+        boxShadow: AppTheme.softShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -332,222 +512,95 @@ class DashboardScreen extends ConsumerWidget {
                   color: AppTheme.successColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: const Text(
-                  'LIVE & UNLOCKED',
-                  style: TextStyle(
-                    color: AppTheme.successColor,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
-                  ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.workspace_premium_rounded, color: AppTheme.successColor, size: 10),
+                    SizedBox(width: 4),
+                    Text(
+                      'RESULT PUBLISHED',
+                      style: TextStyle(
+                        color: AppTheme.successColor,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const Spacer(),
               Text(
-                subjectCode,
+                data['subjectCode'] ?? '',
                 style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
               ),
             ],
           ),
           const SizedBox(height: 16),
           Text(
-            subjectName,
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20, color: AppTheme.textPrimary),
+            data['subjectName'] ?? '',
+            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20, color: AppTheme.textPrimary, height: 1.2),
           ),
-          const SizedBox(height: 4),
-          Text(
-            examType,
-            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton.icon(
-            onPressed: () => context.go('/exams'),
-            icon: const Icon(Icons.document_scanner_rounded, size: 18),
-            label: const Text('Open Script Checklists'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActionsGrid(BuildContext context, bool hasActiveExam) {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      childAspectRatio: 1.4,
-      children: [
-        _buildActionCard(
-          context,
-          icon: Icons.qr_code_scanner_rounded,
-          title: 'Scan Paper',
-          subtitle: 'Submit scripts',
-          color: const Color(0xFFE8EAF6),
-          iconColor: AppTheme.primaryColor,
-          onTap: () {
-            if (hasActiveExam) {
-              context.go('/exams');
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Please unlock an active exam with a token first under the Exams tab.'),
-                  behavior: SnackBarBehavior.floating,
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.successColor.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
                 ),
-              );
-            }
-          },
-        ),
-        _buildActionCard(
-          context,
-          icon: Icons.checklist_rounded,
-          title: 'Timetables',
-          subtitle: 'Exams schedule',
-          color: const Color(0xFFE0F2F1),
-          iconColor: Colors.teal,
-          onTap: () => context.go('/exams'),
-        ),
-        _buildActionCard(
-          context,
-          icon: Icons.history_edu_rounded,
-          title: 'Results',
-          subtitle: 'Academic grades',
-          color: const Color(0xFFFFF3E0),
-          iconColor: Colors.orange,
-          onTap: () {
-            context.push('/results');
-          },
-        ),
-        _buildActionCard(
-          context,
-          icon: Icons.account_circle_outlined,
-          title: 'My Profile',
-          subtitle: 'Roll ID & Branch',
-          color: const Color(0xFFFCE4EC),
-          iconColor: Colors.pink,
-          onTap: () => context.go('/profile'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required Color iconColor,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 28, color: iconColor),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppTheme.textPrimary),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              subtitle,
-              style: TextStyle(color: AppTheme.textSecondary.withValues(alpha: 0.7), fontSize: 11, fontWeight: FontWeight.w500),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context, String studentName) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
-        border: Border.all(color: AppTheme.outlineColor.withValues(alpha: 0.15)),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.task_alt_rounded,
-            size: 56,
-            color: AppTheme.primaryColor.withValues(alpha: 0.4),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Welcome, $studentName',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'No exams active or unlocked yet.\nTap Scan to submit your first paper.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppTheme.textSecondary,
-              fontSize: 13,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () => context.go('/exams'),
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size(200, 48),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium)),
-            ),
-            child: const Text('Unlock Exam with Token'),
+                child: const Icon(
+                  Icons.check_circle_outline_rounded,
+                  color: AppTheme.successColor,
+                  size: 26,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('MARKS OBTAINED', style: TextStyle(color: AppTheme.textSecondary, fontSize: 10, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text('$marksObtained / $maxMarks', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: AppTheme.textPrimary)),
+                ],
+              ),
+              const Spacer(),
+              ElevatedButton(
+                onPressed: () {
+                  if (examId.isNotEmpty) {
+                    context.push('/results/detail/$examId');
+                  } else {
+                    context.go('/results');
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(110, 44),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge)),
+                  elevation: 0,
+                ),
+                child: const Text('View Script'),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSectionDivider(String label) {
-    return Row(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
-            color: AppTheme.textSecondary,
-            letterSpacing: 1,
-          ),
-        ),
-        const SizedBox(width: 16),
-        const Expanded(child: Divider(color: AppTheme.outlineColor, height: 1)),
-      ],
-    );
-  }
-
-  Widget _buildAcademicCard(BuildContext context, StudentModel? student) {
-    if (student == null) return const SizedBox.shrink();
-
-    final String department = student.department;
-    final String semester = student.semester;
-    final String collegeName = student.collegeName;
+  Widget _buildDefaultOverviewCard(BuildContext context, Map<String, dynamic> data) {
+    final semesterName = data['semesterName'] ?? 'Semester Overview';
+    final coursesCount = data['coursesCount'] ?? 0;
+    final totalCredits = data['totalCredits'] ?? 0;
+    final completedExams = data['completedExams'] ?? 0;
+    final totalExams = data['totalExams'] ?? 0;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
+        borderRadius: BorderRadius.circular(AppTheme.borderRadius2XL),
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -571,9 +624,7 @@ class DashboardScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                semester == 'N/A'
-                    ? 'N/A'
-                    : (semester.toLowerCase().contains('semester') ? semester : 'Semester $semester').toUpperCase(),
+                semesterName.toString().toUpperCase(),
                 style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 11,
@@ -581,84 +632,31 @@ class DashboardScreen extends ConsumerWidget {
                   letterSpacing: 1.5,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(
-                      Icons.shield_rounded,
-                      color: Colors.white,
-                      size: 12,
-                    ),
-                    SizedBox(width: 4),
-                    Text(
-                      'VERIFIED STUDENT',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              const Icon(Icons.dashboard_customize_rounded, color: Colors.white70, size: 16),
             ],
           ),
           const SizedBox(height: 16),
-          Text(
-            department,
-            style: const TextStyle(
+          const Text(
+            'Academic Control Center',
+            style: TextStyle(
               color: Colors.white,
               fontSize: 22,
               fontWeight: FontWeight.w900,
               letterSpacing: -0.5,
             ),
           ),
-          if (collegeName != 'N/A') ...[
-            const SizedBox(height: 6),
-            Text(
-              collegeName.toUpperCase(),
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
+          const SizedBox(height: 4),
+          const Text(
+            'System fully operational. Tap tabs below to view detailed timelines.',
+            style: TextStyle(color: Colors.white70, fontSize: 12),
+          ),
           const SizedBox(height: 24),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'STUDENT ID',
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      student.rollNumber.isNotEmpty ? student.rollNumber : student.id,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _buildMetricItem('$coursesCount', 'Courses'),
+              _buildMetricItem('$totalCredits', 'Credits'),
+              _buildMetricItem('$completedExams / $totalExams', 'Exams Done'),
             ],
           ),
         ],
@@ -666,147 +664,509 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEnrolledCoursesList(BuildContext context, StudentModel student) {
-    final courses = student.enrolledCourses;
-    
+  Widget _buildMetricItem(String val, String label) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionDivider('ENROLLED COURSES'),
-        const SizedBox(height: 20),
-        if (courses.isEmpty)
+        Text(
+          val,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label.toUpperCase(),
+          style: const TextStyle(
+            color: Colors.white54,
+            fontSize: 8,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LivePulseIndicator extends StatefulWidget {
+  const _LivePulseIndicator();
+
+  @override
+  State<_LivePulseIndicator> createState() => _LivePulseIndicatorState();
+}
+
+class _LivePulseIndicatorState extends State<_LivePulseIndicator> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: Tween<double>(begin: 0.3, end: 1.0).animate(_controller),
+      child: Container(
+        width: 8,
+        height: 8,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+        ),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// 2. SEMESTER SNAPSHOT GRID
+// ==========================================
+class _SemesterSnapshotGrid extends StatelessWidget {
+  final DashboardSemesterSnapshot snapshot;
+
+  const _SemesterSnapshotGrid({required this.snapshot});
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 16,
+      childAspectRatio: 1.9,
+      children: [
+        _buildSnapshotCard(
+          icon: Icons.book_outlined,
+          title: 'Courses Enrolled',
+          value: '${snapshot.coursesCount}',
+          color: const Color(0xFFE8EAF6),
+          iconColor: AppTheme.primaryColor,
+        ),
+        _buildSnapshotCard(
+          icon: Icons.badge_outlined,
+          title: 'Semester Credits',
+          value: '${snapshot.totalCredits}',
+          color: const Color(0xFFFFF3E0),
+          iconColor: Colors.orange,
+        ),
+        _buildSnapshotCard(
+          icon: Icons.pending_actions_rounded,
+          title: 'Upcoming Exams',
+          value: '${snapshot.upcomingExams}',
+          color: const Color(0xFFE0F2F1),
+          iconColor: Colors.teal,
+        ),
+        _buildSnapshotCard(
+          icon: Icons.task_alt_rounded,
+          title: 'Exams Completed',
+          value: '${snapshot.completedExams}',
+          color: const Color(0xFFFCE4EC),
+          iconColor: Colors.pink,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSnapshotCard({
+    required IconData icon,
+    required String title,
+    required String value,
+    required Color color,
+    required Color iconColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
+        border: Border.all(color: AppTheme.outlineVariant.withValues(alpha: 0.3)),
+        boxShadow: AppTheme.softShadow,
+      ),
+      child: Row(
+        children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppTheme.surfaceColor,
-              borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
-              border: Border.all(color: AppTheme.outlineColor.withValues(alpha: 0.15)),
+              color: color,
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: const Center(
-              child: Text(
-                'No courses enrolled for this semester.',
-                style: TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 13,
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppTheme.textPrimary),
                 ),
+                const SizedBox(height: 2),
+                Text(
+                  title,
+                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 10, fontWeight: FontWeight.w500),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ==========================================
+// 3. LATEST RESULT PREVIEW CARD
+// ==========================================
+class _LatestResultPreviewCard extends StatelessWidget {
+  final DashboardLatestResult result;
+
+  const _LatestResultPreviewCard({required this.result});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
+        border: Border.all(color: AppTheme.outlineVariant.withValues(alpha: 0.3)),
+        boxShadow: AppTheme.softShadow,
+      ),
+      child: InkWell(
+        onTap: () {
+          if (result.examId.isNotEmpty) {
+            context.push('/results/detail/${result.examId}');
+          } else {
+            context.go('/results');
+          }
+        },
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.assignment_turned_in_outlined,
+                color: AppTheme.primaryColor,
+                size: 20,
               ),
             ),
-          )
-        else
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: courses.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final course = courses[index];
-              final courseName = course.name;
-              final courseCode = course.code;
-              final credits = course.credits;
-              final facultyName = course.facultyName;
-
-              return Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceColor,
-                  borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
-                  border: Border.all(color: AppTheme.outlineColor.withValues(alpha: 0.15)),
-                  boxShadow: AppTheme.softShadow,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    result.subjectName,
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppTheme.textPrimary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    result.subjectCode,
+                    style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${result.marksObtained.toStringAsFixed(0)} / ${result.maxMarks.toStringAsFixed(0)}',
+                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: AppTheme.textPrimary),
                 ),
-                child: Row(
+                const SizedBox(height: 2),
+                const Text(
+                  'View Details →',
+                  style: TextStyle(color: AppTheme.primaryColor, fontSize: 10, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// 4. RECENT ACTIVITY TIMELINE
+// ==========================================
+class _RecentActivityTimeline extends StatelessWidget {
+  final List<DashboardRecentActivity> activities;
+
+  const _RecentActivityTimeline({required this.activities});
+
+  @override
+  Widget build(BuildContext context) {
+    // 1. Deduplicate activities by title to reduce clutter
+    final uniqueActivities = <DashboardRecentActivity>[];
+    final seenTitles = <String>{};
+    for (final activity in activities) {
+      if (!seenTitles.contains(activity.title)) {
+        seenTitles.add(activity.title);
+        uniqueActivities.add(activity);
+      }
+    }
+
+    if (uniqueActivities.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 32),
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor,
+          borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
+          border: Border.all(color: AppTheme.outlineVariant.withValues(alpha: 0.2)),
+        ),
+        child: const Center(
+          child: Text(
+            'No recent activity logged.',
+            style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+          ),
+        ),
+      );
+    }
+
+    // 2. Group by date categories: "Today", "Yesterday", "Earlier"
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final yesterdayStart = todayStart.subtract(const Duration(days: 1));
+
+    final todayActivities = <DashboardRecentActivity>[];
+    final yesterdayActivities = <DashboardRecentActivity>[];
+    final earlierActivities = <DashboardRecentActivity>[];
+
+    for (final activity in uniqueActivities) {
+      final date = activity.timestamp;
+      if (date.isAfter(todayStart) || date.isAtSameMomentAs(todayStart)) {
+        todayActivities.add(activity);
+      } else if (date.isAfter(yesterdayStart) || date.isAtSameMomentAs(yesterdayStart)) {
+        yesterdayActivities.add(activity);
+      } else {
+        earlierActivities.add(activity);
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (todayActivities.isNotEmpty) ...[
+          _buildGroupHeader('Today'),
+          const SizedBox(height: 12),
+          ...todayActivities.map((a) => _ActivityTimelineTile(
+                activity: a,
+                isLast: a == todayActivities.last && yesterdayActivities.isEmpty && earlierActivities.isEmpty,
+                timeStr: _formatTimestamp(a.timestamp),
+              )),
+          const SizedBox(height: 16),
+        ],
+        if (yesterdayActivities.isNotEmpty) ...[
+          _buildGroupHeader('Yesterday'),
+          const SizedBox(height: 12),
+          ...yesterdayActivities.map((a) => _ActivityTimelineTile(
+                activity: a,
+                isLast: a == yesterdayActivities.last && earlierActivities.isEmpty,
+                timeStr: _formatTimestamp(a.timestamp),
+              )),
+          const SizedBox(height: 16),
+        ],
+        if (earlierActivities.isNotEmpty) ...[
+          _buildGroupHeader('Earlier'),
+          const SizedBox(height: 12),
+          ...earlierActivities.map((a) => _ActivityTimelineTile(
+                activity: a,
+                isLast: a == earlierActivities.last,
+                timeStr: _formatTimestamp(a.timestamp),
+              )),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildGroupHeader(String label) {
+    return Text(
+      label.toUpperCase(),
+      style: const TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w900,
+        color: AppTheme.outlineColor,
+        letterSpacing: 0.8,
+      ),
+    );
+  }
+
+  String _formatTimestamp(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+
+    if (diff.inMinutes < 60) {
+      return '${diff.inMinutes.clamp(1, 59)}m ago';
+    } else if (diff.inHours < 24) {
+      return '${diff.inHours}h ago';
+    } else if (diff.inDays < 7) {
+      return '${diff.inDays}d ago';
+    } else {
+      return DateFormat('MMM dd').format(dt);
+    }
+  }
+}
+
+class _ActivityTimelineTile extends StatelessWidget {
+  final DashboardRecentActivity activity;
+  final bool isLast;
+  final String timeStr;
+
+  const _ActivityTimelineTile({
+    required this.activity,
+    required this.isLast,
+    required this.timeStr,
+  });
+
+  String _getActivitySubtext(String type) {
+    switch (type) {
+      case 'submission':
+        return 'Answer script submitted successfully.';
+      case 'result':
+        return 'Evaluation completed & marks published.';
+      case 'feedback':
+        return 'Constructive evaluation feedback added.';
+      case 'token':
+        return 'Exam passcode unlocked successfully.';
+      default:
+        return 'Activity logged successfully.';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    IconData icon;
+    Color iconColor;
+    Color circleBg;
+
+    switch (activity.type) {
+      case 'submission':
+        icon = Icons.task_alt_rounded;
+        iconColor = AppTheme.successColor;
+        circleBg = AppTheme.successColor.withValues(alpha: 0.1);
+        break;
+      case 'result':
+        icon = Icons.workspace_premium_rounded;
+        iconColor = Colors.orange;
+        circleBg = Colors.orange.withValues(alpha: 0.1);
+        break;
+      case 'feedback':
+        icon = Icons.rate_review_rounded;
+        iconColor = AppTheme.primaryColor;
+        circleBg = AppTheme.primaryColor.withValues(alpha: 0.1);
+        break;
+      case 'token':
+        icon = Icons.vpn_key_rounded;
+        iconColor = Colors.teal;
+        circleBg = Colors.teal.withValues(alpha: 0.1);
+        break;
+      case 'profile':
+      default:
+        icon = Icons.shield_rounded;
+        iconColor = Colors.indigo;
+        circleBg = Colors.indigo.withValues(alpha: 0.1);
+        break;
+    }
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Timeline node representation
+          Column(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: circleBg,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: iconColor, size: 16),
+              ),
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    width: 1.5,
+                    color: AppTheme.outlineVariant.withValues(alpha: 0.4),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: 16),
+          // Timeline contents
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.book_outlined,
-                        color: AppTheme.primaryColor,
-                        size: 22,
+                    Expanded(
+                      child: Text(
+                        activity.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: AppTheme.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  courseCode,
-                                  style: const TextStyle(
-                                    color: AppTheme.primaryColor,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.teal.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  '$credits Credits',
-                                  style: const TextStyle(
-                                    color: Colors.teal,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            courseName,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 15,
-                              color: AppTheme.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.person_outline_rounded,
-                                size: 13,
-                                color: AppTheme.textSecondary.withValues(alpha: 0.7),
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  facultyName,
-                                  style: TextStyle(
-                                    color: AppTheme.textSecondary.withValues(alpha: 0.8),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                    const SizedBox(width: 8),
+                    Text(
+                      timeStr,
+                      style: const TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
-              );
-            },
+                const SizedBox(height: 2),
+                Text(
+                  _getActivitySubtext(activity.type),
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(height: 16), // space between elements
+              ],
+            ),
           ),
-      ],
+        ],
+      ),
     );
   }
 }

@@ -7,6 +7,8 @@ class QuestionEvaluationModel extends Equatable {
   final String feedback;
   final String reasoning;
   final String? imageUrl;
+  final String strengths;
+  final String weaknesses;
 
   const QuestionEvaluationModel({
     required this.questionId,
@@ -15,6 +17,8 @@ class QuestionEvaluationModel extends Equatable {
     required this.feedback,
     required this.reasoning,
     this.imageUrl,
+    required this.strengths,
+    required this.weaknesses,
   });
 
   factory QuestionEvaluationModel.fromJson(Map<String, dynamic> json) {
@@ -25,6 +29,8 @@ class QuestionEvaluationModel extends Equatable {
       feedback: json['feedback'] ?? 'No feedback provided.',
       reasoning: json['reasoning'] ?? '',
       imageUrl: json['imageUrl'],
+      strengths: json['strengths'] ?? '',
+      weaknesses: json['weaknesses'] ?? '',
     );
   }
 
@@ -36,6 +42,8 @@ class QuestionEvaluationModel extends Equatable {
       'feedback': feedback,
       'reasoning': reasoning,
       'imageUrl': imageUrl,
+      'strengths': strengths,
+      'weaknesses': weaknesses,
     };
   }
 
@@ -46,6 +54,8 @@ class QuestionEvaluationModel extends Equatable {
     String? feedback,
     String? reasoning,
     String? imageUrl,
+    String? strengths,
+    String? weaknesses,
   }) {
     return QuestionEvaluationModel(
       questionId: questionId ?? this.questionId,
@@ -54,6 +64,8 @@ class QuestionEvaluationModel extends Equatable {
       feedback: feedback ?? this.feedback,
       reasoning: reasoning ?? this.reasoning,
       imageUrl: imageUrl ?? this.imageUrl,
+      strengths: strengths ?? this.strengths,
+      weaknesses: weaknesses ?? this.weaknesses,
     );
   }
 
@@ -65,6 +77,8 @@ class QuestionEvaluationModel extends Equatable {
         feedback,
         reasoning,
         imageUrl,
+        strengths,
+        weaknesses,
       ];
 }
 
@@ -152,7 +166,7 @@ class ExamResultModel extends Equatable {
     );
   }
 
-  bool get isGraded => status.toLowerCase() == 'graded';
+  bool get isGraded => status.toLowerCase() == 'graded' || status.toLowerCase() == 'completed';
   double get percent => maxMarks > 0 ? (totalMarksObtained / maxMarks) * 100 : 0.0;
 
   @override

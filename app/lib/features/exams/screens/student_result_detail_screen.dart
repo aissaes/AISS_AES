@@ -111,6 +111,8 @@ class StudentResultDetailScreen extends ConsumerWidget {
                               feedback: feedback,
                               reasoning: reasoning,
                               imageUrl: imageUrl,
+                              strengths: evaluation.strengths,
+                              weaknesses: evaluation.weaknesses,
                             );
                           },
                         ),
@@ -306,6 +308,8 @@ class StudentResultDetailScreen extends ConsumerWidget {
     required String feedback,
     required String reasoning,
     required String? imageUrl,
+    required String strengths,
+    required String weaknesses,
   }) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -371,35 +375,68 @@ class StudentResultDetailScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
-          // Feedback Block
-          const Text(
-            'FEEDBACK & EVALUATION',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textSecondary,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppTheme.backgroundColor,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTheme.outlineColor.withValues(alpha: 0.08)),
-            ),
-            child: Text(
-              feedback,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppTheme.textPrimary,
-                height: 1.5,
+          // Strengths Bullet
+          if (strengths.isNotEmpty) ...[
+            const Text(
+              'STRENGTHS',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+                letterSpacing: 0.5,
               ),
             ),
+            const SizedBox(height: 6),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.check_circle_outline_rounded, color: Colors.green, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    strengths,
+                    style: const TextStyle(fontSize: 13, color: AppTheme.textPrimary, height: 1.4),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Weaknesses Bullet
+          if (weaknesses.isNotEmpty) ...[
+            const Text(
+              'WEAKNESSES',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.errorColor,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.cancel_outlined, color: AppTheme.errorColor, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    weaknesses,
+                    style: const TextStyle(fontSize: 13, color: AppTheme.textPrimary, height: 1.4),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Expandable AI Feedback Block
+          _ExpandableFeedbackBlock(
+            title: 'AI Feedback',
+            feedback: feedback,
           ),
 
           if (reasoning.isNotEmpty) ...[
@@ -424,11 +461,11 @@ class StudentResultDetailScreen extends ConsumerWidget {
             ),
           ],
 
-          // Answer Script Page Image Attachment
+          // Answer Script Page Image Attachment Redesigned
           if (imageUrl != null && imageUrl.isNotEmpty) ...[
             const SizedBox(height: 20),
             const Text(
-              'SUBMITTED SCRIPT PAGE',
+              'SUBMITTED SCRIPT',
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
@@ -437,40 +474,72 @@ class StudentResultDetailScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 8),
-            GestureDetector(
-              onTap: () => _showFullScreenImage(context, imageUrl, questionId),
-              child: Stack(
-                alignment: Alignment.bottomRight,
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.backgroundColor,
+                borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
+                border: Border.all(color: AppTheme.outlineColor.withValues(alpha: 0.08)),
+              ),
+              child: Row(
                 children: [
-                  Container(
-                    height: 160,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
-                      border: Border.all(color: AppTheme.outlineColor.withValues(alpha: 0.15)),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return const Center(child: CircularProgressIndicator());
-                      },
-                      errorBuilder: (context, error, stackTrace) => const Center(
-                        child: Icon(Icons.broken_image_rounded, color: AppTheme.outlineColor, size: 36),
+                  GestureDetector(
+                    onTap: () => _showFullScreenImage(context, imageUrl, questionId),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        color: Colors.black.withValues(alpha: 0.03),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Image.network(
+                              imageUrl,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return const Center(
+                                  child: SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) => const Center(
+                                child: Icon(Icons.image_not_supported_rounded, color: AppTheme.outlineColor, size: 20),
+                              ),
+                            ),
+                            Container(
+                              color: Colors.black.withValues(alpha: 0.15),
+                            ),
+                            const Icon(Icons.zoom_in_rounded, color: Colors.white, size: 18),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                  Container(
-                    margin: const EdgeInsets.all(12),
-                    padding: const EdgeInsets.all(6),
-                    decoration: const BoxDecoration(
-                      color: Colors.black54,
-                      shape: BoxShape.circle,
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Page $questionId.png',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textPrimary),
+                        ),
+                        const SizedBox(height: 2),
+                        const Text(
+                          'Tap thumbnail to view full resolution',
+                          style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                        ),
+                      ],
                     ),
-                    child: const Icon(Icons.fullscreen_rounded, color: Colors.white, size: 20),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.open_in_new_rounded, color: AppTheme.primaryColor, size: 20),
+                    onPressed: () => _showFullScreenImage(context, imageUrl, questionId),
                   ),
                 ],
               ),
@@ -524,6 +593,95 @@ class StudentResultDetailScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ExpandableFeedbackBlock extends StatefulWidget {
+  final String feedback;
+  final String title;
+
+  const _ExpandableFeedbackBlock({
+    required this.feedback,
+    required this.title,
+  });
+
+  @override
+  State<_ExpandableFeedbackBlock> createState() => _ExpandableFeedbackBlockState();
+}
+
+class _ExpandableFeedbackBlockState extends State<_ExpandableFeedbackBlock> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppTheme.backgroundColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppTheme.outlineColor.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    widget.title.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textSecondary,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        _isExpanded ? 'Collapse' : 'Expand',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppTheme.primaryColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        _isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                        color: AppTheme.primaryColor,
+                        size: 16,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_isExpanded)
+            Padding(
+              padding: const EdgeInsets.only(left: 14, right: 14, bottom: 14),
+              child: Text(
+                widget.feedback,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.textPrimary,
+                  height: 1.5,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

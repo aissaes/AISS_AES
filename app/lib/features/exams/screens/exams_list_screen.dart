@@ -11,6 +11,7 @@ import '../../../core/widgets/app_loading_indicator.dart';
 import '../../../shared/widgets/response_dialog.dart';
 import '../../../core/models/exam_model.dart';
 import '../../../core/models/exam_state.dart';
+import '../../../core/models/exam_result_model.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 class ExamsListScreen extends ConsumerStatefulWidget {
@@ -176,8 +177,549 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> with WidgetsB
     );
   }
 
+  int _getSelectedIndex() {
+    switch (_selectedTab) {
+      case 'live':
+        return 0;
+      case 'upcoming':
+        return 1;
+      case 'history':
+      default:
+        return 2;
+    }
+  }
+
+  void _setSelectedTabByIndex(int index) {
+    setState(() {
+      if (index == 0) _selectedTab = 'live';
+      if (index == 1) _selectedTab = 'upcoming';
+      if (index == 2) _selectedTab = 'history';
+    });
+  }
+
+  Widget _buildSegmentedControl() {
+    final tabs = ['Live', 'Upcoming', 'History'];
+    final selectedIndex = _getSelectedIndex();
+
+    return Container(
+      height: 46,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppTheme.outlineVariant.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final tabWidth = constraints.maxWidth / 3;
+          return Stack(
+            children: [
+              // Sliding active pill
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeInOutCubic,
+                left: selectedIndex * tabWidth,
+                width: tabWidth,
+                height: 38,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Tab labels
+              Row(
+                children: List.generate(tabs.length, (index) {
+                  final isSelected = selectedIndex == index;
+                  return Expanded(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => _setSelectedTabByIndex(index),
+                      child: Center(
+                        child: Text(
+                          tabs[index],
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                            color: isSelected 
+                                ? AppTheme.primaryColor 
+                                : AppTheme.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildLiveExamCard(BuildContext context, ExamModel exam) {
+    final dateStr = exam.date != null 
+        ? DateFormat('EEE, MMM d, yyyy').format(exam.date!.toLocal())
+        : 'N/A';
+    final subjectName = exam.subjectName;
+    final subjectCode = exam.subjectCode;
+    final examType = exam.examType;
+    final maxMarks = exam.maxMarks;
+    
+    final startTime = exam.startTime;
+    final endTime = exam.endTime;
+    String timingsStr = 'N/A';
+    if (startTime != null && endTime != null) {
+      try {
+        final startFormatted = DateFormat('hh:mm a').format(startTime.toLocal());
+        final endFormatted = DateFormat('hh:mm a').format(endTime.toLocal());
+        timingsStr = '$startFormatted - $endFormatted';
+      } catch (_) {}
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.borderRadius2XL),
+        boxShadow: AppTheme.premiumShadow,
+        border: Border.all(
+          color: AppTheme.errorColor.withValues(alpha: 0.6),
+          width: 2.0,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.errorColor.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  'LIVE NOW',
+                  style: TextStyle(
+                    color: AppTheme.errorColor,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                subjectCode,
+                style: const TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            subjectName,
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 17,
+              color: AppTheme.textPrimary,
+              letterSpacing: -0.2,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '$examType • Max Marks: ${maxMarks.toStringAsFixed(0)}',
+            style: const TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 14),
+          const Divider(color: AppTheme.outlineColor, height: 1),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              const Icon(Icons.date_range_rounded, size: 14, color: AppTheme.textSecondary),
+              const SizedBox(width: 6),
+              Text(
+                dateStr,
+                style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(width: 20),
+              const Icon(Icons.access_time_rounded, size: 14, color: AppTheme.textSecondary),
+              const SizedBox(width: 6),
+              Text(
+                timingsStr,
+                style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: () {
+              _showUnlockDialog(context, exam);
+            },
+            icon: const Icon(Icons.lock_open_rounded, size: 16),
+            label: const Text('Unlock script upload'),
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 44),
+              backgroundColor: AppTheme.successColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUpcomingExamCard(BuildContext context, ExamModel exam) {
+    final dateStr = exam.date != null 
+        ? DateFormat('EEE, MMM d, yyyy').format(exam.date!.toLocal())
+        : 'N/A';
+    final subjectName = exam.subjectName;
+    final subjectCode = exam.subjectCode;
+    final examType = exam.examType;
+    final maxMarks = exam.maxMarks;
+    final facultyName = exam.facultyName;
+    
+    final startTime = exam.startTime;
+    final endTime = exam.endTime;
+    String timingsStr = 'N/A';
+    if (startTime != null && endTime != null) {
+      try {
+        final startFormatted = DateFormat('hh:mm a').format(startTime.toLocal());
+        final endFormatted = DateFormat('hh:mm a').format(endTime.toLocal());
+        timingsStr = '$startFormatted - $endFormatted';
+      } catch (_) {}
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.borderRadius2XL),
+        boxShadow: AppTheme.softShadow,
+        border: Border.all(
+          color: AppTheme.outlineColor.withValues(alpha: 0.15),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  'UPCOMING',
+                  style: TextStyle(
+                    color: AppTheme.primaryColor,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                subjectCode,
+                style: const TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            subjectName,
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 17,
+              color: AppTheme.textPrimary,
+              letterSpacing: -0.2,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '$examType • Max Marks: ${maxMarks.toStringAsFixed(0)}',
+            style: const TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 14),
+          const Divider(color: AppTheme.outlineColor, height: 1),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              const Icon(Icons.date_range_rounded, size: 14, color: AppTheme.textSecondary),
+              const SizedBox(width: 6),
+              Text(
+                dateStr,
+                style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(width: 20),
+              const Icon(Icons.person_outline_rounded, size: 14, color: AppTheme.textSecondary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  facultyName,
+                  style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(Icons.access_time_rounded, size: 14, color: AppTheme.textSecondary),
+              const SizedBox(width: 6),
+              Text(
+                timingsStr,
+                style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistoryExamCard(BuildContext context, ExamModel exam, List<ExamResultModel> results) {
+    final dateStr = exam.date != null 
+        ? DateFormat('MMM d, yyyy').format(exam.date!.toLocal())
+        : 'N/A';
+    final subjectName = exam.subjectName;
+    final subjectCode = exam.subjectCode;
+    final examType = exam.examType;
+    final hasSubmitted = exam.hasSubmitted;
+    
+    // Look up result
+    final ExamResultModel matchedResult = results.firstWhere(
+      (r) => r.id == exam.id,
+      orElse: () {
+        final fallbackList = results.where((r) => r.subjectCode == exam.subjectCode && r.examType == exam.examType).toList();
+        if (fallbackList.isNotEmpty) {
+          return fallbackList.first;
+        }
+        return const ExamResultModel(
+          id: '',
+          status: 'Unknown',
+          totalMarksObtained: 0,
+          subjectName: '',
+          subjectCode: '',
+          examType: '',
+          maxMarks: 0,
+          evaluations: [],
+        );
+      },
+    );
+    
+    final hasResultRecord = matchedResult.id.isNotEmpty;
+    final isGraded = hasResultRecord && matchedResult.isGraded;
+    final totalMarksObtained = hasResultRecord ? matchedResult.totalMarksObtained.toStringAsFixed(0) : '0';
+    final maxMarks = hasResultRecord ? matchedResult.maxMarks.toStringAsFixed(0) : exam.maxMarks.toStringAsFixed(0);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(AppTheme.borderRadius2XL),
+        boxShadow: AppTheme.softShadow,
+        border: Border.all(
+          color: AppTheme.outlineColor.withValues(alpha: 0.15),
+          width: 1,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppTheme.borderRadius2XL),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: hasSubmitted && isGraded && matchedResult.id.isNotEmpty
+                ? () => context.push('/results/detail/${matchedResult.id}')
+                : hasSubmitted
+                    ? () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Your answers are under AI-assisted evaluation. Feedback will be published shortly.'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    : null, // If missed, it's not clickable
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      // Status Badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: hasSubmitted
+                              ? AppTheme.successColor.withValues(alpha: 0.08)
+                              : Colors.orange.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              hasSubmitted ? Icons.check_circle_rounded : Icons.warning_amber_rounded,
+                              size: 10,
+                              color: hasSubmitted ? AppTheme.successColor : Colors.orange,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              hasSubmitted ? 'Completed' : 'Missed',
+                              style: TextStyle(
+                                color: hasSubmitted ? AppTheme.successColor : Colors.orange,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        subjectCode,
+                        style: const TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    subjectName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 17,
+                      color: AppTheme.textPrimary,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$examType • $dateStr',
+                    style: const TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                  
+                  // Score section (if submitted)
+                  if (hasSubmitted) ...[
+                    const SizedBox(height: 16),
+                    const Divider(color: AppTheme.outlineColor, height: 1),
+                    const SizedBox(height: 14),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if (isGraded) ...[
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryColor.withValues(alpha: 0.06),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.12)),
+                                ),
+                                child: Text(
+                                  '$totalMarksObtained / $maxMarks Marks',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w900,
+                                    color: AppTheme.primaryColor,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Row(
+                            children: [
+                              Text(
+                                'View grading breakdown',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppTheme.primaryColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(width: 4),
+                              Icon(Icons.arrow_forward_ios_rounded, size: 10, color: AppTheme.primaryColor),
+                            ],
+                          ),
+                        ] else ...[
+                          Row(
+                            children: [
+                              Icon(Icons.hourglass_empty_rounded, size: 14, color: Colors.amber[800]),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Pending Evaluation',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.amber[800],
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            'Max Marks: $maxMarks',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final examsAsync = ref.watch(studentTimetableAndExamsProvider);
+    final resultsAsync = ref.watch(studentResultsProvider);
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
@@ -209,11 +751,13 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> with WidgetsB
                       child: RefreshIndicator(
                         onRefresh: () async {
                           ref.invalidate(studentTimetableAndExamsProvider);
+                          ref.invalidate(studentResultsProvider);
                           try {
                             await ref.read(studentTimetableAndExamsProvider.future);
+                            await ref.read(studentResultsProvider.future);
                           } catch (_) {}
                         },
-                        child: ref.watch(studentTimetableAndExamsProvider).when(
+                        child: examsAsync.when(
                           data: (exams) {
                             if (exams.isEmpty) {
                               return SingleChildScrollView(
@@ -231,6 +775,7 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> with WidgetsB
                             
                             // Calculate status categories on the fly
                             final now = DateTime.now();
+                            final results = resultsAsync.value ?? [];
                             
                             String getExamStatus(ExamModel exam) {
                               final startTime = exam.startTime;
@@ -254,42 +799,27 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> with WidgetsB
 
                             final liveExams = exams.where((e) => getExamStatus(e) == 'live').toList();
                             final upcomingExams = exams.where((e) => getExamStatus(e) == 'upcoming').toList();
-                            final completedExams = exams.where((e) => getExamStatus(e) == 'completed').toList();
-                            final missedExams = exams.where((e) => getExamStatus(e) == 'missed').toList();
+                            final historyExams = exams.where((e) => getExamStatus(e) == 'completed' || getExamStatus(e) == 'missed').toList();
 
-                            // Set default tab key on first load
-                            if (_selectedTab.isEmpty) {
+                            // Set default tab key on first load or backward compatibility
+                            if (_selectedTab.isEmpty || _selectedTab == 'completed' || _selectedTab == 'missed') {
                               if (liveExams.isNotEmpty) {
                                 _selectedTab = 'live';
                               } else if (upcomingExams.isNotEmpty) {
                                 _selectedTab = 'upcoming';
-                              } else if (completedExams.isNotEmpty) {
-                                _selectedTab = 'completed';
                               } else {
-                                _selectedTab = 'upcoming';
+                                _selectedTab = 'history';
                               }
                             }
 
                             List<ExamModel> activeList = [];
-                            Color tabThemeColor = AppTheme.primaryColor;
-                            String sectionHeader = 'UPCOMING EXAMS';
                             
                             if (_selectedTab == 'live') {
                               activeList = liveExams;
-                              tabThemeColor = AppTheme.errorColor;
-                              sectionHeader = 'LIVE EXAMS NOW';
                             } else if (_selectedTab == 'upcoming') {
                               activeList = upcomingExams;
-                              tabThemeColor = AppTheme.primaryColor;
-                              sectionHeader = 'UPCOMING EXAMS';
-                            } else if (_selectedTab == 'completed') {
-                              activeList = completedExams;
-                              tabThemeColor = AppTheme.successColor;
-                              sectionHeader = 'COMPLETED EXAMS';
-                            } else if (_selectedTab == 'missed') {
-                              activeList = missedExams;
-                              tabThemeColor = Colors.orange;
-                              sectionHeader = 'MISSED EXAMS';
+                            } else if (_selectedTab == 'history') {
+                              activeList = historyExams;
                             }
 
                             // Sort active list: upcoming sorted by date ascending; others sorted by date descending (most recent first)
@@ -304,26 +834,40 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> with WidgetsB
                                 parent: BouncingScrollPhysics(),
                               ),
                               children: [
-                                // Gmail-style tabs row
-                                SizedBox(
-                                  height: 40,
-                                  child: ListView(
-                                    scrollDirection: Axis.horizontal,
-                                    physics: const BouncingScrollPhysics(),
-                                    children: [
-                                      _buildTabButton('Live Now', 'live', liveExams.length, AppTheme.errorColor),
-                                      const SizedBox(width: 8),
-                                      _buildTabButton('Upcoming', 'upcoming', upcomingExams.length, AppTheme.primaryColor),
-                                      const SizedBox(width: 8),
-                                      _buildTabButton('Completed', 'completed', completedExams.length, AppTheme.successColor),
-                                      const SizedBox(width: 8),
-                                      _buildTabButton('Missed', 'missed', missedExams.length, Colors.orange),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 28),
+                                _buildSegmentedControl(),
+                                const SizedBox(height: 24),
                                 
-                                _buildSectionDivider(sectionHeader),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          _selectedTab == 'live' 
+                                              ? 'Live Exams' 
+                                              : (_selectedTab == 'upcoming' ? 'Upcoming Exams' : 'History'),
+                                          style: const TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w900,
+                                            color: AppTheme.textPrimary,
+                                            letterSpacing: -0.5,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '${activeList.length} ${activeList.length == 1 ? 'Exam' : 'Exams'}',
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppTheme.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                                 const SizedBox(height: 16),
   
                                 if (activeList.isEmpty)
@@ -336,7 +880,7 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> with WidgetsB
                                           Icon(
                                             _selectedTab == 'live' 
                                                 ? Icons.notifications_none_rounded 
-                                                : (_selectedTab == 'completed' 
+                                                : (_selectedTab == 'history' 
                                                     ? Icons.assignment_turned_in_outlined 
                                                     : Icons.event_available_rounded),
                                             size: 40,
@@ -363,152 +907,13 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> with WidgetsB
                                     separatorBuilder: (context, index) => const SizedBox(height: 14),
                                     itemBuilder: (context, index) {
                                       final exam = activeList[index];
-                                      final dateStr = exam.date != null 
-                                          ? DateFormat('EEE, MMM d, yyyy').format(exam.date!.toLocal())
-                                          : 'N/A';
-                                      final subjectName = exam.subjectName;
-                                      final subjectCode = exam.subjectCode;
-                                      final examType = exam.examType;
-                                      final maxMarks = exam.maxMarks;
-                                      final facultyName = exam.facultyName;
-                                      
-                                      final startTime = exam.startTime;
-                                      final endTime = exam.endTime;
-                                      
-                                      final isLive = getExamStatus(exam) == 'live';
-  
-                                      String timingsStr = 'N/A';
-                                      if (startTime != null && endTime != null) {
-                                        try {
-                                          final startFormatted = DateFormat('hh:mm a').format(startTime.toLocal());
-                                          final endFormatted = DateFormat('hh:mm a').format(endTime.toLocal());
-                                          timingsStr = '$startFormatted - $endFormatted';
-                                        } catch (_) {}
+                                      if (_selectedTab == 'live') {
+                                        return _buildLiveExamCard(context, exam);
+                                      } else if (_selectedTab == 'upcoming') {
+                                        return _buildUpcomingExamCard(context, exam);
+                                      } else {
+                                        return _buildHistoryExamCard(context, exam, results);
                                       }
-                                      
-                                      String statusLabel = 'UPCOMING';
-                                      if (_selectedTab == 'live') statusLabel = 'LIVE NOW';
-                                      if (_selectedTab == 'completed') statusLabel = 'COMPLETED';
-                                      if (_selectedTab == 'missed') statusLabel = 'MISSED';
-                                      
-                                      return Container(
-                                        padding: const EdgeInsets.all(18),
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.surfaceColor,
-                                          borderRadius: BorderRadius.circular(AppTheme.borderRadius2XL),
-                                          boxShadow: AppTheme.premiumShadow,
-                                          border: Border.all(
-                                            color: isLive 
-                                                ? AppTheme.successColor.withValues(alpha: 0.6) 
-                                                : AppTheme.outlineColor.withValues(alpha: 0.15),
-                                            width: isLive ? 2.0 : 1,
-                                          ),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                  decoration: BoxDecoration(
-                                                    color: tabThemeColor.withValues(alpha: 0.08),
-                                                    borderRadius: BorderRadius.circular(6),
-                                                  ),
-                                                  child: Text(
-                                                    statusLabel,
-                                                    style: TextStyle(
-                                                      color: tabThemeColor,
-                                                      fontSize: 9,
-                                                      fontWeight: FontWeight.w900,
-                                                      letterSpacing: 0.5,
-                                                    ),
-                                                  ),
-                                                ),
-                                                const Spacer(),
-                                                Text(
-                                                  subjectCode,
-                                                  style: const TextStyle(
-                                                    color: AppTheme.textSecondary,
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 12),
-                                            Text(
-                                              subjectName,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w900,
-                                                fontSize: 17,
-                                                color: AppTheme.textPrimary,
-                                                letterSpacing: -0.2,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              '$examType • Max Marks: ${maxMarks.toStringAsFixed(0)}',
-                                              style: const TextStyle(
-                                                color: AppTheme.textSecondary,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 14),
-                                            const Divider(color: AppTheme.outlineColor, height: 1),
-                                            const SizedBox(height: 14),
-                                            Row(
-                                              children: [
-                                                const Icon(Icons.date_range_rounded, size: 14, color: AppTheme.textSecondary),
-                                                const SizedBox(width: 6),
-                                                Text(
-                                                  dateStr,
-                                                  style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
-                                                ),
-                                                const SizedBox(width: 20),
-                                                const Icon(Icons.person_outline_rounded, size: 14, color: AppTheme.textSecondary),
-                                                const SizedBox(width: 6),
-                                                Expanded(
-                                                  child: Text(
-                                                    facultyName,
-                                                    style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
-                                                    overflow: TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Row(
-                                              children: [
-                                                const Icon(Icons.access_time_rounded, size: 14, color: AppTheme.textSecondary),
-                                                const SizedBox(width: 6),
-                                                Text(
-                                                  timingsStr,
-                                                  style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
-                                                ),
-                                              ],
-                                            ),
-                                            if (isLive) ...[
-                                              const SizedBox(height: 16),
-                                              ElevatedButton.icon(
-                                                onPressed: () {
-                                                  _showUnlockDialog(context, exam);
-                                                },
-                                                icon: const Icon(Icons.lock_open_rounded, size: 16),
-                                                label: const Text('Unlock script upload'),
-                                                style: ElevatedButton.styleFrom(
-                                                  minimumSize: const Size(double.infinity, 44),
-                                                  backgroundColor: AppTheme.successColor,
-                                                  foregroundColor: Colors.white,
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                      );
                                     },
                                   ),
                                 const SizedBox(height: 120),
@@ -555,67 +960,6 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> with WidgetsB
     );
   }
 
-  Widget _buildTabButton(String label, String tabKey, int count, Color activeColor) {
-    final isSelected = _selectedTab == tabKey;
-    final cardColor = isSelected ? activeColor : AppTheme.surfaceColor;
-    final textColor = isSelected ? Colors.white : AppTheme.textPrimary;
-    final dotColor = isSelected ? Colors.white : activeColor;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedTab = tabKey),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected 
-                ? Colors.transparent 
-                : AppTheme.outlineColor.withValues(alpha: 0.15),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: dotColor,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: textColor,
-                fontSize: 13,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: isSelected 
-                    ? Colors.white.withValues(alpha: 0.2) 
-                    : AppTheme.outlineColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                '$count',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: isSelected ? Colors.white : AppTheme.textSecondary,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
@@ -651,24 +995,6 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> with WidgetsB
           'Verify tokens and submit your answer scripts securely.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary),
         ),
-      ],
-    );
-  }
-
-  Widget _buildSectionDivider(String label) {
-    return Row(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            color: AppTheme.textSecondary,
-            letterSpacing: 1,
-          ),
-        ),
-        const SizedBox(width: 16),
-        const Expanded(child: Divider(color: AppTheme.outlineColor, height: 1)),
       ],
     );
   }
