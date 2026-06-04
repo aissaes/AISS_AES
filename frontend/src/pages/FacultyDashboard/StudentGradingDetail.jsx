@@ -403,15 +403,27 @@ const StudentGradingDetail = () => {
                       <>
                         {fileType === 'pdf' ? (
                           <div style={{ position: 'relative', width: '100%', height: '420px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white' }}>
-                            <img 
-                              src={getPdfPageUrl(fileUrl, 1)} 
-                              alt={`Question ${ev.questionId}`}
-                              onError={() => setLoadErrors(prev => ({ ...prev, [ev.questionId]: true }))}
-                              style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                            />
-                            <div style={{ position: 'absolute', bottom: 12, left: 12, background: 'rgba(15,23,42,0.85)', color: 'white', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, border: '1px solid rgba(255,255,255,0.1)' }}>
-                              PDF Preview - Page 1
-                            </div>
+                            {!fileUrl.toLowerCase().includes('.pdf') ? (
+                              <iframe 
+                                src={fileUrl} 
+                                width="100%" 
+                                height="100%" 
+                                style={{ border: 'none', borderRadius: '6px' }}
+                                title={`Question ${ev.questionId}`}
+                              />
+                            ) : (
+                              <>
+                                <img 
+                                  src={getPdfPageUrl(fileUrl, 1)} 
+                                  alt={`Question ${ev.questionId}`}
+                                  onError={() => setLoadErrors(prev => ({ ...prev, [ev.questionId]: true }))}
+                                  style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                                />
+                                <div style={{ position: 'absolute', bottom: 12, left: 12, background: 'rgba(15,23,42,0.85)', color: 'white', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, border: '1px solid rgba(255,255,255,0.1)' }}>
+                                  PDF Preview - Page 1
+                                </div>
+                              </>
+                            )}
                           </div>
                         ) : (
                           <img 
@@ -649,9 +661,19 @@ const StudentGradingDetail = () => {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'var(--bg-page)', padding: 20, borderRadius: 8, overflow: 'hidden', maxHeight: '80vh', width: '100%', height: '70vh' }}>
           {activeEval && (
             activeEval.fileType === 'pdf' ? (
-              <PdfPageViewer 
-                url={activeEval.fileUrl} 
-              />
+              !activeEval.fileUrl.toLowerCase().includes('.pdf') ? (
+                <iframe 
+                  src={activeEval.fileUrl} 
+                  width="100%" 
+                  height="100%" 
+                  style={{ border: 'none', borderRadius: '6px' }}
+                  title="PDF Viewer"
+                />
+              ) : (
+                <PdfPageViewer 
+                  url={activeEval.fileUrl} 
+                />
+              )
             ) : (
               <img 
                 src={activeEval.fileUrl} 
