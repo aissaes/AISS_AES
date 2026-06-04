@@ -116,7 +116,7 @@ class _SemesterDetailScreenState extends ConsumerState<SemesterDetailScreen> wit
       return const Center(child: Text('No courses found for this semester.'));
     }
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 8.0, bottom: 120.0),
       itemCount: courses.length,
       itemBuilder: (context, index) {
         final course = courses[index];
@@ -223,7 +223,7 @@ class _SemesterDetailScreenState extends ConsumerState<SemesterDetailScreen> wit
       return const Center(child: Text('No timetable schedules found.'));
     }
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 8.0, bottom: 120.0),
       itemCount: categories.length,
       itemBuilder: (context, index) {
         final cat = categories[index];

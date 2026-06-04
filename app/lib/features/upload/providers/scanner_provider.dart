@@ -126,6 +126,19 @@ class ScannerNotifier extends StateNotifier<ScannerState> {
     }
   }
 
+  void initializeWithImages(List<String> paths) {
+    state = ScannerState(
+      imagePaths: paths,
+      qualityResults: List.generate(paths.length, (_) => ImageQualityResult(
+        brightness: 0.5,
+        clarity: 80.0,
+        isBlurry: false,
+        isTooDark: false,
+        isTooBright: false,
+      )),
+    );
+  }
+
   void reset() {
     state = ScannerState();
   }
@@ -133,4 +146,34 @@ class ScannerNotifier extends StateNotifier<ScannerState> {
 
 final scannerProvider = StateNotifierProvider<ScannerNotifier, ScannerState>((ref) {
   return ScannerNotifier();
+});
+
+class QuestionScansNotifier extends StateNotifier<Map<String, List<String>>> {
+  QuestionScansNotifier() : super(const {});
+
+  void saveScans(String questionId, List<String> paths) {
+    state = {
+      ...state,
+      questionId: List<String>.from(paths),
+    };
+  }
+
+  void removeScan(String questionId, int index) {
+    final list = state[questionId];
+    if (list != null && index < list.length) {
+      final newList = List<String>.from(list)..removeAt(index);
+      state = {
+        ...state,
+        questionId: newList,
+      };
+    }
+  }
+
+  void clear() {
+    state = const {};
+  }
+}
+
+final questionScansProvider = StateNotifierProvider<QuestionScansNotifier, Map<String, List<String>>>((ref) {
+  return QuestionScansNotifier();
 });

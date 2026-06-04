@@ -23,6 +23,7 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> with WidgetsBindi
   String _flashMode = 'auto';
   bool _isInitializing = false;
   bool _isProcessingPicture = false;
+  double _laserPos = 0.95;
 
   @override
   void initState() {
@@ -134,17 +135,30 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> with WidgetsBindi
       final XFile file = await _controller!.takePicture();
       if (mounted) {
         Feedback.forTap(context);
-        final quality = await ref.read(scannerProvider.notifier).addImage(file.path);
+        
+        // Navigate to the Crop/Perspective adjustments screen
+        final bool? accepted = await context.push<bool>('/upload/crop-preview', extra: file.path);
+        
         if (mounted) {
-          setState(() {
-            _isProcessingPicture = false;
-          });
-          if (!quality.isValid) {
-            // Low quality scan! Redirect directly to QualityAlertScreen prior to upload
-            context.push('/upload/quality-alert');
+          if (accepted == true) {
+            final quality = await ref.read(scannerProvider.notifier).addImage(file.path);
+            if (mounted) {
+              setState(() {
+                _isProcessingPicture = false;
+              });
+              if (!quality.isValid) {
+                // Low quality scan! Redirect directly to QualityAlertScreen prior to upload
+                context.push('/upload/quality-alert');
+              } else {
+                // High quality scan! Navigate to Review
+                _navigateToReview();
+              }
+            }
           } else {
-            // High quality scan! Navigate to Review
-            _navigateToReview();
+            // Retake was clicked, just reset processing flag so they can scan again
+            setState(() {
+              _isProcessingPicture = false;
+            });
           }
         }
       }
@@ -434,28 +448,145 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> with WidgetsBindi
   }
 
   Widget _buildScanningOverlay() {
+    final overlayWidth = MediaQuery.of(context).size.width * 0.85;
+    final overlayHeight = MediaQuery.of(context).size.height * 0.65;
+
     return Center(
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 500),
-            width: MediaQuery.of(context).size.width * 0.85,
-            height: MediaQuery.of(context).size.height * 0.65,
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: _isAligned ? AppTheme.successColor : Colors.white70,
-                width: 2,
+      child: SizedBox(
+        width: overlayWidth,
+        height: overlayHeight,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Outer rectangle
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 500),
+              width: overlayWidth,
+              height: overlayHeight,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: _isAligned ? AppTheme.successColor : Colors.white24,
+                  width: 1.5,
+                ),
+                borderRadius: BorderRadius.circular(24),
               ),
-              borderRadius: BorderRadius.circular(24),
             ),
-          ),
-          if (!_isAligned)
-            const Text(
-              'Align the document',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16),
+
+            // Top-left L bracket
+            Positioned(
+              left: 0,
+              top: 0,
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: const BoxDecoration(
+                  border: Border(
+                    left: BorderSide(color: AppTheme.primaryColor, width: 4),
+                    top: BorderSide(color: AppTheme.primaryColor, width: 4),
+                  ),
+                  borderRadius: BorderRadius.only(topLeft: Radius.circular(12)),
+                ),
+              ),
             ),
-        ],
+
+            // Top-right L bracket
+            Positioned(
+              right: 0,
+              top: 0,
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: const BoxDecoration(
+                  border: Border(
+                    right: BorderSide(color: AppTheme.primaryColor, width: 4),
+                    top: BorderSide(color: AppTheme.primaryColor, width: 4),
+                  ),
+                  borderRadius: BorderRadius.only(topRight: Radius.circular(12)),
+                ),
+              ),
+            ),
+
+            // Bottom-left L bracket
+            Positioned(
+              left: 0,
+              bottom: 0,
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: const BoxDecoration(
+                  border: Border(
+                    left: BorderSide(color: AppTheme.primaryColor, width: 4),
+                    bottom: BorderSide(color: AppTheme.primaryColor, width: 4),
+                  ),
+                  borderRadius: BorderRadius.only(bottomLeft: Radius.circular(12)),
+                ),
+              ),
+            ),
+
+            // Bottom-right L bracket
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: const BoxDecoration(
+                  border: Border(
+                    right: BorderSide(color: AppTheme.primaryColor, width: 4),
+                    bottom: BorderSide(color: AppTheme.primaryColor, width: 4),
+                  ),
+                  borderRadius: BorderRadius.only(bottomRight: Radius.circular(12)),
+                ),
+              ),
+            ),
+
+            // Laser line
+            TweenAnimationBuilder<double>(
+              key: ValueKey(_laserPos),
+              tween: Tween<double>(begin: _laserPos == 0.95 ? 0.05 : 0.95, end: _laserPos),
+              duration: const Duration(seconds: 2),
+              curve: Curves.easeInOut,
+              onEnd: () {
+                setState(() {
+                  _laserPos = _laserPos == 0.95 ? 0.05 : 0.95;
+                });
+              },
+              builder: (context, value, child) {
+                return Positioned(
+                  top: overlayHeight * value,
+                  left: 8,
+                  right: 8,
+                  child: Container(
+                    height: 2,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryColor.withValues(alpha: 0.8),
+                          blurRadius: 8,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            if (!_isAligned)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'Align paper within guides',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

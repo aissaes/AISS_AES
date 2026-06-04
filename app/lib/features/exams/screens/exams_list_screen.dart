@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../providers/exam_provider.dart';
 import '../providers/student_results_provider.dart';
 import '../repositories/exam_repository_impl.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../../core/widgets/app_logo.dart';
 import '../../../core/widgets/app_loading_indicator.dart';
 import '../../../shared/widgets/response_dialog.dart';
@@ -117,43 +118,45 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> with WidgetsB
               ),
             ],
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Unlock answer sheet upload session for ${exam.subjectName}. Enter the department token or scan the projected exam QR code.',
-                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: _tokenController,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                decoration: InputDecoration(
-                  hintText: 'Enter Exam Token',
-                  prefixIcon: const Icon(Icons.vpn_key_rounded, size: 18),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Unlock answer sheet upload session for ${exam.subjectName}. Enter the department token or scan the projected exam QR code.',
+                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _tokenController,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  decoration: InputDecoration(
+                    hintText: 'Enter Exam Token',
+                    prefixIcon: const Icon(Icons.vpn_key_rounded, size: 18),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  _scanExamQr();
-                },
-                icon: const Icon(Icons.qr_code_scanner_rounded, size: 16),
-                label: const Text('Scan Exam QR Code'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-                  foregroundColor: AppTheme.primaryColor,
-                  elevation: 0,
-                  minimumSize: const Size(0, 42),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    _scanExamQr();
+                  },
+                  icon: const Icon(Icons.qr_code_scanner_rounded, size: 16),
+                  label: const Text('Scan Exam QR Code'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+                    foregroundColor: AppTheme.primaryColor,
+                    elevation: 0,
+                    minimumSize: const Size(0, 42),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -750,6 +753,9 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> with WidgetsB
                     Expanded(
                       child: RefreshIndicator(
                         onRefresh: () async {
+                          try {
+                            await ref.read(authProvider.notifier).verifyToken();
+                          } catch (_) {}
                           ref.invalidate(studentTimetableAndExamsProvider);
                           ref.invalidate(studentResultsProvider);
                           try {
@@ -1088,55 +1094,57 @@ class _TokenQrScanDialogState extends State<TokenQrScanDialog> {
           ),
         ],
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            'Point your camera at the Exam QR Code provided by your department or supervisor to automatically fill and unlock the exam.',
-            style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 20),
-          Container(
-            height: 220,
-            width: 220,
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
-              border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Point your camera at the Exam QR Code provided by your department or supervisor to automatically fill and unlock the exam.',
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
+              textAlign: TextAlign.center,
             ),
-            clipBehavior: Clip.antiAlias,
-            child: Stack(
-              children: [
-                MobileScanner(
-                  controller: _scannerController,
-                  onDetect: (capture) {
-                    final List<Barcode> barcodes = capture.barcodes;
-                    for (final barcode in barcodes) {
-                      final rawValue = barcode.rawValue;
-                      if (rawValue != null && rawValue.trim().isNotEmpty) {
-                        Navigator.pop(context); // Close dialog
-                        widget.onScanned(rawValue.trim());
-                        return;
+            const SizedBox(height: 20),
+            Container(
+              height: 220,
+              width: 220,
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
+                border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Stack(
+                children: [
+                  MobileScanner(
+                    controller: _scannerController,
+                    onDetect: (capture) {
+                      final List<Barcode> barcodes = capture.barcodes;
+                      for (final barcode in barcodes) {
+                        final rawValue = barcode.rawValue;
+                        if (rawValue != null && rawValue.trim().isNotEmpty) {
+                          Navigator.pop(context); // Close dialog
+                          widget.onScanned(rawValue.trim());
+                          return;
+                        }
                       }
-                    }
-                  },
-                ),
-                // Viewfinder Reticle Overlay
-                Center(
-                  child: Container(
-                    width: 160,
-                    height: 160,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: AppTheme.primaryColor, width: 2),
-                      borderRadius: BorderRadius.circular(12),
+                    },
+                  ),
+                  // Viewfinder Reticle Overlay
+                  Center(
+                    child: Container(
+                      width: 160,
+                      height: 160,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppTheme.primaryColor, width: 2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       actions: [
         TextButton(

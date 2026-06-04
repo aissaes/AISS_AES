@@ -6,6 +6,7 @@ import '../features/auth/screens/login_screen.dart';
 import '../features/dashboard/screens/dashboard_screen.dart';
 import '../features/upload/screens/upload_success_screen.dart';
 import '../features/upload/screens/scanner_screen.dart';
+import '../features/upload/screens/crop_preview_screen.dart';
 import '../features/upload/screens/review_scans_screen.dart';
 import '../features/upload/screens/submission_progress_screen.dart';
 import '../features/upload/screens/quality_alert_screen.dart';
@@ -118,12 +119,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/exams',
                 builder: (context, state) => const ExamsListScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'detail',
-                    builder: (context, state) => const ExamDetailScreen(),
-                  ),
-                ],
               ),
             ],
           ),
@@ -177,6 +172,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ScannerScreen(),
       ),
       GoRoute(
+        path: '/upload/crop-preview',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final imagePath = state.extra as String? ?? '';
+          return CropPreviewScreen(imagePath: imagePath);
+        },
+      ),
+      GoRoute(
         path: '/change-password',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const ChangePasswordScreen(),
@@ -200,6 +203,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         path: '/upload-success',
         builder: (context, state) => const UploadSuccessScreen(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/exams/detail',
+        builder: (context, state) => const ExamDetailScreen(),
       ),
     ],
     redirect: (context, state) {

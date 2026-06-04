@@ -76,10 +76,17 @@ class _SubmissionProgressScreenState extends ConsumerState<SubmissionProgressScr
         throw ApiException('Failed to generate answer script PDF.');
       }
 
+      // 1b. Contrast Enhancement Processing
+      setState(() {
+        _currentStage = 'Optimizing contrast & clarity...';
+        _progress = 0.12;
+      });
+      await Future.delayed(const Duration(milliseconds: 600));
+
       // 2. Start or resume the upload window session
       setState(() {
         _currentStage = 'Acquiring secure upload window';
-        _progress = 0.15;
+        _progress = 0.18;
       });
       
       await paperRepo.startUploadSession(examToken);
@@ -113,6 +120,9 @@ class _SubmissionProgressScreenState extends ConsumerState<SubmissionProgressScr
 
       // Inject the uploaded image into the active submissions cache
       ref.read(examSubmissionsProvider(examId).notifier).addSubmission(questionId, fileUrl);
+
+      // Save local scan paths to questionScansProvider
+      ref.read(questionScansProvider.notifier).saveScans(questionId, scannerState.imagePaths);
 
       setState(() {
         _currentStage = 'Completed';
@@ -348,29 +358,48 @@ class _SubmissionProgressScreenState extends ConsumerState<SubmissionProgressScr
       ),
       child: Column(
         children: [
-          _buildStepItem('Secure Upload Session', 'Acquiring secure upload window'),
+          _buildStepItem('Capturing & Compiling PDF', 1),
           const SizedBox(height: 16),
-          _buildStepItem('Question $questionId Script Page', 'Streaming Answer'),
+          _buildStepItem('Contrast Enhancement Processing', 2),
           const SizedBox(height: 16),
-          _buildStepItem('Register Upload in Database', 'Finalizing upload cache'),
+          _buildStepItem('Streaming Pages to Server', 3),
+          const SizedBox(height: 16),
+          _buildStepItem('Finalizing Server Cache', 4),
         ],
       ),
     );
   }
 
-  Widget _buildStepItem(String label, String stageKeyPrefix) {
+  Widget _buildStepItem(String label, int stepNumber) {
     bool isCompleted = false;
     bool isCurrent = false;
 
-    if (stageKeyPrefix == 'Acquiring secure upload window') {
-      isCompleted = _currentStage.startsWith('Streaming Answer') || _currentStage == 'Finalizing upload cache' || _isDone;
-      isCurrent = _currentStage == 'Acquiring secure upload window';
-    } else if (stageKeyPrefix == 'Streaming Answer') {
-      isCompleted = _currentStage == 'Finalizing upload cache' || _isDone;
-      isCurrent = _currentStage.startsWith('Streaming Answer');
-    } else if (stageKeyPrefix == 'Finalizing upload cache') {
-      isCompleted = _isDone;
-      isCurrent = _currentStage == 'Finalizing upload cache';
+    switch (stepNumber) {
+      case 1:
+        isCompleted = _currentStage == 'Optimizing contrast & clarity...' ||
+            _currentStage == 'Acquiring secure upload window' ||
+            _currentStage.startsWith('Streaming PDF Answer') ||
+            _currentStage == 'Finalizing upload cache' ||
+            _isDone;
+        isCurrent = _currentStage == 'Initializing upload window...' ||
+            _currentStage == 'Compiling answer script into PDF...';
+        break;
+      case 2:
+        isCompleted = _currentStage == 'Acquiring secure upload window' ||
+            _currentStage.startsWith('Streaming PDF Answer') ||
+            _currentStage == 'Finalizing upload cache' ||
+            _isDone;
+        isCurrent = _currentStage == 'Optimizing contrast & clarity...';
+        break;
+      case 3:
+        isCompleted = _currentStage == 'Finalizing upload cache' || _isDone;
+        isCurrent = _currentStage == 'Acquiring secure upload window' ||
+            _currentStage.startsWith('Streaming PDF Answer');
+        break;
+      case 4:
+        isCompleted = _isDone;
+        isCurrent = _currentStage == 'Finalizing upload cache';
+        break;
     }
 
     return Row(
@@ -389,15 +418,25 @@ class _SubmissionProgressScreenState extends ConsumerState<SubmissionProgressScr
           ),
           child: isCompleted
               ? const Icon(Icons.check, size: 14, color: Colors.white)
-              : (isCurrent ? const Center(child: SizedBox(width: 8, height: 8, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))) : null),
+              : (isCurrent
+                  ? const Center(
+                      child: SizedBox(
+                        width: 8,
+                        height: 8,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      ),
+                    )
+                  : null),
         ),
         const SizedBox(width: 16),
-        Text(
-          isCurrent && stageKeyPrefix == 'Streaming Answer' ? _currentStage : label,
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
-            color: isCurrent ? AppTheme.textPrimary : AppTheme.textSecondary,
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
+              color: isCurrent ? AppTheme.textPrimary : AppTheme.textSecondary,
+            ),
           ),
         ),
       ],

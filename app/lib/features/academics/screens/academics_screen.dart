@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/models/semester_model.dart';
 import '../providers/academics_providers.dart';
+import '../../auth/providers/auth_provider.dart';
 
 class AcademicsScreen extends ConsumerStatefulWidget {
   const AcademicsScreen({super.key});
@@ -105,7 +106,15 @@ class _AcademicsScreenState extends ConsumerState<AcademicsScreen> with WidgetsB
   
                 Expanded(
                   child: RefreshIndicator(
-                    onRefresh: () => ref.refresh(semestersProvider.future),
+                    onRefresh: () async {
+                      try {
+                        await ref.read(authProvider.notifier).verifyToken();
+                      } catch (_) {}
+                      ref.invalidate(semestersProvider);
+                      try {
+                        await ref.read(semestersProvider.future);
+                      } catch (_) {}
+                    },
                     child: semestersAsync.when(
                       data: (semesters) {
                         if (semesters.isEmpty) {
@@ -123,6 +132,7 @@ class _AcademicsScreenState extends ConsumerState<AcademicsScreen> with WidgetsB
                         if (_searchQuery.isNotEmpty) {
                           return ListView(
                             physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                            padding: const EdgeInsets.only(bottom: 120),
                             children: [
                               _buildSearchResults(semesters),
                             ],
@@ -131,6 +141,7 @@ class _AcademicsScreenState extends ConsumerState<AcademicsScreen> with WidgetsB
 
                         return ListView.builder(
                           physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                          padding: const EdgeInsets.only(bottom: 120),
                           itemCount: semesters.length,
                           itemBuilder: (context, index) {
                             final semester = semesters[index];

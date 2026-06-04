@@ -28,6 +28,9 @@ class DashboardScreen extends ConsumerWidget {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
+            try {
+              await ref.read(authProvider.notifier).verifyToken();
+            } catch (_) {}
             ref.invalidate(dashboardDataProvider);
             await ref.read(dashboardDataProvider.future);
           },

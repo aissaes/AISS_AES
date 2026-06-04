@@ -74,9 +74,10 @@ class QualityAlertScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
                     boxShadow: AppTheme.premiumShadow,
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
                       Container(
                         width: 80,
                         height: 80,
@@ -189,6 +190,7 @@ class QualityAlertScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
+                ),
                 ),
               ),
             ),

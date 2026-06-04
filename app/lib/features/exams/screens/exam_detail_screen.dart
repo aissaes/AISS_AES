@@ -13,6 +13,7 @@ import '../../../core/models/exam_model.dart';
 import '../../../core/models/question_model.dart';
 import '../../../core/models/submission_model.dart';
 import 'dart:async';
+import 'dart:io' show File;
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 class ExamDetailScreen extends ConsumerStatefulWidget {
@@ -28,6 +29,7 @@ class _ExamDetailScreenState extends ConsumerState<ExamDetailScreen> with Ticker
   late AnimationController _pulseController;
   late TabController _tabController;
   bool _isFinalizing = false;
+  String? _selectedQuestionFilter;
 
   @override
   void initState() {
@@ -79,6 +81,7 @@ class _ExamDetailScreenState extends ConsumerState<ExamDetailScreen> with Ticker
     _timer?.cancel();
     _pulseController.dispose();
     _tabController.dispose();
+    _finalizeTokenController.dispose();
     super.dispose();
   }
 
@@ -93,8 +96,14 @@ class _ExamDetailScreenState extends ConsumerState<ExamDetailScreen> with Ticker
 
   void _triggerScanForQuestion(QuestionModel question) {
     ref.read(selectedQuestionProvider.notifier).state = question;
-    ref.read(scannerProvider.notifier).reset();
-    context.push('/upload/scanner');
+    final existingScans = ref.read(questionScansProvider)[question.questionId] ?? [];
+    if (existingScans.isNotEmpty) {
+      ref.read(scannerProvider.notifier).initializeWithImages(existingScans);
+      context.push('/upload/review'); // Open pages preview directly
+    } else {
+      ref.read(scannerProvider.notifier).reset();
+      context.push('/upload/scanner'); // Open camera for first scan
+    }
   }
 
   void _finalizeSubmission(String examToken) async {
@@ -140,6 +149,109 @@ class _ExamDetailScreenState extends ConsumerState<ExamDetailScreen> with Ticker
         setState(() => _isFinalizing = false);
       }
     }
+  }
+
+  final TextEditingController _finalizeTokenController = TextEditingController();
+
+  void _showFinalizeDialog(BuildContext context, String examToken) {
+    _finalizeTokenController.clear();
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppTheme.surfaceColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge),
+            side: const BorderSide(color: AppTheme.outlineColor),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.verified_rounded, color: AppTheme.successColor, size: 22),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Finalize & Submit',
+                  style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Enter the exam verification token or scan the projected QR code to finalize and lock your submission.',
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _finalizeTokenController,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  decoration: InputDecoration(
+                    hintText: 'Enter Exam Token',
+                    prefixIcon: const Icon(Icons.vpn_key_rounded, size: 18),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    // Open QR scan dialog
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (qrDialogContext) {
+                        return QrScanDialog(
+                          examToken: examToken,
+                          onVerified: (verifiedToken) {
+                            _finalizeSubmission(verifiedToken);
+                          },
+                        );
+                      },
+                    );
+                  },
+                  icon: const Icon(Icons.qr_code_scanner_rounded, size: 16),
+                  label: const Text('Scan Exam QR Code'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+                    foregroundColor: AppTheme.primaryColor,
+                    elevation: 0,
+                    minimumSize: const Size(0, 42),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel', style: TextStyle(color: AppTheme.textSecondary, fontWeight: FontWeight.bold)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final token = _finalizeTokenController.text.trim();
+                if (token.isEmpty) return;
+                Navigator.pop(dialogContext);
+                _finalizeSubmission(token);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.successColor,
+                minimumSize: const Size(90, 38),
+              ),
+              child: const Text('Submit'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -244,7 +356,7 @@ class _ExamDetailScreenState extends ConsumerState<ExamDetailScreen> with Ticker
                 children: [
                   // TAB 1: GUIDELINES & SYLLABUS
                   SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                    padding: const EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 24),
                     child: Column(
                       children: [
                         _buildHeroCard(subjectName, subjectCode, examType, semester, course, department, maxMarks),
@@ -263,6 +375,84 @@ class _ExamDetailScreenState extends ConsumerState<ExamDetailScreen> with Ticker
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildQuestionFilterChips(ExamModel exam, AsyncValue<SubmissionModel> submissionsState) {
+    final List<String> questionIds = [];
+    for (final sec in exam.sections) {
+      for (final q in sec.questions) {
+        if (q.children == null || q.children!.isEmpty) {
+          questionIds.add(q.questionId);
+        } else {
+          for (final sub in q.children!) {
+            questionIds.add(sub.questionId);
+          }
+        }
+      }
+    }
+
+    final uploadsMap = submissionsState.valueOrNull?.uploads ?? {};
+
+    return Container(
+      height: 48,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: questionIds.length + 1,
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            final isSelected = _selectedQuestionFilter == null;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: ChoiceChip(
+                label: const Text('All Questions'),
+                selected: isSelected,
+                selectedColor: AppTheme.primaryColor.withValues(alpha: 0.15),
+                backgroundColor: AppTheme.surfaceColor,
+                labelStyle: TextStyle(
+                  color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+                  fontWeight: FontWeight.bold,
+                ),
+                onSelected: (_) {
+                  setState(() {
+                    _selectedQuestionFilter = null;
+                  });
+                },
+              ),
+            );
+          }
+
+          final qId = questionIds[index - 1];
+          final isSelected = _selectedQuestionFilter == qId;
+          final hasUploaded = uploadsMap.containsKey(qId);
+
+          return Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: ChoiceChip(
+              avatar: Icon(
+                hasUploaded ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                size: 14,
+                color: hasUploaded ? AppTheme.successColor : AppTheme.textSecondary,
+              ),
+              label: Text('Q$qId'),
+              selected: isSelected,
+              selectedColor: AppTheme.primaryColor.withValues(alpha: 0.15),
+              backgroundColor: AppTheme.surfaceColor,
+              labelStyle: TextStyle(
+                color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+                fontWeight: FontWeight.bold,
+              ),
+              onSelected: (_) {
+                setState(() {
+                  _selectedQuestionFilter = qId;
+                });
+              },
+            ),
+          );
+        },
       ),
     );
   }
@@ -289,6 +479,7 @@ class _ExamDetailScreenState extends ConsumerState<ExamDetailScreen> with Ticker
 
     return Column(
       children: [
+        _buildQuestionFilterChips(exam, submissionsState),
         Expanded(
           child: submissionsState.when(
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -310,12 +501,24 @@ class _ExamDetailScreenState extends ConsumerState<ExamDetailScreen> with Ticker
             data: (submission) {
               final uploadsMap = submission.uploads;
               return ListView.builder(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.only(left: 20, right: 20, top: 10, bottom: 20),
                 itemCount: sections.length,
                 itemBuilder: (context, sectionIndex) {
                   final section = sections[sectionIndex];
-                  final questions = section.questions;
+                  var questions = section.questions;
                   final sectionLabel = section.title;
+
+                  if (_selectedQuestionFilter != null) {
+                    questions = questions.where((q) {
+                      if (q.questionId == _selectedQuestionFilter) return true;
+                      if (q.children != null) {
+                        return q.children!.any((sub) => sub.questionId == _selectedQuestionFilter);
+                      }
+                      return false;
+                    }).toList();
+                  }
+
+                  if (questions.isEmpty) return const SizedBox.shrink();
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,7 +555,7 @@ class _ExamDetailScreenState extends ConsumerState<ExamDetailScreen> with Ticker
         
         // Finalize Submit Bottom Area
         Container(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.only(left: 24, right: 24, top: 20, bottom: 20),
           decoration: const BoxDecoration(
             color: AppTheme.surfaceColor,
             border: Border(top: BorderSide(color: AppTheme.outlineColor)),
@@ -361,19 +564,7 @@ class _ExamDetailScreenState extends ConsumerState<ExamDetailScreen> with Ticker
             onPressed: _isFinalizing || _secondsRemaining <= 0
                 ? null
                 : () {
-                    // Two-Step Verification: Scan projected QR code
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (dialogContext) {
-                        return QrScanDialog(
-                          examToken: examToken,
-                          onVerified: (verifiedToken) {
-                            _finalizeSubmission(verifiedToken);
-                          },
-                        );
-                      },
-                    );
+                    _showFinalizeDialog(context, examToken);
                   },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.successColor,
@@ -398,6 +589,68 @@ class _ExamDetailScreenState extends ConsumerState<ExamDetailScreen> with Ticker
     );
   }
 
+  Widget _buildLocalScansPreview(String qId) {
+    final localScans = ref.watch(questionScansProvider)[qId] ?? [];
+    if (localScans.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            const Icon(Icons.collections_bookmark_outlined, size: 12, color: AppTheme.textSecondary),
+            const SizedBox(width: 6),
+            Text(
+              '${localScans.length} Scanned Page${localScans.length == 1 ? "" : "s"}',
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppTheme.textSecondary, letterSpacing: 0.3),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 68,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: localScans.length,
+            itemBuilder: (context, index) {
+              return Container(
+                width: 48,
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppTheme.outlineColor, width: 1.5),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.file(File(localScans[index]), fit: BoxFit.cover),
+                    Positioned(
+                      left: 2,
+                      bottom: 2,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.75),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: Text(
+                          'P${index + 1}',
+                          style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildQuestionItem(QuestionModel q, Map<String, String> uploadsMap) {
     final questionId = q.questionId;
     final text = q.text;
@@ -405,6 +658,8 @@ class _ExamDetailScreenState extends ConsumerState<ExamDetailScreen> with Ticker
     final hasUploaded = uploadsMap.containsKey(questionId);
     
     final children = q.children;
+    final localScans = ref.watch(questionScansProvider)[questionId] ?? [];
+    final hasLocalScans = localScans.isNotEmpty;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -460,6 +715,11 @@ class _ExamDetailScreenState extends ConsumerState<ExamDetailScreen> with Ticker
             text,
             style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary, height: 1.4),
           ),
+          
+          if (children == null || children.isEmpty) ...[
+            _buildLocalScansPreview(questionId),
+          ],
+          
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -471,15 +731,15 @@ class _ExamDetailScreenState extends ConsumerState<ExamDetailScreen> with Ticker
               if (children == null || children.isEmpty) // Only upload at leaf nodes
                 ElevatedButton.icon(
                   onPressed: () => _triggerScanForQuestion(q),
-                  icon: Icon(hasUploaded ? Icons.refresh_rounded : Icons.camera_alt_rounded, size: 14),
-                  label: Text(hasUploaded ? 'Re-upload' : 'Upload Scan'),
+                  icon: Icon(hasLocalScans ? Icons.edit_note_rounded : Icons.camera_alt_rounded, size: 14),
+                  label: Text(hasLocalScans ? 'Manage Pages' : 'Upload Scan'),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    backgroundColor: hasUploaded ? Colors.white : AppTheme.primaryColor,
-                    foregroundColor: hasUploaded ? AppTheme.primaryColor : Colors.white,
-                    side: hasUploaded ? const BorderSide(color: AppTheme.primaryColor) : null,
+                    backgroundColor: hasLocalScans ? Colors.white : AppTheme.primaryColor,
+                    foregroundColor: hasLocalScans ? AppTheme.primaryColor : Colors.white,
+                    side: hasLocalScans ? const BorderSide(color: AppTheme.primaryColor) : null,
                   ),
                 ),
             ],
@@ -495,6 +755,8 @@ class _ExamDetailScreenState extends ConsumerState<ExamDetailScreen> with Ticker
               final subText = subQ.text;
               final subMarks = subQ.marks.toStringAsFixed(0);
               final subUploaded = uploadsMap.containsKey(subId);
+              final subLocalScans = ref.watch(questionScansProvider)[subId] ?? [];
+              final subHasScans = subLocalScans.isNotEmpty;
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 12, left: 12),
@@ -524,6 +786,9 @@ class _ExamDetailScreenState extends ConsumerState<ExamDetailScreen> with Ticker
                       subText,
                       style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
                     ),
+                    
+                    _buildLocalScansPreview(subId),
+                    
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -534,15 +799,15 @@ class _ExamDetailScreenState extends ConsumerState<ExamDetailScreen> with Ticker
                         ),
                         ElevatedButton.icon(
                           onPressed: () => _triggerScanForQuestion(subQ),
-                          icon: Icon(subUploaded ? Icons.refresh_rounded : Icons.camera_alt_rounded, size: 12),
-                          label: Text(subUploaded ? 'Re-upload' : 'Upload'),
+                          icon: Icon(subHasScans ? Icons.edit_note_rounded : Icons.camera_alt_rounded, size: 12),
+                          label: Text(subHasScans ? 'Manage Pages' : 'Upload'),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            backgroundColor: subUploaded ? Colors.white : AppTheme.primaryColor,
-                            foregroundColor: subUploaded ? AppTheme.primaryColor : Colors.white,
-                            side: subUploaded ? const BorderSide(color: AppTheme.primaryColor, width: 1) : null,
+                            backgroundColor: subHasScans ? Colors.white : AppTheme.primaryColor,
+                            foregroundColor: subHasScans ? AppTheme.primaryColor : Colors.white,
+                            side: subHasScans ? const BorderSide(color: AppTheme.primaryColor, width: 1) : null,
                           ),
                         ),
                       ],
@@ -842,69 +1107,71 @@ class _QrScanDialogState extends State<QrScanDialog> {
           ),
         ],
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            'To finalize and lock your exam script, point your camera at the Exam QR Code projected in the exam hall.',
-            style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 20),
-          Container(
-            height: 220,
-            width: 220,
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
-              border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Stack(
-              children: [
-                MobileScanner(
-                  controller: _scannerController,
-                  onDetect: (capture) {
-                    final List<Barcode> barcodes = capture.barcodes;
-                    for (final barcode in barcodes) {
-                      final rawValue = barcode.rawValue;
-                      if (rawValue != null) {
-                        if (rawValue.trim() == widget.examToken.trim()) {
-                          Navigator.pop(context); // Close dialog
-                          widget.onVerified(widget.examToken);
-                          return;
-                        } else {
-                          setState(() {
-                            _scanError = 'Mismatched QR code. Please scan the correct Exam QR.';
-                          });
-                        }
-                      }
-                    }
-                  },
-                ),
-                // Viewfinder Reticle Overlay
-                Center(
-                  child: Container(
-                    width: 160,
-                    height: 160,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: AppTheme.primaryColor, width: 2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (_scanError != null) ...[
-            const SizedBox(height: 16),
-            Text(
-              _scanError!,
-              style: const TextStyle(color: AppTheme.errorColor, fontSize: 12, fontWeight: FontWeight.bold),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'To finalize and lock your exam script, point your camera at the Exam QR Code projected in the exam hall.',
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 20),
+            Container(
+              height: 220,
+              width: 220,
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(AppTheme.borderRadiusMedium),
+                border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Stack(
+                children: [
+                  MobileScanner(
+                    controller: _scannerController,
+                    onDetect: (capture) {
+                      final List<Barcode> barcodes = capture.barcodes;
+                      for (final barcode in barcodes) {
+                        final rawValue = barcode.rawValue;
+                        if (rawValue != null) {
+                          if (rawValue.trim() == widget.examToken.trim()) {
+                            Navigator.pop(context); // Close dialog
+                            widget.onVerified(widget.examToken);
+                            return;
+                          } else {
+                            setState(() {
+                              _scanError = 'Mismatched QR code. Please scan the correct Exam QR.';
+                            });
+                          }
+                        }
+                      }
+                    },
+                  ),
+                  // Viewfinder Reticle Overlay
+                  Center(
+                    child: Container(
+                      width: 160,
+                      height: 160,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppTheme.primaryColor, width: 2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (_scanError != null) ...[
+              const SizedBox(height: 16),
+              Text(
+                _scanError!,
+                style: const TextStyle(color: AppTheme.errorColor, fontSize: 12, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ],
-        ],
+        ),
       ),
       actions: [
         TextButton(

@@ -30,6 +30,8 @@ class _ReviewScansScreenState extends ConsumerState<ReviewScansScreen> {
     super.dispose();
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     final scannerState = ref.watch(scannerProvider);
@@ -53,6 +55,7 @@ class _ReviewScansScreenState extends ConsumerState<ReviewScansScreen> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => context.pop(),
         ),
+        actions: const [],
       ),
       body: SafeArea(
         child: Center(
@@ -143,28 +146,7 @@ class _ReviewScansScreenState extends ConsumerState<ReviewScansScreen> {
                                 ),
                               ),
 
-                              // Dot indicators for swiping
-                              if (imagePaths.length > 1)
-                                Positioned(
-                                  bottom: 90,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: List.generate(imagePaths.length, (index) {
-                                      return AnimatedContainer(
-                                        duration: const Duration(milliseconds: 250),
-                                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                                        width: _activeIndex == index ? 12 : 6,
-                                        height: 6,
-                                        decoration: BoxDecoration(
-                                          color: _activeIndex == index ? AppTheme.primaryColor : Colors.white.withValues(alpha: 0.5),
-                                          borderRadius: BorderRadius.circular(3),
-                                        ),
-                                      );
-                                    }),
-                                  ),
-                                ),
-
-                              // Glassmorphic Floating Toolbar
+                              // Glassmorphic Floating Toolbar for Active Page
                               Positioned(
                                 bottom: 16,
                                 child: Container(
@@ -177,21 +159,10 @@ class _ReviewScansScreenState extends ConsumerState<ReviewScansScreen> {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      // Add another page
-                                      _ActionButton(
-                                        icon: Icons.add_photo_alternate_rounded,
-                                        label: 'Add Page',
-                                        color: Colors.white,
-                                        onTap: () {
-                                          // Pop back to scanner so student can take another photo
-                                          context.pop();
-                                        },
-                                      ),
-                                      const _VerticalDivider(),
                                       // Retake page
                                       _ActionButton(
                                         icon: Icons.refresh_rounded,
-                                        label: 'Retake Page',
+                                        label: 'Retake',
                                         color: Colors.amber,
                                         onTap: () async {
                                           final confirm = await ConfirmationDialog.show(
@@ -212,7 +183,7 @@ class _ReviewScansScreenState extends ConsumerState<ReviewScansScreen> {
                                       // Delete page
                                       _ActionButton(
                                         icon: Icons.delete_outline_rounded,
-                                        label: 'Delete Page',
+                                        label: 'Delete',
                                         color: AppTheme.errorColor,
                                         onTap: () async {
                                           final confirm = await ConfirmationDialog.show(
@@ -246,6 +217,10 @@ class _ReviewScansScreenState extends ConsumerState<ReviewScansScreen> {
                         ),
                 ),
                 
+                // Filmstrip page list
+                if (imagePaths.isNotEmpty)
+                  _buildFilmstrip(imagePaths, scannerNotifier),
+
                 // Bottom Action Button
                 _buildBottomAction(context, questionId, imagePaths.length),
               ],
@@ -273,6 +248,183 @@ class _ReviewScansScreenState extends ConsumerState<ReviewScansScreen> {
           child: const Text('Open Scanner'),
         ),
       ],
+    );
+  }
+
+  Widget _buildFilmstrip(List<String> imagePaths, ScannerNotifier scannerNotifier) {
+    return Container(
+      height: 96,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          // Reorderable page thumbnails
+          Expanded(
+            child: ReorderableListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              buildDefaultDragHandles: false,
+              itemCount: imagePaths.length,
+              onReorder: (oldIndex, newIndex) {
+                scannerNotifier.reorderImages(oldIndex, newIndex);
+                setState(() {
+                  // Adjust active index to follow the moved item
+                  if (_activeIndex == oldIndex) {
+                    _activeIndex = newIndex > oldIndex ? newIndex - 1 : newIndex;
+                  } else if (oldIndex < _activeIndex && newIndex >= _activeIndex) {
+                    _activeIndex--;
+                  } else if (oldIndex > _activeIndex && newIndex <= _activeIndex) {
+                    _activeIndex++;
+                  }
+                });
+                _pageController.jumpToPage(_activeIndex);
+              },
+              proxyDecorator: (child, index, animation) {
+                return Material(
+                  color: Colors.transparent,
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(12),
+                  child: child,
+                );
+              },
+              itemBuilder: (context, index) {
+                final path = imagePaths[index];
+                final isSelected = _activeIndex == index;
+
+                return ReorderableDragStartListener(
+                  key: ValueKey('page_$index'),
+                  index: index,
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _activeIndex = index;
+                      });
+                      _pageController.animateToPage(
+                        index,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    child: Stack(
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: 70,
+                          height: 90,
+                          margin: const EdgeInsets.only(right: 12, top: 4, bottom: 4),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isSelected ? AppTheme.primaryColor : AppTheme.outlineColor,
+                              width: isSelected ? 3 : 1,
+                            ),
+                            boxShadow: isSelected
+                                ? [BoxShadow(color: AppTheme.primaryColor.withValues(alpha: 0.3), blurRadius: 6)]
+                                : null,
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(9),
+                            child: AppImage(path: path, fit: BoxFit.cover),
+                          ),
+                        ),
+
+                        // Small Delete button on top right of thumbnail
+                        Positioned(
+                          right: 6,
+                          top: 0,
+                          child: InkWell(
+                            onTap: () async {
+                              final confirm = await ConfirmationDialog.show(
+                                context,
+                                title: 'Delete Page?',
+                                message: 'Are you sure you want to delete Page ${index + 1}?',
+                                type: ConfirmationDialogType.danger,
+                                confirmText: 'Delete',
+                                icon: Icons.delete_forever_rounded,
+                              );
+                              if (confirm && context.mounted) {
+                                scannerNotifier.removeImage(index);
+                                if (imagePaths.length <= 1) {
+                                  context.pop();
+                                } else {
+                                  setState(() {
+                                    if (_activeIndex >= imagePaths.length - 1) {
+                                      _activeIndex = imagePaths.length - 2;
+                                    }
+                                  });
+                                }
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: AppTheme.errorColor,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.close, color: Colors.white, size: 8),
+                            ),
+                          ),
+                        ),
+
+                        // Page index identifier
+                        Positioned(
+                          left: 4,
+                          bottom: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.75),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'P${index + 1}',
+                              style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          // "+ Add Page" button (non-draggable, pinned at end)
+          Padding(
+            padding: const EdgeInsets.only(right: 20),
+            child: InkWell(
+              onTap: () => context.pop(), // Pop to scanner to capture another page
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 70,
+                height: 90,
+                margin: const EdgeInsets.only(top: 4, bottom: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.3),
+                    style: BorderStyle.solid,
+                    width: 1.5,
+                  ),
+                ),
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.add_photo_alternate_rounded, color: AppTheme.primaryColor, size: 24),
+                    SizedBox(height: 4),
+                    Text(
+                      'Add Page',
+                      style: TextStyle(fontSize: 9, color: AppTheme.primaryColor, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -339,7 +491,7 @@ class _ActionButton extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 22),
+            Icon(icon, color: color, size: 20),
             const SizedBox(height: 4),
             Text(
               label,
