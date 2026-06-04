@@ -17,7 +17,7 @@ final versionStringProvider = FutureProvider<String>((ref) async {
     final packageInfo = await PackageInfo.fromPlatform();
     return 'Version ${packageInfo.version} (Build ${packageInfo.buildNumber})';
   } catch (e) {
-    return 'Version 1.0.1 (Build 2)';
+    return 'Version 1.1.0 (Build 3)';
   }
 });
 
@@ -209,7 +209,7 @@ class ProfileScreen extends ConsumerWidget {
             ),
             loading: () => const SizedBox(height: 14),
             error: (err, stack) => const Text(
-              'Version 1.0.1 (Build 2)',
+              'Version 1.1.0 (Build 3)',
               style: TextStyle(
                 fontSize: 11,
                 color: AppTheme.textSecondary,
