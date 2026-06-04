@@ -4,6 +4,7 @@ import axios from "axios";
 import QuestionPaper from "../../models/questionPapers.js"; 
 import Result from "../../models/result.js";
 import Student from "../../models/student.js";
+import Upload from "../../models/uploadSession.js";
 
 // Define the Base URL (Defaults to local if the .env variable is missing)
 const AI_BASE_URL = process.env.PYTHON_AGENT_URL || "http://127.0.0.1:10000";
@@ -54,12 +55,30 @@ export const getAllStudentsAppearedForExam = async (req, res) => {
 
 
 // ==========================================
-// 2. TRIGGER AI EVALUATION (PARALLEL EXECUTION)
+// 2. TRIGGER AI EVALUATION (SYNCHRONOUS EXECUTION)
 // ==========================================
+async function limitConcurrency(tasks, limit) {
+  const results = [];
+  const executing = new Set();
+  for (const task of tasks) {
+    const p = Promise.resolve().then(() => task());
+    results.push(p);
+    executing.add(p);
+    const clean = () => executing.delete(p);
+    p.then(clean, clean);
+    if (executing.size >= limit) {
+      await Promise.race(executing);
+    }
+  }
+  return Promise.all(results);
+}
+
 export const triggerAIEvaluation = async (req, res) => {
+  let examId;
+  let studentId;
   try {
-    const { examId } = req.params;
-    const { studentId } = req.body; 
+    examId = req.params.examId;
+    studentId = req.body.studentId; 
     const facultyId = req.user.id; 
 
     // 1. Validate Exam & Permissions
@@ -76,7 +95,16 @@ export const triggerAIEvaluation = async (req, res) => {
     const submission = await Answers.findOne({ for_exam: examId, uploaded_student: studentId });
     if (!submission) return res.status(400).json({ success: false, message: "No submission found for this student." });
 
-    // 4. Initialize or fetch the Result document
+    // 4. Assert that the student has no active upload session
+    const activeSession = await Upload.findOne({ student: studentId, exam: examId });
+    if (activeSession) {
+      return res.status(400).json({
+        success: false,
+        message: "Student's upload session is still active. Please wait for the student to finalize submission or for the upload window to close."
+      });
+    }
+
+    // 5. Initialize or fetch the Result document
     let resultDoc = await Result.findOne({ student: studentId, exam: examId });
     if (resultDoc && resultDoc.status === "Evaluating") {
       return res.status(400).json({ success: false, message: "AI evaluation is already in progress for this student." });
@@ -95,12 +123,8 @@ export const triggerAIEvaluation = async (req, res) => {
       await resultDoc.save();
     }
 
-    // ==========================================
-    // 5. Evaluate all questions IN PARALLEL
-    // ==========================================
-    console.log(`\n🚀 Sending ALL questions for student ${studentId} to AI simultaneously...`);
-
-    const evaluationPromises = Array.from(submission.answers.entries()).map(async ([questionNoStr, imageUrl]) => {
+    // 6. Evaluate all questions synchronously with concurrency limit
+    const tasks = Array.from(submission.answers.entries()).map(([questionNoStr, imageUrl]) => async () => {
       try {
         let questionText = "Question text missing"; 
         let maxMarks = 10;
@@ -162,14 +186,15 @@ export const triggerAIEvaluation = async (req, res) => {
       }
     });
 
-    // 🛑 WAIT FOR ALL QUESTIONS TO FINISH AT THE SAME TIME
-    const aiResults = await Promise.all(evaluationPromises);
+    const aiResults = await limitConcurrency(tasks, 2);
 
-    // ==========================================
-    // 6. Update Database and Save
-    // ==========================================
+    // Reload Result document to prevent version conflict
+    resultDoc = await Result.findOne({ student: studentId, exam: examId });
+    if (!resultDoc) {
+      return res.status(404).json({ success: false, message: "Result document not found after evaluation." });
+    }
+
     let finalTotal = 0;
-
     for (const resData of aiResults) {
       const existingEvalIndex = resultDoc.evaluations.findIndex(e => e.questionId === resData.questionNoStr);
 
@@ -197,31 +222,31 @@ export const triggerAIEvaluation = async (req, res) => {
     
     resultDoc.totalMarksObtained = finalTotal;
 
-    // Set status to Failed if any individual question failed to evaluate
     const hasFailedQuestion = aiResults.some(r => r.reasoning && r.reasoning.startsWith("AI Error:"));
     resultDoc.status = hasFailedQuestion ? "Failed" : "Completed"; 
 
     await resultDoc.save();
     console.log(`✅ Student ${studentId} grading finalized with status ${resultDoc.status}! Total Marks: ${finalTotal}`);
 
-    // 7. SEND FINAL SUCCESS RESPONSE
     return res.status(200).json({ 
       success: true, 
       message: hasFailedQuestion ? `Student evaluation finished with some failures.` : `Student evaluated successfully.`,
       status: resultDoc.status,
       totalMarks: finalTotal
     });
-      
+
   } catch (error) {
     const exactReason = error.message || "Unknown server error";
     console.error("Trigger Evaluation Error:", exactReason);
     
     // Set result document status to Failed on uncaught exceptions
     try {
-      const resultDoc = await Result.findOne({ student: studentId, exam: examId });
-      if (resultDoc) {
-        resultDoc.status = "Failed";
-        await resultDoc.save();
+      if (studentId && examId) {
+        const resultDoc = await Result.findOne({ student: studentId, exam: examId });
+        if (resultDoc) {
+          resultDoc.status = "Failed";
+          await resultDoc.save();
+        }
       }
     } catch (saveErr) {
       console.error("Failed to save error status to Result doc:", saveErr);

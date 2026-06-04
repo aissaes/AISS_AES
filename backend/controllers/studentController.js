@@ -78,6 +78,13 @@ export const startUploadSession = async (req, res) => {
       return res.status(404).json({ success: false, message: "Invalid or expired exam token." });
     }
 
+    if (Date.now() > new Date(exam.endTime).getTime()) {
+      return res.status(403).json({
+        success: false,
+        message: "Exam submission time window has already closed. Late submissions are not permitted."
+      });
+    }
+
     // 2. Check if the student already has an active session for this exam
     let session = await Upload.findOne({ student: studentId, exam: exam._id });
 

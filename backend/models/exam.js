@@ -97,6 +97,9 @@ const examSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// Optimize lookups by exam token
+examSchema.index({ token: 1 });
+
 const Exam = mongoose.model("Exam", examSchema);
 
 export default Exam;

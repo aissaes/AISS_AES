@@ -20,7 +20,7 @@ export const UploadAnswer = async (req, res) => {
     }
 
     // 1. Find session
-    const session = await Upload.findOne({ token });
+    const session = await Upload.findOne({ token, student: req.user.id });
 
     if (!session) {
       return res.status(404).json({ error: "Invalid session" });
@@ -40,24 +40,13 @@ export const UploadAnswer = async (req, res) => {
 
     const fileUrl = uploadResponse.url;
 
-    // 4. Find/Create doc
-    let doc = await Answers.findOne({
-      uploaded_student: session.student,
-      for_exam: session.exam,
-    });
-
-    if (!doc) {
-      doc = await Answers.create({
-        uploaded_student: session.student,
-        for_exam: session.exam,
-        answers: {},
-      });
-    }
-
-    // 5. Save URL
-    doc.answers.set(String(questionNo), fileUrl);
-
-    await doc.save();
+    // 4. Atomic Find/Upsert to avoid race conditions
+    const updatePath = `answers.${questionNo}`;
+    await Answers.findOneAndUpdate(
+      { uploaded_student: session.student, for_exam: session.exam },
+      { $set: { [updatePath]: fileUrl } },
+      { upsert: true, new: true }
+    );
 
     res.json({ success: true, fileUrl });
 
@@ -81,7 +70,7 @@ export const reuploadAnswer = async (req, res) => {
       });
     }
 
-    const session = await Upload.findOne({ token });
+    const session = await Upload.findOne({ token, student: req.user.id });
 
     if (!session) {
       return res.status(404).json({
@@ -99,7 +88,7 @@ export const reuploadAnswer = async (req, res) => {
       for_exam: session.exam,
     });
 
-    if (!doc || !doc.answers.has(String(questionNo))) {
+    if (!doc || !doc.answers || !doc.answers.has(String(questionNo))) {
       return res.status(400).json({
         success: false,
         message: "No existing answer to replace",
@@ -115,10 +104,12 @@ export const reuploadAnswer = async (req, res) => {
 
     const fileUrl = uploadResponse.url;
 
-    // overwrite
-    doc.answers.set(String(questionNo), fileUrl);
-
-    await doc.save();
+    // overwrite atomically
+    const updatePath = `answers.${questionNo}`;
+    await Answers.findOneAndUpdate(
+      { uploaded_student: session.student, for_exam: session.exam },
+      { $set: { [updatePath]: fileUrl } }
+    );
 
     return res.status(200).json({
       success: true,

@@ -66,6 +66,36 @@ export const getSemesters = async (req, res) => {
 
     const semestersWithStats = [];
 
+    const semIds = semestersList.map(s => s._id);
+    const enrollmentsCourseIds = enrollments.map(e => e.course?._id).filter(id => id != null);
+
+    // Fetch all exams for these semesters and courses in bulk
+    const allExams = await Exam.find({ semesterId: { $in: semIds }, courseId: { $in: enrollmentsCourseIds } });
+    const allExamIds = allExams.map(ex => ex._id);
+
+    // Fetch all results for these exams in bulk
+    const allResults = await Result.find({ student: studentId, exam: { $in: allExamIds } });
+
+    // Group exams by semester ID
+    const examsBySemester = {};
+    for (const exam of allExams) {
+      if (exam.semesterId) {
+        const semIdStr = exam.semesterId.toString();
+        if (!examsBySemester[semIdStr]) {
+          examsBySemester[semIdStr] = [];
+        }
+        examsBySemester[semIdStr].push(exam);
+      }
+    }
+
+    // Group results by exam ID
+    const resultsByExam = {};
+    for (const resDoc of allResults) {
+      if (resDoc.exam) {
+        resultsByExam[resDoc.exam.toString()] = resDoc;
+      }
+    }
+
     for (const sem of semestersList) {
       const semIdStr = sem._id.toString();
       const isCurrent = student.semester && student.semester._id.toString() === semIdStr;
@@ -77,13 +107,18 @@ export const getSemesters = async (req, res) => {
       const courseIds = semEnrollments.map(e => e.course._id);
       const totalCredits = semEnrollments.reduce((sum, e) => sum + (e.course.credits || 0), 0);
 
-      // Find exams for these courses in this semester
-      const exams = await Exam.find({ semesterId: sem._id, courseId: { $in: courseIds } });
+      // Find exams from the pre-fetched list
+      const exams = examsBySemester[semIdStr] || [];
       const examsConducted = exams.length;
 
-      // Calculate GPA based on Results published
-      const examIds = exams.map(ex => ex._id);
-      const results = await Result.find({ student: studentId, exam: { $in: examIds } });
+      // Find results from the pre-fetched list
+      const results = [];
+      for (const ex of exams) {
+        const resDoc = resultsByExam[ex._id.toString()];
+        if (resDoc) {
+          results.push(resDoc);
+        }
+      }
       
       let gpTotal = 0;
       let creditsCounted = 0;
@@ -168,38 +203,68 @@ export const getSemesterCourses = async (req, res) => {
     const enrollments = await StudentCourseEnrollment.find({ student: studentId, semester: semesterId })
       .populate("course");
 
+    const courseIds = enrollments.map(e => e.course?._id).filter(id => id != null);
+
+    // Fetch all active assignments for these courses in bulk
+    const assignments = await FacultyCourseAssignment.find({ course: { $in: courseIds }, status: "Active" })
+      .populate("faculty", "name email");
+    const assignmentsByCourse = {};
+    for (const a of assignments) {
+      if (a.course) {
+        assignmentsByCourse[a.course.toString()] = a;
+      }
+    }
+
+    // Fetch all exams for these courses and semester in bulk
+    const exams = await Exam.find({ courseId: { $in: courseIds }, semesterId: semesterId });
+    const examIds = exams.map(e => e._id);
+
+    // Fetch answers and results in bulk
+    const [submissions, results] = await Promise.all([
+      Answers.find({ for_exam: { $in: examIds }, uploaded_student: studentId }).select("for_exam"),
+      Result.find({ student: studentId, exam: { $in: examIds } }).select("exam")
+    ]);
+
+    const submittedExamIds = new Set(submissions.map(s => s.for_exam.toString()));
+    const resultExamIds = new Set(results.map(r => r.exam.toString()));
+
+    // Group exams by course ID
+    const examsByCourse = {};
+    for (const exam of exams) {
+      if (exam.courseId) {
+        const cIdStr = exam.courseId.toString();
+        if (!examsByCourse[cIdStr]) {
+          examsByCourse[cIdStr] = [];
+        }
+        examsByCourse[cIdStr].push(exam);
+      }
+    }
+
     const coursesList = [];
 
     for (const enrollment of enrollments) {
       const course = enrollment.course;
-      
-      // Find assigned faculty
-      const assignment = await FacultyCourseAssignment.findOne({ course: course._id, status: "Active" })
-        .populate("faculty", "name email");
+      if (!course) continue;
 
+      const assignment = assignmentsByCourse[course._id.toString()];
       const facultyInfo = {
         name: assignment && assignment.faculty ? assignment.faculty.name : "No Instructor Assigned",
         email: assignment && assignment.faculty ? assignment.faculty.email : "N/A"
       };
 
-      // Get exams for this course
-      const exams = await Exam.find({ courseId: course._id, semesterId: semesterId });
-      
+      const courseExams = examsByCourse[course._id.toString()] || [];
       let upcoming = 0;
       let completed = 0;
       let missed = 0;
-      
       const now = new Date();
 
-      for (const exam of exams) {
+      for (const exam of courseExams) {
         if (exam.endTime && now < new Date(exam.endTime)) {
           upcoming++;
         } else {
-          // Check if user has uploaded or has a result
-          const submitted = await Answers.findOne({ for_exam: exam._id, uploaded_student: studentId });
-          const result = await Result.findOne({ student: studentId, exam: exam._id });
-          
-          if (submitted || result) {
+          const hasSubmitted = submittedExamIds.has(exam._id.toString());
+          const hasResult = resultExamIds.has(exam._id.toString());
+          if (hasSubmitted || hasResult) {
             completed++;
           } else {
             missed++;
@@ -253,14 +318,18 @@ export const getSemesterTimetableCategories = async (req, res) => {
       collegeId: student.collegeId
     });
 
+    const allTimetableExamIds = timetables.reduce((acc, tt) => acc.concat(tt.exams || []), []);
+    const matchingExams = await Exam.find({
+      _id: { $in: allTimetableExamIds },
+      courseId: { $in: enrolledCourseIds }
+    }).select("_id");
+    const matchingExamIdsSet = new Set(matchingExams.map(e => e._id.toString()));
+
     const categories = [];
 
     for (const tt of timetables) {
-      // Filter exams in this timetable to match student's enrolled courses
-      const examsCount = await Exam.countDocuments({
-        _id: { $in: tt.exams },
-        courseId: { $in: enrolledCourseIds }
-      });
+      // Filter exams in this timetable to match student's enrolled courses in-memory
+      const examsCount = (tt.exams || []).filter(id => matchingExamIdsSet.has(id.toString())).length;
 
       // Map examType string to standard Code and Name
       let code = "MID_SEM";
@@ -320,17 +389,35 @@ export const getTimetableCategoryExams = async (req, res) => {
       courseId: { $in: enrolledCourseIds }
     }).populate("courseId");
 
+    const examIds = exams.map(e => e._id);
+
+    // Fetch answers and results in bulk
+    const [submissions, results] = await Promise.all([
+      Answers.find({ for_exam: { $in: examIds }, uploaded_student: studentId }).select("for_exam"),
+      Result.find({ student: studentId, exam: { $in: examIds } })
+    ]);
+
+    const submittedExamIds = new Set(submissions.map(s => s.for_exam.toString()));
+    const resultsMap = {};
+    for (const r of results) {
+      if (r.exam) {
+        resultsMap[r.exam.toString()] = r;
+      }
+    }
+
     const examsList = [];
     const now = new Date();
 
     for (const exam of exams) {
+      const eIdStr = exam._id.toString();
+      const hasSubmitted = submittedExamIds.has(eIdStr);
+      const resultDoc = resultsMap[eIdStr];
+
       // Check status
       let examStatus = "Upcoming";
       if (exam.endTime && now > new Date(exam.endTime)) {
         // Check if student completed or missed
-        const submitted = await Answers.findOne({ for_exam: exam._id, uploaded_student: studentId });
-        const result = await Result.findOne({ student: studentId, exam: exam._id });
-        if (submitted || result) {
+        if (hasSubmitted || resultDoc) {
           examStatus = "Completed";
         } else {
           examStatus = "Missed";
@@ -340,7 +427,6 @@ export const getTimetableCategoryExams = async (req, res) => {
       }
 
       // Fetch result if available
-      const resultDoc = await Result.findOne({ student: studentId, exam: exam._id });
       let resultData = null;
       
       if (resultDoc && resultDoc.status === "Completed" && exam.resultsPublished === true) {

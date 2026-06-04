@@ -230,13 +230,27 @@ export const getDepartmentStudents = async (req, res) => {
       .populate("semester", "semesterNumber semesterName academicYear status")
       .sort({ rollNumber: 1 });
 
-    const formattedStudents = [];
-    for (const student of students) {
-        const studentObj = student.toObject();
-        const enrollments = await StudentCourseEnrollment.find({ student: student._id }).populate("course", "courseCode courseName credits department status");
-        studentObj.courses = enrollments.map(e => e.course).filter(c => c != null);
-        formattedStudents.push(studentObj);
+    const studentIds = students.map(s => s._id);
+    const enrollments = await StudentCourseEnrollment.find({ student: { $in: studentIds } })
+      .populate("course", "courseCode courseName credits department status");
+
+    const enrollmentsByStudent = {};
+    for (const enrollment of enrollments) {
+      if (enrollment.student) {
+        const sIdStr = enrollment.student.toString();
+        if (!enrollmentsByStudent[sIdStr]) {
+          enrollmentsByStudent[sIdStr] = [];
+        }
+        enrollmentsByStudent[sIdStr].push(enrollment);
+      }
     }
+
+    const formattedStudents = students.map(student => {
+      const studentObj = student.toObject();
+      const studentEnrollments = enrollmentsByStudent[student._id.toString()] || [];
+      studentObj.courses = studentEnrollments.map(e => e.course).filter(c => c != null);
+      return studentObj;
+    });
 
     res.status(200).json({ count: formattedStudents.length, students: formattedStudents });
   } catch (error) {
