@@ -134,9 +134,20 @@ export const getStudentSubmissions = async (req, res) => {
 
     const submission = await Answers.findOne({ for_exam: examId, uploaded_student: studentId });
 
+    let parsedAnswers = {};
+    if (submission && submission.answers) {
+      for (const [key, value] of submission.answers.entries()) {
+        if (value && typeof value === "object" && value.fileUrl) {
+          parsedAnswers[key] = value.fileUrl;
+        } else {
+          parsedAnswers[key] = value;
+        }
+      }
+    }
+
     return res.status(200).json({
       success: true,
-      answers: submission ? submission.answers : {},
+      answers: parsedAnswers,
     });
   } catch (err) {
     console.error("Error fetching student submissions:", err);

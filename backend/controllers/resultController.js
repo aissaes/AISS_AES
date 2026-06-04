@@ -62,12 +62,40 @@ export const getStudentDetailedResult = async (req, res) => {
 
     // 3. MERGE LOGIC: Combine Images with AI Feedback
     const detailedEvaluations = resultDoc.evaluations.map(evaluation => {
-      // Extract the image URL using the questionNo as the Map key
-      const imageUrl = submission ? submission.answers.get(evaluation.questionId) : null;
+      const answerVal = submission ? submission.answers.get(evaluation.questionId) : null;
+      let fileUrl = null;
+      let fileType = "unknown";
+      let mimeType = "application/octet-stream";
+      let originalFileName = "unknown";
+      let size = 0;
+      let uploadedAt = null;
+
+      if (answerVal) {
+        if (typeof answerVal === "object") {
+          fileUrl = answerVal.fileUrl || null;
+          fileType = answerVal.fileType || "unknown";
+          mimeType = answerVal.mimeType || "application/octet-stream";
+          originalFileName = answerVal.originalFileName || "unknown";
+          size = typeof answerVal.size === "number" ? answerVal.size : 0;
+          uploadedAt = answerVal.uploadedAt || null;
+        } else if (typeof answerVal === "string") {
+          fileUrl = answerVal;
+          const isPdf = answerVal.toLowerCase().includes(".pdf");
+          fileType = isPdf ? "pdf" : "image";
+          mimeType = isPdf ? "application/pdf" : "image/png";
+          originalFileName = "migrated_submission" + (isPdf ? ".pdf" : ".png");
+        }
+      }
       
       return {
         questionId: evaluation.questionId,
-        imageUrl: imageUrl, 
+        imageUrl: fileUrl, // legacy alias
+        fileUrl,
+        fileType,
+        mimeType,
+        originalFileName,
+        size,
+        uploadedAt,
         aiMarks: evaluation.aiMarks,
         aiReasoning: evaluation.aiReasoning,
         aiFeedback: evaluation.aiFeedback,
@@ -160,7 +188,30 @@ export const getMyResult = async (req, res) => {
 
     // 3. Merge Data for the Student UI
     const detailedEvaluations = resultDoc.evaluations.map(evaluation => {
-      const imageUrl = submission ? submission.answers.get(evaluation.questionId) : null;
+      const answerVal = submission ? submission.answers.get(evaluation.questionId) : null;
+      let fileUrl = null;
+      let fileType = "unknown";
+      let mimeType = "application/octet-stream";
+      let originalFileName = "unknown";
+      let size = 0;
+      let uploadedAt = null;
+
+      if (answerVal) {
+        if (typeof answerVal === "object") {
+          fileUrl = answerVal.fileUrl || null;
+          fileType = answerVal.fileType || "unknown";
+          mimeType = answerVal.mimeType || "application/octet-stream";
+          originalFileName = answerVal.originalFileName || "unknown";
+          size = typeof answerVal.size === "number" ? answerVal.size : 0;
+          uploadedAt = answerVal.uploadedAt || null;
+        } else if (typeof answerVal === "string") {
+          fileUrl = answerVal;
+          const isPdf = answerVal.toLowerCase().includes(".pdf");
+          fileType = isPdf ? "pdf" : "image";
+          mimeType = isPdf ? "application/pdf" : "image/png";
+          originalFileName = "migrated_submission" + (isPdf ? ".pdf" : ".png");
+        }
+      }
       
       // If the teacher overrode the grade, show that one. Otherwise, show AI marks.
       const isOverridden = evaluation.overrideMarks !== null && evaluation.overrideMarks !== undefined;
@@ -168,13 +219,20 @@ export const getMyResult = async (req, res) => {
 
       return {
         questionId: evaluation.questionId,
-        imageUrl: imageUrl, 
+        imageUrl: fileUrl, // legacy alias
+        fileUrl,
+        fileType,
+        mimeType,
+        originalFileName,
+        size,
+        uploadedAt,
         marksAwarded: finalMarks,
         isManuallyGraded: isOverridden, // Lets the frontend show a "Teacher Graded" badge!
         feedback: evaluation.aiFeedback, // Give the student the constructive feedback
         reasoning: evaluation.aiReasoning,
         strengths: evaluation.strengths,
-        weaknesses: evaluation.weakness
+        weaknesses: evaluation.weakness,
+        overrideReason: isOverridden ? evaluation.overrideReason : null
       };
     });
 

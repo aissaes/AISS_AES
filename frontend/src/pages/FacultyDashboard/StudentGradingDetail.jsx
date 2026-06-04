@@ -6,6 +6,154 @@ import { useToast } from '../../components/Toast/Toast';
 import Modal from '../../components/Modal/Modal';
 import styles from './FacultyDashboard.module.css';
 
+const getPdfPageUrl = (url, page = 1) => {
+  if (!url) return '';
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}tr=pg-${page}`;
+};
+
+const PdfPageViewer = ({ url }) => {
+  const [page, setPage] = useState(1);
+  const [maxPage, setMaxPage] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    setPage(1);
+    setMaxPage(null);
+    setLoading(true);
+    setError(false);
+  }, [url]);
+
+  const handlePrev = () => {
+    if (page > 1) {
+      setPage(prev => prev - 1);
+      setError(false);
+      setLoading(true);
+    }
+  };
+
+  const handleNext = () => {
+    if (maxPage === null || page < maxPage) {
+      setPage(prev => prev + 1);
+      setError(false);
+      setLoading(true);
+    }
+  };
+
+  const handleImageError = () => {
+    if (page > 1) {
+      setMaxPage(page - 1);
+      setPage(page - 1);
+      setError(false);
+    } else {
+      setError(true);
+    }
+    setLoading(false);
+  };
+
+  const imageUrl = getPdfPageUrl(url, page);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', height: '100%', position: 'relative' }}>
+      {/* Navigation Controls */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16, zIndex: 10, background: 'var(--surface-1)', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border-2)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+        <button
+          type="button"
+          onClick={handlePrev}
+          disabled={page === 1 || loading}
+          style={{
+            padding: '6px 16px',
+            borderRadius: '6px',
+            border: '1px solid var(--border-2)',
+            background: page === 1 ? 'var(--surface-3)' : 'var(--accent)',
+            color: page === 1 ? 'var(--text-3)' : '#fff',
+            cursor: (page === 1 || loading) ? 'not-allowed' : 'pointer',
+            opacity: page === 1 ? 0.5 : 1,
+            fontSize: '13px',
+            fontWeight: 700,
+            transition: 'all 0.2s',
+          }}
+        >
+          Previous
+        </button>
+        <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-1)', minWidth: '90px', textAlign: 'center' }}>
+          Page {page} {maxPage ? `of ${maxPage}` : ''}
+        </span>
+        <button
+          type="button"
+          onClick={handleNext}
+          disabled={(maxPage !== null && page >= maxPage) || loading}
+          style={{
+            padding: '6px 16px',
+            borderRadius: '6px',
+            border: '1px solid var(--border-2)',
+            background: (maxPage !== null && page >= maxPage) ? 'var(--surface-3)' : 'var(--accent)',
+            color: (maxPage !== null && page >= maxPage) ? 'var(--text-3)' : '#fff',
+            cursor: ((maxPage !== null && page >= maxPage) || loading) ? 'not-allowed' : 'pointer',
+            opacity: (maxPage !== null && page >= maxPage) ? 0.5 : 1,
+            fontSize: '13px',
+            fontWeight: 700,
+            transition: 'all 0.2s',
+          }}
+        >
+          Next
+        </button>
+      </div>
+
+      {/* Image Display */}
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: 'calc(100% - 60px)', position: 'relative' }}>
+        {loading && !error && (
+          <div style={{ position: 'absolute', zIndex: 5, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <div className={styles.spinner} />
+          </div>
+        )}
+        {error ? (
+          <div style={{ color: 'var(--text-3)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+            <Info size={32} />
+            <span style={{ fontWeight: 600 }}>Failed to load PDF page preview</span>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                background: 'var(--accent)',
+                color: 'white',
+                padding: '6px 16px',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: 700,
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+            >
+              <ExternalLink size={14} /> Open PDF directly
+            </a>
+          </div>
+        ) : (
+          <img
+            src={imageUrl}
+            alt={`PDF Page ${page}`}
+            onLoad={() => setLoading(false)}
+            onError={handleImageError}
+            style={{
+              maxWidth: '100%',
+              maxHeight: '100%',
+              objectFit: 'contain',
+              borderRadius: '6px',
+              display: loading ? 'none' : 'block',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+              border: '1px solid var(--border-1)',
+            }}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
 const StudentGradingDetail = () => {
   const { examId, studentId } = useParams();
   const navigate = useNavigate();
@@ -18,43 +166,14 @@ const StudentGradingDetail = () => {
   const [loading, setLoading] = useState(true);
 
   // Modal zoom states
-  const [activeImage, setActiveImage] = useState(null);
+  const [activeEval, setActiveEval] = useState(null);
 
   // Edit / Override states
   const [overrideState, setOverrideState] = useState({}); // { [questionId]: { marks, reason, isEditing } }
   const [savingOverride, setSavingOverride] = useState({});
 
-  const [fileTypes, setFileTypes] = useState({});
-
-  useEffect(() => {
-    evaluations.forEach(ev => {
-      if (ev.imageUrl) {
-        if (ev.imageUrl.toLowerCase().includes('.pdf')) {
-          setFileTypes(prev => ({ ...prev, [ev.imageUrl]: 'pdf' }));
-        } else {
-          // Asynchronously query the resource to identify MIME type
-          fetch(ev.imageUrl, { method: 'GET', headers: { Range: 'bytes=0-0' } })
-            .then(res => {
-              const contentType = res.headers.get('content-type');
-              if (contentType && contentType.includes('pdf')) {
-                setFileTypes(prev => ({ ...prev, [ev.imageUrl]: 'pdf' }));
-              } else {
-                setFileTypes(prev => ({ ...prev, [ev.imageUrl]: 'image' }));
-              }
-            })
-            .catch(() => {
-              // Heuristic fallback: if it has no standard image extension, assume PDF
-              const hasImageExt = /\.(png|jpg|jpeg|gif|webp|bmp)/i.test(ev.imageUrl);
-              if (!hasImageExt) {
-                setFileTypes(prev => ({ ...prev, [ev.imageUrl]: 'pdf' }));
-              } else {
-                setFileTypes(prev => ({ ...prev, [ev.imageUrl]: 'image' }));
-              }
-            });
-        }
-      }
-    });
-  }, [evaluations]);
+  // Image / PDF rendering error state (mapping questionId -> true)
+  const [loadErrors, setLoadErrors] = useState({});
 
   useEffect(() => {
     fetchDetailedResult();
@@ -213,75 +332,136 @@ const StudentGradingDetail = () => {
               <p style={{ marginTop: 8 }}>No uploaded images found.</p>
             </div>
           ) : (
-            evaluations.map((ev, index) => (
-              <div 
-                key={ev.questionId} 
-                style={{ 
-                  position: 'relative', 
-                  borderRadius: '8px', 
-                  overflow: 'hidden', 
-                  border: '1px solid var(--border-2)',
-                  background: 'var(--bg-3)',
-                  minHeight: '280px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {ev.imageUrl ? (
-                  <>
-                    {fileTypes[ev.imageUrl] === 'pdf' ? (
-                      <iframe 
-                        src={ev.imageUrl} 
-                        title={`Question ${ev.questionId}`}
-                        style={{ width: '100%', height: '420px', border: 'none', background: 'white' }}
-                      />
+            evaluations.map((ev, index) => {
+              const fileUrl = ev.fileUrl;
+              const fileType = ev.fileType;
+              const hasError = loadErrors[ev.questionId];
+
+              return (
+                <div 
+                  key={ev.questionId} 
+                  style={{ 
+                    position: 'relative', 
+                    borderRadius: '8px', 
+                    overflow: 'hidden', 
+                    border: '1px solid var(--border-2)',
+                    background: 'var(--bg-3)',
+                    minHeight: '280px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: hasError ? '20px' : '0'
+                  }}
+                >
+                  {fileUrl ? (
+                    hasError ? (
+                      <div style={{ color: 'var(--text-3)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
+                        <Info size={32} style={{ color: 'var(--warning)' }} />
+                        <span style={{ fontWeight: 600 }}>Failed to load {fileType === 'pdf' ? 'PDF preview' : 'image'}</span>
+                        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                          <a 
+                            href={fileUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{ 
+                              background: 'rgba(15, 23, 42, 0.85)', 
+                              color: 'white', 
+                              padding: '6px 12px', 
+                              borderRadius: '6px', 
+                              fontSize: '13px', 
+                              fontWeight: 700, 
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              textDecoration: 'none'
+                            }}
+                          >
+                            <ExternalLink size={13} /> Open File
+                          </a>
+                          <button
+                            onClick={() => {
+                              setLoadErrors(prev => ({ ...prev, [ev.questionId]: false }));
+                            }}
+                            style={{
+                              background: 'var(--surface-3)',
+                              color: 'var(--text-1)',
+                              padding: '6px 12px',
+                              borderRadius: '6px',
+                              fontSize: '13px',
+                              fontWeight: 700,
+                              border: '1px solid var(--border-2)',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      </div>
                     ) : (
-                      <img 
-                        src={ev.imageUrl} 
-                        alt={`Question ${ev.questionId}`}
-                        style={{ maxWidth: '100%', maxHeight: '420px', objectFit: 'contain' }}
-                      />
-                    )}
-                    <div style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(15,23,42,0.85)', color: 'white', padding: '4px 10px', borderRadius: '4px', fontSize: '12px', fontWeight: 700, border: '1px solid rgba(255,255,255,0.1)' }}>
-                      Question {ev.questionId}
+                      <>
+                        {fileType === 'pdf' ? (
+                          <div style={{ position: 'relative', width: '100%', height: '420px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white' }}>
+                            <img 
+                              src={getPdfPageUrl(fileUrl, 1)} 
+                              alt={`Question ${ev.questionId}`}
+                              onError={() => setLoadErrors(prev => ({ ...prev, [ev.questionId]: true }))}
+                              style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                            />
+                            <div style={{ position: 'absolute', bottom: 12, left: 12, background: 'rgba(15,23,42,0.85)', color: 'white', padding: '4px 10px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, border: '1px solid rgba(255,255,255,0.1)' }}>
+                              PDF Preview - Page 1
+                            </div>
+                          </div>
+                        ) : (
+                          <img 
+                            src={fileUrl} 
+                            alt={`Question ${ev.questionId}`}
+                            onError={() => setLoadErrors(prev => ({ ...prev, [ev.questionId]: true }))}
+                            style={{ maxWidth: '100%', maxHeight: '420px', objectFit: 'contain' }}
+                          />
+                        )}
+                        <div style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(15,23,42,0.85)', color: 'white', padding: '4px 10px', borderRadius: '4px', fontSize: '12px', fontWeight: 700, border: '1px solid rgba(255,255,255,0.1)' }}>
+                          Question {ev.questionId} ({fileType.toUpperCase()})
+                        </div>
+                        <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 8 }}>
+                          <a 
+                            href={fileUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{ 
+                              background: 'rgba(15, 23, 42, 0.85)', 
+                              color: 'white', 
+                              padding: '4px 10px', 
+                              borderRadius: '4px', 
+                              fontSize: '12px', 
+                              fontWeight: 700, 
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              textDecoration: 'none'
+                            }}
+                          >
+                            <ExternalLink size={12} /> Open File
+                          </a>
+                        </div>
+                        <button 
+                          onClick={() => setActiveEval(ev)}
+                          style={{ position: 'absolute', bottom: 12, right: 12, background: 'var(--primary)', color: 'white', border: 'none', width: 36, height: 36, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
+                        >
+                          <ZoomIn size={16} />
+                        </button>
+                      </>
+                    )
+                  ) : (
+                    <div style={{ color: 'var(--text-3)', fontSize: '13px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Info size={16} /> File missing for Question {ev.questionId}
                     </div>
-                    <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 8 }}>
-                      <a 
-                        href={ev.imageUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        style={{ 
-                          background: 'rgba(15, 23, 42, 0.85)', 
-                          color: 'white', 
-                          padding: '4px 10px', 
-                          borderRadius: '4px', 
-                          fontSize: '12px', 
-                          fontWeight: 700, 
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          textDecoration: 'none'
-                        }}
-                      >
-                        <ExternalLink size={12} /> Open PDF
-                      </a>
-                    </div>
-                    <button 
-                      onClick={() => setActiveImage(ev.imageUrl)}
-                      style={{ position: 'absolute', bottom: 12, right: 12, background: 'var(--primary)', color: 'white', border: 'none', width: 36, height: 36, borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
-                    >
-                      <ZoomIn size={16} />
-                    </button>
-                  </>
-                ) : (
-                  <div style={{ color: 'var(--text-3)', fontSize: '13px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Info size={16} /> Image missing for {ev.questionId}
-                  </div>
-                )}
-              </div>
-            ))
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
 
@@ -461,24 +641,24 @@ const StudentGradingDetail = () => {
 
       {/* Fullscreen Zoom Modal */}
       <Modal 
-        isOpen={activeImage !== null} 
-        onClose={() => setActiveImage(null)}
+        isOpen={activeEval !== null} 
+        onClose={() => setActiveEval(null)}
         title="HD Script Viewer"
         className={styles.wideModal}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'var(--bg-page)', padding: 20, borderRadius: 8, overflow: 'auto', maxHeight: '80vh', width: '100%', height: '70vh' }}>
-          {fileTypes[activeImage] === 'pdf' ? (
-            <iframe 
-              src={activeImage} 
-              title="HD Script Page" 
-              style={{ width: '100%', height: '100%', border: 'none', background: 'white', borderRadius: '4px' }}
-            />
-          ) : (
-            <img 
-              src={activeImage} 
-              alt="HD Script Page" 
-              style={{ maxWidth: '100%', height: 'auto', objectFit: 'contain' }}
-            />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'var(--bg-page)', padding: 20, borderRadius: 8, overflow: 'hidden', maxHeight: '80vh', width: '100%', height: '70vh' }}>
+          {activeEval && (
+            activeEval.fileType === 'pdf' ? (
+              <PdfPageViewer 
+                url={activeEval.fileUrl} 
+              />
+            ) : (
+              <img 
+                src={activeEval.fileUrl} 
+                alt="HD Script Page" 
+                style={{ maxWidth: '100%', height: 'auto', objectFit: 'contain' }}
+              />
+            )
           )}
         </div>
       </Modal>

@@ -6,6 +6,10 @@ const collegeSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  collegeCode: {
+    type: String,
+    required: false
+  },
   location: {
     type: String
   },

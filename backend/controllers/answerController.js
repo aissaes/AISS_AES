@@ -2,11 +2,52 @@
 
 import Upload from "../models/uploadSession.js";
 import Answers from "../models/answer.js";
+import Student from "../models/student.js";
+import Exam from "../models/exam.js";
 
 //upload answer sheet
 import imagekit from "../configurations/imageKit.js";
 
+const getFolderStructure = async (studentId, examId) => {
+  let collegeFolder = "unknown_college";
+  let examFolder = examId;
+  let studentFolder = studentId;
 
+  try {
+    const student = await Student.findById(studentId).populate("collegeId");
+    if (student) {
+      if (student.collegeId) {
+        collegeFolder = student.collegeId.collegeCode
+          ? student.collegeId.collegeCode.toUpperCase().replace(/[^a-zA-Z0-9-_]/g, "_")
+          : student.collegeId.collegeName.replace(/[^a-zA-Z0-9-_]/g, "_");
+      }
+      if (student.rollNumber) {
+        studentFolder = student.rollNumber.replace(/[^a-zA-Z0-9-_]/g, "_");
+      }
+    }
+  } catch (err) {
+    console.error("Error fetching student/college info for folder naming:", err);
+  }
+
+  try {
+    const exam = await Exam.findById(examId);
+    if (exam) {
+      const examTypeShortMap = {
+        "Mid Semester Examination": "MIDSEM",
+        "End Semester Examination": "ENDSEM",
+        "Special Mid Semester Examination": "SPL-MIDSEM",
+        "Special End Semester Examination": "SPL-ENDSEM"
+      };
+      const shortType = examTypeShortMap[exam.examType] || "EXAM";
+      const year = exam.date ? new Date(exam.date).getFullYear() : new Date().getFullYear();
+      examFolder = `${exam.subjectCode}-${shortType}-${year}`.toUpperCase().replace(/[^a-zA-Z0-9-_]/g, "_");
+    }
+  } catch (err) {
+    console.error("Error fetching exam info for folder naming:", err);
+  }
+
+  return `/AISSAES/${collegeFolder}/${examFolder}/${studentFolder}`;
+};
 
 export const UploadAnswer = async (req, res) => {
   try {
@@ -32,19 +73,38 @@ export const UploadAnswer = async (req, res) => {
     }
 
     // 3. Upload to ImageKit
+    const mimeType = file.mimetype || "application/octet-stream";
+    const ext = mimeType === "application/pdf" ? "pdf" : (file.originalname ? file.originalname.split('.').pop() : "jpg");
+    const fileNameWithExt = `${session.student}_${session.exam}_q${questionNo}.${ext}`;
+
+    const folderPath = await getFolderStructure(session.student, session.exam);
+
     const uploadResponse = await imagekit.upload({
       file: file.buffer, // important (memoryStorage)
-      fileName: `${session.student}_${session.exam}_q${questionNo}`,
-      folder: `/answers/${session.exam}/${session.student}`,
+      fileName: fileNameWithExt,
+      folder: folderPath,
     });
 
     const fileUrl = uploadResponse.url;
+    const fileType = mimeType === "application/pdf" ? "pdf" : (mimeType.startsWith("image/") ? "image" : "unknown");
+    const originalFileName = file.originalname || "submission";
+    const size = file.size || 0;
+    const uploadedAt = new Date();
+
+    const answerMetadata = {
+      fileUrl,
+      fileType,
+      mimeType,
+      originalFileName,
+      size,
+      uploadedAt
+    };
 
     // 4. Atomic Find/Upsert to avoid race conditions
     const updatePath = `answers.${questionNo}`;
     await Answers.findOneAndUpdate(
       { uploaded_student: session.student, for_exam: session.exam },
-      { $set: { [updatePath]: fileUrl } },
+      { $set: { [updatePath]: answerMetadata } },
       { upsert: true, new: true }
     );
 
@@ -96,19 +156,38 @@ export const reuploadAnswer = async (req, res) => {
     }
 
     // Upload new file
+    const mimeType = file.mimetype || "application/octet-stream";
+    const ext = mimeType === "application/pdf" ? "pdf" : (file.originalname ? file.originalname.split('.').pop() : "jpg");
+    const fileNameWithExt = `${session.student}_${session.exam}_q${questionNo}.${ext}`;
+
+    const folderPath = await getFolderStructure(session.student, session.exam);
+
     const uploadResponse = await imagekit.upload({
       file: file.buffer,
-      fileName: `${session.student}_${session.exam}_q${questionNo}`,
-      folder: `/answers/${session.exam}/${session.student}`,
+      fileName: fileNameWithExt,
+      folder: folderPath,
     });
 
     const fileUrl = uploadResponse.url;
+    const fileType = mimeType === "application/pdf" ? "pdf" : (mimeType.startsWith("image/") ? "image" : "unknown");
+    const originalFileName = file.originalname || "submission";
+    const size = file.size || 0;
+    const uploadedAt = new Date();
+
+    const answerMetadata = {
+      fileUrl,
+      fileType,
+      mimeType,
+      originalFileName,
+      size,
+      uploadedAt
+    };
 
     // overwrite atomically
     const updatePath = `answers.${questionNo}`;
     await Answers.findOneAndUpdate(
       { uploaded_student: session.student, for_exam: session.exam },
-      { $set: { [updatePath]: fileUrl } }
+      { $set: { [updatePath]: answerMetadata } }
     );
 
     return res.status(200).json({

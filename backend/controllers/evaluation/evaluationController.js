@@ -124,7 +124,7 @@ export const triggerAIEvaluation = async (req, res) => {
     }
 
     // 6. Evaluate all questions synchronously with concurrency limit
-    const tasks = Array.from(submission.answers.entries()).map(([questionNoStr, imageUrl]) => async () => {
+    const tasks = Array.from(submission.answers.entries()).map(([questionNoStr, answerData]) => async () => {
       try {
         let questionText = "Question text missing"; 
         let maxMarks = 10;
@@ -148,8 +148,10 @@ export const triggerAIEvaluation = async (req, res) => {
           if (questionText !== "Question text missing") break;
         }
 
+        const fileUrl = (answerData && typeof answerData === "object") ? answerData.fileUrl : answerData;
+
         const aiResponse = await axios.post(`${AI_BASE_URL}/student/evaluate`, {
-          raw_input: imageUrl,
+          raw_input: fileUrl,
           question: questionText,
           exam_id: examId,
           namespace: exam.collegeId.toString(), 
