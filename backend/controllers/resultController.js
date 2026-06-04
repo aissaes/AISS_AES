@@ -172,7 +172,9 @@ export const getMyResult = async (req, res) => {
         marksAwarded: finalMarks,
         isManuallyGraded: isOverridden, // Lets the frontend show a "Teacher Graded" badge!
         feedback: evaluation.aiFeedback, // Give the student the constructive feedback
-        reasoning: evaluation.aiReasoning
+        reasoning: evaluation.aiReasoning,
+        strengths: evaluation.strengths,
+        weaknesses: evaluation.weakness
       };
     });
 
