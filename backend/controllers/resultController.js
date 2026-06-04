@@ -62,7 +62,14 @@ export const getStudentDetailedResult = async (req, res) => {
 
     // 3. MERGE LOGIC: Combine Images with AI Feedback
     const detailedEvaluations = resultDoc.evaluations.map(evaluation => {
-      const answerVal = submission ? submission.answers.get(evaluation.questionId) : null;
+      let answerVal = null;
+      if (submission && submission.answers) {
+        if (typeof submission.answers.get === "function") {
+          answerVal = submission.answers.get(evaluation.questionId);
+        } else {
+          answerVal = submission.answers[evaluation.questionId];
+        }
+      }
       let fileUrl = null;
       let fileType = "unknown";
       let mimeType = "application/octet-stream";
@@ -188,7 +195,14 @@ export const getMyResult = async (req, res) => {
 
     // 3. Merge Data for the Student UI
     const detailedEvaluations = resultDoc.evaluations.map(evaluation => {
-      const answerVal = submission ? submission.answers.get(evaluation.questionId) : null;
+      let answerVal = null;
+      if (submission && submission.answers) {
+        if (typeof submission.answers.get === "function") {
+          answerVal = submission.answers.get(evaluation.questionId);
+        } else {
+          answerVal = submission.answers[evaluation.questionId];
+        }
+      }
       let fileUrl = null;
       let fileType = "unknown";
       let mimeType = "application/octet-stream";
