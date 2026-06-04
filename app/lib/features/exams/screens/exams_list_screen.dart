@@ -523,22 +523,16 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> with WidgetsB
     // Look up result
     final ExamResultModel matchedResult = results.firstWhere(
       (r) => r.id == exam.id,
-      orElse: () {
-        final fallbackList = results.where((r) => r.subjectCode == exam.subjectCode && r.examType == exam.examType).toList();
-        if (fallbackList.isNotEmpty) {
-          return fallbackList.first;
-        }
-        return const ExamResultModel(
-          id: '',
-          status: 'Unknown',
-          totalMarksObtained: 0,
-          subjectName: '',
-          subjectCode: '',
-          examType: '',
-          maxMarks: 0,
-          evaluations: [],
-        );
-      },
+      orElse: () => const ExamResultModel(
+        id: '',
+        status: 'Unknown',
+        totalMarksObtained: 0,
+        subjectName: '',
+        subjectCode: '',
+        examType: '',
+        maxMarks: 0,
+        evaluations: [],
+      ),
     );
     
     final hasResultRecord = matchedResult.id.isNotEmpty;

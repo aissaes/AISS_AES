@@ -6,9 +6,11 @@ class QuestionEvaluationModel extends Equatable {
   final bool isManuallyGraded;
   final String feedback;
   final String reasoning;
-  final String? imageUrl;
+  final String? fileUrl;
+  final String fileType;
   final String strengths;
   final String weaknesses;
+  final String? overrideReason;
 
   const QuestionEvaluationModel({
     required this.questionId,
@@ -16,21 +18,32 @@ class QuestionEvaluationModel extends Equatable {
     required this.isManuallyGraded,
     required this.feedback,
     required this.reasoning,
-    this.imageUrl,
+    this.fileUrl,
+    required this.fileType,
     required this.strengths,
     required this.weaknesses,
+    this.overrideReason,
   });
 
+  // Legacy compatibility getter
+  String? get imageUrl => fileUrl;
+
   factory QuestionEvaluationModel.fromJson(Map<String, dynamic> json) {
+    final fileUrlVal = json['fileUrl'] ?? json['imageUrl'];
+    final fileUrlStr = fileUrlVal?.toString() ?? '';
+    final defaultType = fileUrlStr.toLowerCase().contains('.pdf') ? 'pdf' : 'image';
+
     return QuestionEvaluationModel(
       questionId: json['questionId']?.toString() ?? '',
       marksAwarded: (json['marksAwarded'] ?? 0).toDouble(),
       isManuallyGraded: json['isManuallyGraded'] ?? false,
       feedback: json['feedback'] ?? 'No feedback provided.',
       reasoning: json['reasoning'] ?? '',
-      imageUrl: json['imageUrl'],
+      fileUrl: fileUrlVal,
+      fileType: json['fileType'] ?? defaultType,
       strengths: json['strengths'] ?? '',
       weaknesses: json['weaknesses'] ?? '',
+      overrideReason: json['overrideReason'],
     );
   }
 
@@ -41,9 +54,11 @@ class QuestionEvaluationModel extends Equatable {
       'isManuallyGraded': isManuallyGraded,
       'feedback': feedback,
       'reasoning': reasoning,
-      'imageUrl': imageUrl,
+      'fileUrl': fileUrl,
+      'fileType': fileType,
       'strengths': strengths,
       'weaknesses': weaknesses,
+      'overrideReason': overrideReason,
     };
   }
 
@@ -53,9 +68,11 @@ class QuestionEvaluationModel extends Equatable {
     bool? isManuallyGraded,
     String? feedback,
     String? reasoning,
-    String? imageUrl,
+    String? fileUrl,
+    String? fileType,
     String? strengths,
     String? weaknesses,
+    String? overrideReason,
   }) {
     return QuestionEvaluationModel(
       questionId: questionId ?? this.questionId,
@@ -63,9 +80,11 @@ class QuestionEvaluationModel extends Equatable {
       isManuallyGraded: isManuallyGraded ?? this.isManuallyGraded,
       feedback: feedback ?? this.feedback,
       reasoning: reasoning ?? this.reasoning,
-      imageUrl: imageUrl ?? this.imageUrl,
+      fileUrl: fileUrl ?? this.fileUrl,
+      fileType: fileType ?? this.fileType,
       strengths: strengths ?? this.strengths,
       weaknesses: weaknesses ?? this.weaknesses,
+      overrideReason: overrideReason ?? this.overrideReason,
     );
   }
 
@@ -76,9 +95,11 @@ class QuestionEvaluationModel extends Equatable {
         isManuallyGraded,
         feedback,
         reasoning,
-        imageUrl,
+        fileUrl,
+        fileType,
         strengths,
         weaknesses,
+        overrideReason,
       ];
 }
 

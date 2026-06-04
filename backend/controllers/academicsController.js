@@ -485,8 +485,13 @@ export const getCourseDetail = async (req, res) => {
     const exams = await Exam.find({ courseId: course._id });
     const examIds = exams.map(e => e._id);
 
-    // Fetch student's results
-    const results = await Result.find({ student: studentId, exam: { $in: examIds } });
+    // Fetch student's results and submissions in bulk
+    const [submissions, results] = await Promise.all([
+      Answers.find({ for_exam: { $in: examIds }, uploaded_student: studentId }).select("for_exam"),
+      Result.find({ student: studentId, exam: { $in: examIds } })
+    ]);
+
+    const submittedExamIds = new Set(submissions.map(s => s.for_exam.toString()));
 
     const evaluationHistory = [];
     let internalMarksObtained = 0;
@@ -517,11 +522,30 @@ export const getCourseDetail = async (req, res) => {
         }
       }
 
+      const hasSubmitted = submittedExamIds.has(exam._id.toString());
+      const hasResult = resultDoc != null;
+
+      let examStatus = "Upcoming";
+      const now = new Date();
+      if (exam.endTime && now > new Date(exam.endTime)) {
+        if (resultDoc && resultDoc.status === "Completed" && exam.resultsPublished === true) {
+          examStatus = "Completed";
+        } else if (hasSubmitted || hasResult) {
+          examStatus = "Evaluating";
+        } else {
+          examStatus = "Missed";
+        }
+      } else if (exam.startTime && now >= new Date(exam.startTime)) {
+        examStatus = "Live";
+      } else {
+        examStatus = "Upcoming";
+      }
+
       evaluationHistory.push({
         examId: exam._id,
         examTitle: exam.examType,
         type,
-        status: (resultDoc && exam.resultsPublished === true) ? resultDoc.status : "Evaluating",
+        status: examStatus,
         marksObtained,
         maxMarks: exam.maxMarks,
         percentage: marksObtained != null ? parseFloat(((marksObtained / exam.maxMarks) * 100).toFixed(1)) : null

@@ -148,6 +148,7 @@ class CourseDetailScreen extends ConsumerWidget {
               final item = detail.evaluationHistory[index];
               final isCompleted = item.status == 'Completed';
               final isEvaluating = item.status == 'Evaluating';
+              final isMissed = item.status == 'Missed';
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
@@ -172,13 +173,15 @@ class CourseDetailScreen extends ConsumerWidget {
                       Text(
                         isCompleted
                             ? '${item.percentage?.toStringAsFixed(1) ?? "--"}% (${item.marksObtained?.toStringAsFixed(1) ?? "--"}/${item.maxMarks.toStringAsFixed(1)})'
-                            : (isEvaluating ? 'Evaluating' : 'Upcoming'),
+                            : (isEvaluating ? 'Evaluating' : (isMissed ? 'Missed' : 'Upcoming')),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
                           color: isCompleted
                               ? AppTheme.textPrimary
-                              : (isEvaluating ? Colors.orange.shade800 : AppTheme.outlineColor),
+                              : (isEvaluating 
+                                  ? Colors.orange.shade800 
+                                  : (isMissed ? AppTheme.errorColor : AppTheme.outlineColor)),
                         ),
                       ),
                       if (isCompleted) ...[

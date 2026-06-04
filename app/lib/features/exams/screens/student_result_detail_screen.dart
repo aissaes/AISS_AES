@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
@@ -101,7 +102,8 @@ class StudentResultDetailScreen extends ConsumerWidget {
                             final isManuallyGraded = evaluation.isManuallyGraded;
                             final feedback = evaluation.feedback;
                             final reasoning = evaluation.reasoning;
-                            final imageUrl = evaluation.imageUrl;
+                            final fileUrl = evaluation.fileUrl;
+                            final fileType = evaluation.fileType;
 
                             return _buildQuestionCard(
                               context,
@@ -110,9 +112,11 @@ class StudentResultDetailScreen extends ConsumerWidget {
                               isManuallyGraded: isManuallyGraded,
                               feedback: feedback,
                               reasoning: reasoning,
-                              imageUrl: imageUrl,
+                              fileUrl: fileUrl,
+                              fileType: fileType,
                               strengths: evaluation.strengths,
                               weaknesses: evaluation.weaknesses,
+                              overrideReason: evaluation.overrideReason,
                             );
                           },
                         ),
@@ -307,10 +311,19 @@ class StudentResultDetailScreen extends ConsumerWidget {
     required bool isManuallyGraded,
     required String feedback,
     required String reasoning,
-    required String? imageUrl,
+    required String? fileUrl,
+    required String fileType,
     required String strengths,
     required String weaknesses,
+    String? overrideReason,
   }) {
+    final localFileUrl = fileUrl;
+    final hasFile = localFileUrl != null && localFileUrl.isNotEmpty;
+    final isPdf = hasFile && fileType == 'pdf';
+    final thumbnailUrl = isPdf
+        ? (localFileUrl.contains('?') ? '$localFileUrl&tr=pg-1' : '$localFileUrl?tr=pg-1')
+        : localFileUrl ?? '';
+    final fileExtension = isPdf ? '.pdf' : '.png';
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -461,8 +474,35 @@ class StudentResultDetailScreen extends ConsumerWidget {
             ),
           ],
 
+          if (isManuallyGraded && overrideReason != null && overrideReason.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'INSTRUCTOR OVERRIDE NOTE',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: Colors.purple,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.rate_review_outlined, color: Colors.purple, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    overrideReason,
+                    style: const TextStyle(fontSize: 13, color: AppTheme.textPrimary, height: 1.4),
+                  ),
+                ),
+              ],
+            ),
+          ],
+
           // Answer Script Page Image Attachment Redesigned
-          if (imageUrl != null && imageUrl.isNotEmpty) ...[
+          if (localFileUrl != null && localFileUrl.isNotEmpty) ...[
             const SizedBox(height: 20),
             const Text(
               'SUBMITTED SCRIPT',
@@ -484,39 +524,49 @@ class StudentResultDetailScreen extends ConsumerWidget {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => _showFullScreenImage(context, imageUrl, questionId),
+                    onTap: () => _showFullScreenImage(context, localFileUrl, fileType, questionId),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(6),
                       child: Container(
                         width: 50,
                         height: 50,
                         color: Colors.black.withValues(alpha: 0.03),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Image.network(
-                              imageUrl,
-                              fit: BoxFit.cover,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return const Center(
-                                  child: SizedBox(
-                                    width: 14,
-                                    height: 14,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
+                        child: !isPdf || localFileUrl.toLowerCase().contains('.pdf')
+                            ? Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Image.network(
+                                    thumbnailUrl,
+                                    fit: BoxFit.cover,
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return const Center(
+                                        child: SizedBox(
+                                          width: 14,
+                                          height: 14,
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        ),
+                                      );
+                                    },
+                                    errorBuilder: (context, error, stackTrace) => const Center(
+                                      child: Icon(Icons.image_not_supported_rounded, color: AppTheme.outlineColor, size: 20),
+                                    ),
                                   ),
-                                );
-                              },
-                              errorBuilder: (context, error, stackTrace) => const Center(
-                                child: Icon(Icons.image_not_supported_rounded, color: AppTheme.outlineColor, size: 20),
+                                  Container(
+                                    color: Colors.black.withValues(alpha: 0.15),
+                                  ),
+                                  const Icon(Icons.zoom_in_rounded, color: Colors.white, size: 18),
+                                ],
+                              )
+                            : Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Container(
+                                    color: Colors.red.withValues(alpha: 0.08),
+                                  ),
+                                  const Icon(Icons.picture_as_pdf_rounded, color: Colors.red, size: 24),
+                                ],
                               ),
-                            ),
-                            Container(
-                              color: Colors.black.withValues(alpha: 0.15),
-                            ),
-                            const Icon(Icons.zoom_in_rounded, color: Colors.white, size: 18),
-                          ],
-                        ),
                       ),
                     ),
                   ),
@@ -526,7 +576,7 @@ class StudentResultDetailScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Page $questionId.png',
+                          'Page $questionId$fileExtension',
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textPrimary),
                         ),
                         const SizedBox(height: 2),
@@ -539,7 +589,7 @@ class StudentResultDetailScreen extends ConsumerWidget {
                   ),
                   IconButton(
                     icon: const Icon(Icons.open_in_new_rounded, color: AppTheme.primaryColor, size: 20),
-                    onPressed: () => _showFullScreenImage(context, imageUrl, questionId),
+                    onPressed: () => _showFullScreenImage(context, localFileUrl, fileType, questionId),
                   ),
                 ],
               ),
@@ -550,50 +600,264 @@ class StudentResultDetailScreen extends ConsumerWidget {
     );
   }
 
-  void _showFullScreenImage(BuildContext context, String imageUrl, String questionId) {
+  void _showFullScreenImage(BuildContext context, String fileUrl, String fileType, String questionId) {
     showDialog(
       context: context,
       builder: (dialogContext) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.all(12),
-        child: Stack(
-          alignment: Alignment.topRight,
-          children: [
-            InteractiveViewer(
-              minScale: 0.5,
-              maxScale: 4.0,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+        child: _FullScreenPdfOrImageViewer(
+          fileUrl: fileUrl,
+          fileType: fileType,
+          questionId: questionId,
+          onClose: () => Navigator.pop(dialogContext),
+        ),
+      ),
+    );
+  }
+}
+
+class _FullScreenPdfOrImageViewer extends StatefulWidget {
+  final String fileUrl;
+  final String fileType;
+  final String questionId;
+  final VoidCallback onClose;
+
+  const _FullScreenPdfOrImageViewer({
+    required this.fileUrl,
+    required this.fileType,
+    required this.questionId,
+    required this.onClose,
+  });
+
+  @override
+  State<_FullScreenPdfOrImageViewer> createState() => _FullScreenPdfOrImageViewerState();
+}
+
+class _FullScreenPdfOrImageViewerState extends State<_FullScreenPdfOrImageViewer> {
+  late final bool _isPdf;
+  late final PageController _pageController;
+  int _currentPage = 1;
+  int? _maxPage;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isPdf = widget.fileType == 'pdf';
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  String _getPdfPageUrl(int pageNum) {
+    final separator = widget.fileUrl.contains('?') ? '&' : '?';
+    return '${widget.fileUrl}${separator}tr=pg-$pageNum';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.topRight,
+      children: [
+        Center(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.9),
+              width: double.infinity,
+              height: double.infinity,
+              child: _isPdf ? _buildPdfPageView() : _buildStandardImageView(),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: CircleAvatar(
+            backgroundColor: Colors.black54,
+            child: IconButton(
+              icon: const Icon(Icons.close_rounded, color: Colors.white),
+              onPressed: widget.onClose,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStandardImageView() {
+    return InteractiveViewer(
+      minScale: 0.5,
+      maxScale: 4.0,
+      child: Image.network(
+        widget.fileUrl,
+        fit: BoxFit.contain,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return const Center(child: CircularProgressIndicator(color: Colors.white));
+        },
+        errorBuilder: (context, error, stackTrace) => Container(
+          color: Colors.white,
+          child: const Center(
+            child: Icon(Icons.broken_image_rounded, color: AppTheme.outlineColor, size: 48),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPdfPageView() {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          color: Colors.black26,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+                onPressed: _currentPage > 1
+                    ? () {
+                        _pageController.previousPage(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      }
+                    : null,
+              ),
+              const SizedBox(width: 16),
+              Text(
+                'Page $_currentPage${_maxPage != null ? ' of $_maxPage' : ''}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(width: 16),
+              IconButton(
+                icon: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 18),
+                onPressed: (_maxPage == null || _currentPage < _maxPage!)
+                    ? () {
+                        _pageController.nextPage(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      }
+                    : null,
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: PageView.builder(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() {
+                _currentPage = index + 1;
+              });
+            },
+            itemBuilder: (context, index) {
+              final pageNum = index + 1;
+              if (_maxPage != null && pageNum > _maxPage!) {
+                return null;
+              }
+
+              final pageUrl = _getPdfPageUrl(pageNum);
+
+              return InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
                 child: Image.network(
-                  imageUrl,
+                  pageUrl,
                   fit: BoxFit.contain,
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
                     return const Center(child: CircularProgressIndicator(color: Colors.white));
                   },
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.white,
-                    height: 300,
-                    child: const Center(
-                      child: Icon(Icons.broken_image_rounded, color: AppTheme.outlineColor, size: 48),
-                    ),
-                  ),
+                  errorBuilder: (context, error, stackTrace) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted && _maxPage == null && pageNum > 1) {
+                        setState(() {
+                          _maxPage = pageNum - 1;
+                          if (_currentPage > _maxPage!) {
+                            _currentPage = _maxPage!;
+                            _pageController.jumpToPage(_maxPage! - 1);
+                          }
+                        });
+                      } else if (mounted && pageNum == 1) {
+                        setState(() {
+                          _hasError = true;
+                        });
+                      }
+                    });
+
+                    if (pageNum == 1 || _hasError) {
+                      return Container(
+                        color: Colors.white,
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.broken_image_rounded, color: AppTheme.outlineColor, size: 48),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'Failed to load PDF preview',
+                                style: TextStyle(
+                                  color: AppTheme.textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 24),
+                                child: Text(
+                                  'This legacy upload does not support real-time mobile preview.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  Clipboard.setData(ClipboardData(text: widget.fileUrl));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Document link copied to clipboard!'),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.copy_rounded, size: 16, color: Colors.white),
+                                label: const Text('Copy Document Link'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.primaryColor,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: CircleAvatar(
-                backgroundColor: Colors.black54,
-                child: IconButton(
-                  icon: const Icon(Icons.close_rounded, color: Colors.white),
-                  onPressed: () => Navigator.pop(dialogContext),
-                ),
-              ),
-            ),
-          ],
+              );
+            },
+          ),
         ),
-      ),
+      ],
     );
   }
 }
