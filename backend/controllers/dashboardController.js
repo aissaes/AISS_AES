@@ -62,13 +62,13 @@ export const getStudentDashboard = async (req, res) => {
         "subjectName subjectCode examType startTime endTime maxMarks resultsPublished"
       ).exec(),
       // Fetch answer script submissions (only projecting ID and for_exam)
-      Answers.find({ uploaded_student: studentId }, "for_exam createdAt").exec(),
+      Answers.find({ uploaded_student: studentId }, "for_exam").exec(),
       // Fetch results published/evaluated (projecting totalMarksObtained, evaluations, and exam)
       Result.find({ student: studentId }, "exam totalMarksObtained evaluations updatedAt")
         .populate("exam", "subjectName subjectCode examType maxMarks resultsPublished")
         .exec(),
-      // Fetch upload active sessions (projecting exam and createdAt)
-      Upload.find({ student: studentId }, "exam createdAt")
+      // Fetch upload active sessions (projecting exam)
+      Upload.find({ student: studentId }, "exam")
         .populate("exam", "subjectCode")
         .exec()
     ]);
@@ -206,7 +206,7 @@ export const getStudentDashboard = async (req, res) => {
         recentActivity.push({
           id: `sub_${sub._id}`,
           title: `${examDetail.subjectCode} Script Submitted`,
-          timestamp: sub.createdAt,
+          timestamp: sub._id.getTimestamp(),
           type: "submission"
         });
       }
@@ -240,7 +240,7 @@ export const getStudentDashboard = async (req, res) => {
         recentActivity.push({
           id: `tok_${session._id}`,
           title: `Exam Token Activated (${session.exam.subjectCode})`,
-          timestamp: session.createdAt,
+          timestamp: session._id.getTimestamp(),
           type: "token"
         });
       }
