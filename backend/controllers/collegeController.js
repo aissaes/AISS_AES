@@ -41,7 +41,7 @@ export const getCollegeDepartments = async (req, res) => {
 // POST: Public route for the landing page form
 export const collegeRegisterRequest = async (req, res) => {
   try {
-    const { collegeName, location, departments, adminName, adminEmail, adminPhone } = req.body;
+    const { collegeName, collegeCode, location, departments, adminName, adminEmail, adminPhone } = req.body;
 
     if (!collegeName || !adminName || !adminEmail) {
       return res.status(400).json({ message: "Required fields are missing." });
@@ -58,9 +58,15 @@ export const collegeRegisterRequest = async (req, res) => {
     const dummyPassword = crypto.randomBytes(16).toString('hex');
     const hashedDummy = await bcrypt.hash(dummyPassword, 10);
 
+    // Auto-generate code from name if missing/empty
+    const resolvedCode = collegeCode 
+      ? collegeCode.toUpperCase().replace(/[^A-Z0-9]/g, "") 
+      : collegeName.split(/\s+/).map(w => w[0]).join("").toUpperCase().replace(/[^A-Z0-9]/g, "").substring(0, 6) || "COL";
+
     // 3. Create the College (Pending)
     const newCollege = await College.create({
       collegeName,
+      collegeCode: resolvedCode,
       location,
       departments: [],
       collegeAdminId: null,

@@ -202,11 +202,9 @@ export const getDepartmentStudents = async (req, res) => {
     const hod = await Faculty.findById(req.user.id);
     if (!hod) return res.status(404).json({ message: "HOD profile not found." });
 
-    // Resolve department to support both ObjectId and legacy string values
-    const deptDoc = await Department.findById(hod.department);
     let filter = {
       collegeId: hod.collegeId,
-      department: deptDoc ? { $in: [hod.department, deptDoc.name] } : hod.department
+      department: hod.department
     };
 
     if (req.query.semesterId) {

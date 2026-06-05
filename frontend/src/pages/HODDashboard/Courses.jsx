@@ -15,7 +15,7 @@ const Courses = () => {
   // Modal states
   const [createModal, setCreateModal] = useState(false);
   const [editModal, setEditModal] = useState({ open: false, id: null, courseName: '', credits: 3 });
-  const [assignModal, setAssignModal] = useState({ open: false, courseId: null, courseName: '', facultyId: '', academicYear: '2026-2027' });
+  const [assignModal, setAssignModal] = useState({ open: false, courseId: null, courseName: '', facultyId: '', academicYear: '2026-2027', isReassign: false });
   const [submitting, setSubmitting] = useState(false);
   const [deleteConfirmModal, setDeleteConfirmModal] = useState({ open: false, id: null });
 
@@ -121,11 +121,11 @@ const Courses = () => {
         facultyId: assignModal.facultyId,
         academicYear: assignModal.academicYear,
       });
-      toast('Faculty member assigned successfully!', 'success');
-      setAssignModal({ open: false, courseId: null, courseName: '', facultyId: '', academicYear: '2026-2027' });
+      toast(assignModal.isReassign ? 'Faculty member reassigned successfully!' : 'Faculty member assigned successfully!', 'success');
+      setAssignModal({ open: false, courseId: null, courseName: '', facultyId: '', academicYear: '2026-2027', isReassign: false });
       fetchData();
     } catch (err) {
-      toast(err.response?.data?.message || 'Failed to assign faculty.', 'error');
+      toast(err.response?.data?.message || (assignModal.isReassign ? 'Failed to reassign faculty.' : 'Failed to assign faculty.'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -209,9 +209,9 @@ const Courses = () => {
                         <div className={styles.actionBtns} style={{ justifyContent: 'flex-end' }}>
                           <button
                             className={styles.actionBtn}
-                            onClick={() => setAssignModal({ open: true, courseId: course._id, courseName: course.courseName, facultyId: course.assignedFaculty?._id || '', academicYear: '2026-2027' })}
+                            onClick={() => setAssignModal({ open: true, courseId: course._id, courseName: course.courseName, facultyId: course.assignedFaculty?._id || '', academicYear: '2026-2027', isReassign: !!course.assignedFaculty })}
                           >
-                            <UserCheck size={13} /> Assign Teacher
+                            <UserCheck size={13} /> {course.assignedFaculty ? 'Reassign Teacher' : 'Assign Teacher'}
                           </button>
                           <button
                             className={styles.actionBtn}
@@ -336,13 +336,13 @@ const Courses = () => {
       {/* ── Assign Faculty Modal ── */}
       <Modal
         isOpen={assignModal.open}
-        onClose={() => !submitting && setAssignModal({ open: false, courseId: null, courseName: '', facultyId: '', academicYear: '2026-2027' })}
-        title={`Assign Teacher: ${assignModal.courseName}`}
+        onClose={() => !submitting && setAssignModal({ open: false, courseId: null, courseName: '', facultyId: '', academicYear: '2026-2027', isReassign: false })}
+        title={assignModal.isReassign ? `Reassign Teacher: ${assignModal.courseName}` : `Assign Teacher: ${assignModal.courseName}`}
         footer={
           <>
-            <button className={styles.cancelModalBtn} onClick={() => setAssignModal({ open: false, courseId: null, courseName: '', facultyId: '', academicYear: '2026-2027' })} disabled={submitting}>Cancel</button>
+            <button className={styles.cancelModalBtn} onClick={() => setAssignModal({ open: false, courseId: null, courseName: '', facultyId: '', academicYear: '2026-2027', isReassign: false })} disabled={submitting}>Cancel</button>
             <button className={styles.successModalBtn} onClick={handleAssignSubmit} disabled={submitting}>
-              {submitting ? 'Assigning…' : 'Confirm Assignment'}
+              {submitting ? (assignModal.isReassign ? 'Reassigning…' : 'Assigning…') : (assignModal.isReassign ? 'Confirm Reassignment' : 'Confirm Assignment')}
             </button>
           </>
         }

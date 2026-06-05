@@ -289,7 +289,7 @@ const Landing = () => {
   const [collegeModalOpen, setCollegeModalOpen] = useState(false);
   const [registering, setRegistering] = useState(false);
   const [collegeForm, setCollegeForm] = useState({
-    collegeName: '', location: '', adminName: '', adminEmail: '', adminPhone: ''
+    collegeName: '', collegeCode: '', location: '', adminName: '', adminEmail: '', adminPhone: ''
   });
 
   // Soft mount animation state to handle reload/landing entrance elegantly
@@ -367,7 +367,7 @@ const Landing = () => {
 
   const handleRegisterCollege = async (e) => {
     e.preventDefault();
-    if(!collegeForm.collegeName || !collegeForm.adminEmail || !collegeForm.adminName) {
+    if(!collegeForm.collegeName || !collegeForm.collegeCode || !collegeForm.adminEmail || !collegeForm.adminName) {
       toast('Please fill all required fields.', 'warning');
       return;
     }
@@ -376,7 +376,7 @@ const Landing = () => {
       await collegeAPI.registerRequest(collegeForm);
       toast('College registration submitted! Our Sandbox Environment is now active with your institution. Click "Sign In" to continue.', 'success', 6000);
       setCollegeModalOpen(false);
-      setCollegeForm({ collegeName: '', location: '', adminName: '', adminEmail: '', adminPhone: '' });
+      setCollegeForm({ collegeName: '', collegeCode: '', location: '', adminName: '', adminEmail: '', adminPhone: '' });
     } catch {
       toast('Registration failed. Try again.', 'error');
     } finally {
@@ -1517,10 +1517,14 @@ const Landing = () => {
            <p className={styles.registerFormDesc}>
              Register your college to get access to the platform. Only the requesting person will get the College Admin account initially.
            </p>
+           <div className={styles.formField} style={{ marginBottom: 14 }}>
+             <label>College Name *</label>
+             <input className={styles.modalInput} required value={collegeForm.collegeName} onChange={e => setCollegeForm({...collegeForm, collegeName: e.target.value})} placeholder="e.g. AISS Institute" />
+           </div>
            <div className={styles.formGrid}>
              <div className={styles.formField}>
-               <label>College Name *</label>
-               <input className={styles.modalInput} required value={collegeForm.collegeName} onChange={e => setCollegeForm({...collegeForm, collegeName: e.target.value})} placeholder="e.g. AISS Institute" />
+               <label>College Code *</label>
+               <input className={styles.modalInput} required value={collegeForm.collegeCode} onChange={e => setCollegeForm({...collegeForm, collegeCode: e.target.value.toUpperCase().slice(0, 8)})} placeholder="e.g. AISS" />
              </div>
              <div className={styles.formField}>
                <label>Location / City</label>
