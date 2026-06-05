@@ -88,15 +88,39 @@ const SecretTest = () => {
       return;
     }
     setVectorStatus({ loading: true, data: null, error: null });
-    const formData = new FormData();
-    formData.append('file', vectorForm.file);
-    formData.append('contentType', vectorForm.contentType);
 
     try {
-      const res = await axios.post(`${baseURL}/test/sandbox/vectorize`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      // 1. Get ImageKit authentication parameters from backend
+      const authRes = await axios.get(`${baseURL}/test/sandbox/imagekit-auth`, {
         withCredentials: true,
       });
+      const { token, expire, signature, publicKey } = authRes.data;
+
+      // 2. Upload file directly to ImageKit bypassing Vercel limits
+      const ikFormData = new FormData();
+      ikFormData.append("file", vectorForm.file);
+      ikFormData.append("fileName", vectorForm.file.name);
+      ikFormData.append("publicKey", publicKey);
+      ikFormData.append("signature", signature);
+      ikFormData.append("expire", expire);
+      ikFormData.append("token", token);
+      ikFormData.append("folder", "/teacher_materials");
+
+      const ikUploadRes = await axios.post("https://upload.imagekit.io/api/v1/files/upload", ikFormData);
+      if (!ikUploadRes.data || !ikUploadRes.data.url) {
+        throw new Error("Direct ImageKit upload failed.");
+      }
+
+      const fileUrl = ikUploadRes.data.url;
+
+      // 3. Send the file URL to vectorize endpoint
+      const res = await axios.post(`${baseURL}/test/sandbox/vectorize-by-url`, {
+        fileUrl,
+        contentType: vectorForm.contentType,
+      }, {
+        withCredentials: true,
+      });
+
       setVectorStatus({ loading: false, data: res.data, error: null });
     } catch (err) {
       setVectorStatus({

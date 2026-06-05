@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { uploadImage, uploadPDF } from "../controllers/uploadController.js";
+import { uploadImage, uploadPDF, getAuthenticationParameters } from "../controllers/uploadController.js";
 import { verifyToken } from "../middlewares/authMiddleware.js";
 
 const uploadRouter = express.Router();
@@ -14,5 +14,6 @@ const upload = multer({
 
 uploadRouter.post("/upload-image", verifyToken, upload.single("answer_script"), uploadImage);
 uploadRouter.post("/upload-pdf", verifyToken, upload.single("pdf_file"), uploadPDF);
+uploadRouter.get("/imagekit-auth", verifyToken, getAuthenticationParameters);
 
 export default uploadRouter;

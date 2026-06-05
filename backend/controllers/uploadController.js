@@ -64,3 +64,20 @@ export const uploadPDF = async (req, res) => {
     });
   }
 };
+
+// --- GET IMAGEKIT AUTH PARAMETERS FOR CLIENT-SIDE UPLOADS ---
+export const getAuthenticationParameters = async (req, res) => {
+  try {
+    const authParams = imagekit.getAuthenticationParameters();
+    return res.status(200).json({
+      ...authParams,
+      publicKey: imagekit.options.publicKey || process.env.IMAGEKIT_PUBLIC_KEY || "public_WFeQX8UkftEzxi+FHlGACEOfj1k="
+    });
+  } catch (error) {
+    console.error("ImageKit Auth Parameters Error:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to generate ImageKit auth parameters"
+    });
+  }
+};

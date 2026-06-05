@@ -193,6 +193,58 @@ testRouter.post("/test/sandbox/vectorize", upload.single("file"), async (req, re
   }
 });
 
+// ImageKit Auth Endpoint for Client-Side Direct Upload
+testRouter.get("/test/sandbox/imagekit-auth", (req, res) => {
+  try {
+    const authParams = imagekit.getAuthenticationParameters();
+    return res.status(200).json({
+      ...authParams,
+      publicKey: imagekit.options.publicKey || process.env.IMAGEKIT_PUBLIC_KEY || "public_WFeQX8UkftEzxi+FHlGACEOfj1k="
+    });
+  } catch (error) {
+    console.error("ImageKit Auth Error:", error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Vectorize from ImageKit URL Endpoint
+testRouter.post("/test/sandbox/vectorize-by-url", async (req, res) => {
+  try {
+    const { fileUrl, contentType } = req.body;
+
+    if (!fileUrl || !contentType) {
+      return res.status(400).json({ success: false, message: "Missing fileUrl or contentType." });
+    }
+
+    const sandbox = await getOrCreateSandboxRecords();
+
+    // Call Python teacher upload service
+    const payload = {
+      raw_input: fileUrl,
+      content_type: contentType,
+      subject: sandbox.subjectName,
+      exam_id: sandbox.examId.toString(),
+      namespace: sandbox.collegeId.toString()
+    };
+
+    if (contentType === "answer_key") {
+      payload.question_id = "Q1";
+    }
+
+    const aiResponse = await axios.post(`${AI_BASE_URL}/teacher/upload`, payload);
+
+    return res.status(200).json({
+      success: true,
+      message: "Vectorization complete.",
+      fileUrl,
+      aiResponse: aiResponse.data
+    });
+  } catch (error) {
+    console.error("Sandbox Vectorize by URL Error:", error.response?.data?.detail || error.message);
+    return res.status(500).json({ success: false, error: error.response?.data?.detail || error.message });
+  }
+});
+
 // Helper for OCR Space API delegating to Python Agent
 const runOcrDirect = async (fileUrl) => {
   const response = await axios.post(`${AI_BASE_URL}/testing/test`, {

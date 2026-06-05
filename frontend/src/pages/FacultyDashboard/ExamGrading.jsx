@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { ArrowLeft, RefreshCw, Cpu, UserCheck, Clock, FileCheck2, AlertCircle, UserPlus, Upload, BookOpen, FileText } from 'lucide-react';
 import apiClient, { evaluationAPI, timetableAPI, questionPaperAPI } from '../../api/client';
 import { useToast } from '../../components/Toast/Toast';
@@ -124,21 +125,26 @@ const ExamGrading = () => {
 
     setUploadingMaterials(true);
     try {
-      const formData = new FormData();
-      formData.append('pdf_file', materialsFile);
+      toast("Requesting upload credentials...", "info");
+      const authRes = await apiClient.get('/imagekit-auth');
+      const { token, expire, signature, publicKey } = authRes.data;
 
-      toast("Uploading PDF to storage...", "info");
-      const uploadRes = await apiClient.post('/upload-pdf', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      toast("Uploading PDF directly to storage...", "info");
+      const ikFormData = new FormData();
+      ikFormData.append("file", materialsFile);
+      ikFormData.append("fileName", materialsFile.name);
+      ikFormData.append("publicKey", publicKey);
+      ikFormData.append("signature", signature);
+      ikFormData.append("expire", expire);
+      ikFormData.append("token", token);
+      ikFormData.append("folder", "/teacher_materials");
 
-      if (!uploadRes.data || !uploadRes.data.pdfUrl) {
-        throw new Error("PDF upload failed.");
+      const ikUploadRes = await axios.post("https://upload.imagekit.io/api/v1/files/upload", ikFormData);
+      if (!ikUploadRes.data || !ikUploadRes.data.url) {
+        throw new Error("Direct upload failed.");
       }
 
-      const fileUrl = uploadRes.data.pdfUrl;
+      const fileUrl = ikUploadRes.data.url;
 
       toast("Vectorizing materials with AI...", "info");
       const payload = {
