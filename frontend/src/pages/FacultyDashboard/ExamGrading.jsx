@@ -25,12 +25,26 @@ const ExamGrading = () => {
   const [uploadingMaterials, setUploadingMaterials] = useState(false);
   const [availableQuestionIds, setAvailableQuestionIds] = useState([]);
   const [publishConfirm, setPublishConfirm] = useState({ open: false, isCurrentlyPublished: false });
-
-
+  const [materialsList, setMaterialsList] = useState([]);
+  const [materialsLoading, setMaterialsLoading] = useState(false);
 
   useEffect(() => {
     fetchExamAndSubmissions();
   }, [examId]);
+
+  const fetchMaterials = async () => {
+    setMaterialsLoading(true);
+    try {
+      const res = await evaluationAPI.getMaterials(examId);
+      if (res.data.success) {
+        setMaterialsList(res.data.materials || []);
+      }
+    } catch (err) {
+      console.error("Failed to load materials:", err);
+    } finally {
+      setMaterialsLoading(false);
+    }
+  };
 
   const fetchExamAndSubmissions = async () => {
     setLoading(true);
@@ -47,6 +61,9 @@ const ExamGrading = () => {
       // 3. Fetch Grading Results
       const resultRes = await evaluationAPI.getResultOverview(examId);
       setResults(resultRes.data.results || []);
+
+      // Fetch materials
+      fetchMaterials();
 
       // 4. Fetch Question Paper to extract Question IDs for materials modal
       if (fetchedExam && fetchedExam.questionPaper) {
@@ -149,7 +166,9 @@ const ExamGrading = () => {
       toast("Vectorizing materials with AI...", "info");
       const payload = {
         fileUrl,
-        contentType: materialsFileType
+        contentType: materialsFileType,
+        imageKitFileId: ikUploadRes.data.fileId,
+        title: materialsFile.name
       };
       if (materialsFileType === 'answer_key') {
         payload.questionId = materialsSelectedQuestionId;
@@ -160,6 +179,7 @@ const ExamGrading = () => {
         toast("Materials vectorized successfully!", "success");
         setIsMaterialsModalOpen(false);
         setMaterialsFile(null);
+        fetchMaterials();
       } else {
         toast(res.data.message || "Failed to vectorize materials.", "error");
       }
@@ -168,6 +188,53 @@ const ExamGrading = () => {
       toast(err.response?.data?.message || err.message || "Error uploading materials.", "error");
     } finally {
       setUploadingMaterials(false);
+    }
+  };
+
+  const handleDeleteMaterial = async (materialId) => {
+    if (!window.confirm("Are you sure you want to delete this teaching material? This will delete the document from storage and all vectorized chunks from the AI database.")) {
+      return;
+    }
+    toast("Deleting reference material...", "info");
+    try {
+      const res = await evaluationAPI.deleteMaterial(examId, materialId);
+      if (res.data.success) {
+        toast("Material deleted successfully!", "success");
+        fetchMaterials();
+      } else {
+        toast(res.data.message || "Failed to delete material.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      toast(err.response?.data?.message || "Failed to delete material.", "error");
+    }
+  };
+
+  const handleReplaceMaterial = async (material) => {
+    if (!window.confirm(`Replacing will delete the active "${material.title}". After deletion, you will be prompted to upload the replacement file. Proceed?`)) {
+      return;
+    }
+    toast("Removing old material...", "info");
+    try {
+      const res = await evaluationAPI.deleteMaterial(examId, material._id);
+      if (res.data.success) {
+        toast("Old material removed. Please select the new file.", "info");
+        // Pre-populate modal state
+        setMaterialsFileType(material.materialType);
+        if (material.questionId) {
+          setMaterialsSelectedQuestionId(material.questionId);
+        }
+        setMaterialsFile(null);
+        // Open modal
+        setIsMaterialsModalOpen(true);
+        // Refresh materials list
+        fetchMaterials();
+      } else {
+        toast(res.data.message || "Failed to delete old material.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      toast(err.response?.data?.message || "Failed to delete old material.", "error");
     }
   };
 
@@ -313,6 +380,121 @@ const ExamGrading = () => {
             <p className={styles.statValue}>{pendingCount}</p>
             <p className={styles.statLabel}>Pending Evaluation</p>
           </div>
+        </div>
+      </div>
+
+      {/* Active Teaching Reference Materials */}
+      <div className={styles.card} style={{ marginBottom: 24 }}>
+        <div className={styles.cardHeader} style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className={styles.cardHeaderLeft} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <BookOpen className={styles.cardHeaderIcon} size={18} />
+            <h3 className={styles.cardTitle}>Active Reference Materials (Notes, Rubrics, Keys)</h3>
+          </div>
+        </div>
+
+        <div style={{ padding: 20 }}>
+          {materialsLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
+              <div className={styles.spinner} />
+            </div>
+          ) : materialsList.length === 0 ? (
+            <div className={styles.emptyCenter} style={{ padding: '40px 20px' }}>
+              <FileText size={36} color="#94a3b8" style={{ opacity: 0.6 }} />
+              <p className={styles.emptyText} style={{ marginTop: 8 }}>No teaching reference materials active for this course or exam.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+              {materialsList.map((m) => (
+                <div 
+                  key={m._id} 
+                  style={{
+                    background: 'var(--surface-2)',
+                    border: '1px solid var(--border-2)',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    transition: 'all 0.2s',
+                    gap: '12px'
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                      <span 
+                        style={{
+                          background: m.materialType === 'notes' ? 'rgba(99, 102, 241, 0.12)' : 
+                                      m.materialType === 'answer_key' ? 'rgba(16, 185, 129, 0.12)' : 
+                                      m.materialType === 'rubric' ? 'rgba(245, 158, 11, 0.12)' : 'rgba(139, 92, 246, 0.12)',
+                          color: m.materialType === 'notes' ? 'var(--primary)' : 
+                                 m.materialType === 'answer_key' ? 'var(--success)' : 
+                                 m.materialType === 'rubric' ? 'var(--warning)' : '#a78bfa',
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          textTransform: 'uppercase'
+                        }}
+                      >
+                        {m.materialType.replace('_', ' ')}
+                      </span>
+                      {m.questionId && (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-3)', fontWeight: 600 }}>
+                          Q ID: {m.questionId}
+                        </span>
+                      )}
+                    </div>
+                    <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-1)', lineBreak: 'anywhere' }}>
+                      {m.title}
+                    </h4>
+                    <p style={{ margin: '6px 0 0 0', fontSize: '0.75rem', color: 'var(--text-3)' }}>
+                      Uploaded by {m.uploadedBy?.name || 'Faculty'} on {new Date(m.uploadedAt || m.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid var(--border-2)', paddingTop: '10px' }}>
+                    <a 
+                      href={m.imageKitUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className={styles.ghostBtn}
+                      style={{
+                        flex: 1,
+                        justifyContent: 'center',
+                        padding: '6px 0',
+                        fontSize: '0.78rem',
+                        textDecoration: 'none',
+                        textAlign: 'center'
+                      }}
+                    >
+                      View
+                    </a>
+                    <button 
+                      onClick={() => handleReplaceMaterial(m)}
+                      className={styles.ghostBtn}
+                      style={{
+                        flex: 1,
+                        justifyContent: 'center',
+                        padding: '6px 0',
+                        fontSize: '0.78rem'
+                      }}
+                    >
+                      Replace
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteMaterial(m._id)}
+                      className={styles.dangerBtn}
+                      style={{
+                        padding: '6px 10px',
+                        fontSize: '0.78rem'
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

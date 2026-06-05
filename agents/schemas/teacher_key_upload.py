@@ -9,10 +9,10 @@ class TeacherUploadRequest(BaseModel):
         description="The ImageKit or AWS S3 URL pointing to the uploaded file.",
         json_schema_extra={"example": "https://ik.imagekit.io/k3p6avtbf/teacher_materials/biology_rubric.pdf"}
     )
-    content_type: Literal["notes", "answer_key"] = Field(
+    content_type: Literal["notes", "answer_key", "syllabus", "rubric"] = Field(
         ...,
         title="Content Type",
-        description="Allowed values: notes or answer_key",
+        description="Allowed values: notes, answer_key, syllabus, or rubric",
         json_schema_extra={"example": "answer_key"}
     )
     subject: str = Field(
@@ -23,10 +23,10 @@ class TeacherUploadRequest(BaseModel):
         description="The subject of the exam (e.g., biology, physics).",
         json_schema_extra={"example": "biology"}
     )
-    exam_id: str = Field(
-        ..., 
+    exam_id: Optional[str] = Field(
+        None, 
         title="Exam Identifier", 
-        description="Unique ID for the exam to prevent data leakage.",
+        description="Unique ID for the exam (optional for course-wide materials).",
         json_schema_extra={"example": "midterm_2024_v3"}
     )
     namespace: str = Field(
@@ -34,6 +34,21 @@ class TeacherUploadRequest(BaseModel):
         title="Database Namespace", 
         description="The Pinecone namespace, typically the college or organization name.",
         json_schema_extra={"example": "NIT_Raipur"}
+    )
+    material_id: str = Field(
+        ...,
+        title="Material ID",
+        description="Unique MongoDB ID tracking this resource."
+    )
+    course_id: str = Field(
+        ...,
+        title="Course ID",
+        description="The course ID linking the notes to retrieve."
+    )
+    faculty_id: str = Field(
+        ...,
+        title="Faculty ID",
+        description="The uploader faculty ID."
     )
     question_id: Optional[str] = Field(
         None,

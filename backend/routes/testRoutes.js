@@ -140,6 +140,8 @@ const getOrCreateSandboxRecords = async () => {
     studentId: student._id,
     paperId: paper._id,
     examId: exam._id,
+    courseId: exam.courseId,
+    facultyId: exam.assignedFaculty,
     subjectName: exam.subjectName
   };
 };
@@ -167,12 +169,16 @@ testRouter.post("/test/sandbox/vectorize", upload.single("file"), async (req, re
     const fileUrl = uploadResponse.url;
 
     // Call Python teacher upload service
+    // Call Python teacher upload service
     const payload = {
       raw_input: fileUrl,
       content_type: contentType,
       subject: sandbox.subjectName,
       exam_id: sandbox.examId.toString(),
-      namespace: sandbox.collegeId.toString()
+      namespace: sandbox.collegeId.toString(),
+      material_id: new mongoose.Types.ObjectId().toString(),
+      course_id: sandbox.courseId.toString(),
+      faculty_id: sandbox.facultyId.toString()
     };
 
     if (contentType === "answer_key") {
@@ -242,7 +248,10 @@ testRouter.post("/test/sandbox/vectorize-by-url", async (req, res) => {
       content_type: contentType,
       subject: sandbox.subjectName,
       exam_id: sandbox.examId.toString(),
-      namespace: sandbox.collegeId.toString()
+      namespace: sandbox.collegeId.toString(),
+      material_id: new mongoose.Types.ObjectId().toString(),
+      course_id: sandbox.courseId.toString(),
+      faculty_id: sandbox.facultyId.toString()
     };
 
     if (contentType === "answer_key") {

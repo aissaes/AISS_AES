@@ -35,6 +35,12 @@ class StudentEvaluateRequest(BaseModel):
         description="The Pinecone namespace to search within.",
         json_schema_extra={"example": "NIT_Raipur"}
     )
+    course_id: str = Field(
+        ...,
+        title="Course Identifier",
+        description="The course ID linking the notes to retrieve.",
+        json_schema_extra={"example": "course_123"}
+    )
     question_id: str = Field(
         ..., 
         min_length=1,

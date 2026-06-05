@@ -29,3 +29,18 @@ async def upload_teacher_data(request: TeacherUploadRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete(
+    "/materials/{material_id}",
+    summary="Delete Teacher Material Chunks",
+    description="Deletes vectorized chunks for a specific material from Pinecone."
+)
+async def delete_teacher_material(material_id: str, namespace: str):
+    try:
+        from tools.VectorDB_operations import delete_material_chunks
+        success = delete_material_chunks(namespace, material_id)
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to delete chunks from Pinecone.")
+        return {"status": "success", "message": "Material chunks deleted successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

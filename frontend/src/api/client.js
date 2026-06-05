@@ -209,6 +209,8 @@ export const evaluationAPI = {
   triggerAIEvaluation: (examId, studentId) => client.post(`/faculty/exam/${examId}/evaluate`, { studentId }),
   overrideGrade: (examId, studentId, data) => client.put(`/faculty/exam/${examId}/student/${studentId}/override`, data),
   uploadMaterials: (examId, data) => client.post(`/faculty/exam/${examId}/upload-materials`, data),
+  getMaterials: (examId) => client.get(`/faculty/exam/${examId}/materials`),
+  deleteMaterial: (examId, materialId) => client.delete(`/faculty/exam/${examId}/materials/${materialId}`),
   publishResults: (examId, publish) => client.put(`/faculty/exam/${examId}/publish-results`, { publish }),
 };
 

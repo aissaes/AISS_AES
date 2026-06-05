@@ -29,9 +29,12 @@ class TeacherUploadState(TypedDict):
     raw_input: str              # Path to image or PDF uploaded by teacher
     content_type: str           # "notes" or "answer_key"
     subject: str                # e.g., "biology"
-    exam_id: str                # e.g., "midterm_2024_v2"
+    exam_id: str                # e.g., "midterm_2024_v2", can be None/empty
     namespace: str              # e.g., "NIT_Raipur"
     question_id: str            # e.g., "S1-Q1"
+    material_id: str            # Unique MongoDB material ID
+    course_id: str              # Course ID
+    faculty_id: str             # Uploader faculty ID
     extracted_text: str         # Text from OCR/PDF Loader
     cleaned_text: str           # Preprocessed text
     chunks: List[str]           # Split text chunks ready for Pinecone
@@ -126,7 +129,10 @@ def vector_db_agent(state: TeacherUploadState):
         content_type=state.get("content_type"),
         subject=state.get("subject"),
         exam_id=state.get("exam_id"),
-        NAMESPACE=state.get("namespace")
+        NAMESPACE=state.get("namespace"),
+        material_id=state.get("material_id"),
+        course_id=state.get("course_id"),
+        faculty_id=state.get("faculty_id")
     )
 
     return {"upload_status": f"Success: Stored {len(chunks)} chunks in Pinecone."}

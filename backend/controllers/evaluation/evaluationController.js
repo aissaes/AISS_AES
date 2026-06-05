@@ -5,6 +5,8 @@ import QuestionPaper from "../../models/questionPapers.js";
 import Result from "../../models/result.js";
 import Student from "../../models/student.js";
 import Upload from "../../models/uploadSession.js";
+import TeacherMaterial from "../../models/teacherMaterial.js";
+import imagekit from "../../configurations/imageKit.js";
 
 // Define the Base URL (Defaults to local if the .env variable is missing)
 const AI_BASE_URL = process.env.PYTHON_AGENT_URL || "http://127.0.0.1:10000";
@@ -154,6 +156,7 @@ export const triggerAIEvaluation = async (req, res) => {
           raw_input: fileUrl,
           question: questionText,
           exam_id: examId,
+          course_id: exam.courseId.toString(),
           namespace: exam.collegeId.toString(), 
           question_id: questionNoStr,
           max_marks: maxMarks
@@ -265,7 +268,7 @@ export const triggerAIEvaluation = async (req, res) => {
 export const uploadTeacherMaterials = async (req, res) => {
   try {
     const { examId } = req.params;
-    const { fileUrl, contentType, questionId } = req.body; 
+    const { fileUrl, contentType, questionId, imageKitFileId, title } = req.body; 
     const facultyId = req.user.id; 
 
     if (!fileUrl || !contentType) {
@@ -280,6 +283,20 @@ export const uploadTeacherMaterials = async (req, res) => {
     }
 
     const namespace = exam.collegeId.toString();
+
+    // Create MongoDB document
+    const newMaterial = await TeacherMaterial.create({
+      collegeId: exam.collegeId,
+      courseId: exam.courseId,
+      examId: (contentType === "notes" || contentType === "syllabus") ? null : examId,
+      materialType: contentType,
+      title: title || "Uploaded Material",
+      imageKitUrl: fileUrl,
+      imageKitFileId: imageKitFileId || "unknown",
+      questionId: contentType === "answer_key" ? questionId : null,
+      uploadedBy: facultyId
+    });
+
     console.log(`\n📤 Sending ${contentType} to AI for vectorization...`);
 
     const payload = {
@@ -287,25 +304,119 @@ export const uploadTeacherMaterials = async (req, res) => {
       content_type: contentType,
       subject: exam.subjectName,
       exam_id: examId,
-      namespace: namespace
+      namespace: namespace,
+      material_id: newMaterial._id.toString(),
+      course_id: exam.courseId.toString(),
+      faculty_id: facultyId
     };
 
     if (contentType === "answer_key") {
       payload.question_id = questionId;
     }
 
-    const aiResponse = await axios.post(`${AI_BASE_URL}/teacher/upload`, payload);
-    console.log(`✅ AI Vectorization Complete:`, aiResponse.data);
+    try {
+      const aiResponse = await axios.post(`${AI_BASE_URL}/teacher/upload`, payload);
+      console.log(`✅ AI Vectorization Complete:`, aiResponse.data);
 
-    res.status(200).json({
-      success: true,
-      message: "Materials successfully uploaded and vectorized by the AI.",
-      ai_status: aiResponse.data
-    });
+      return res.status(200).json({
+        success: true,
+        message: "Materials successfully uploaded and vectorized by the AI.",
+        material: newMaterial,
+        ai_status: aiResponse.data
+      });
+    } catch (aiError) {
+      console.error("AI Vectorization failed, cleaning up MongoDB document...", aiError.message);
+      await TeacherMaterial.findByIdAndDelete(newMaterial._id);
+      throw aiError;
+    }
 
   } catch (error) {
     console.error("Teacher Upload Error:", error);
     res.status(500).json({ success: false, message: "Server error during AI vectorization.", error: error.message });
+  }
+};
+
+// ==========================================
+// 3A. GET TEACHER MATERIALS
+// ==========================================
+export const getTeacherMaterials = async (req, res) => {
+  try {
+    const { examId } = req.params;
+    const facultyId = req.user.id;
+
+    const exam = await Exam.findById(examId);
+    if (!exam) return res.status(404).json({ success: false, message: "Exam not found." });
+
+    if (exam.assignedFaculty.toString() !== facultyId) {
+      return res.status(403).json({ success: false, message: "Unauthorized." });
+    }
+
+    const materials = await TeacherMaterial.find({
+      $or: [
+        { courseId: exam.courseId, materialType: { $in: ["notes", "syllabus"] } },
+        { examId: examId, materialType: { $in: ["answer_key", "rubric"] } }
+      ]
+    }).populate("uploadedBy", "name email");
+
+    return res.status(200).json({
+      success: true,
+      materials
+    });
+  } catch (error) {
+    console.error("Get Teacher Materials Error:", error);
+    res.status(500).json({ success: false, message: "Server error during materials retrieval.", error: error.message });
+  }
+};
+
+// ==========================================
+// 3B. DELETE TEACHER MATERIAL
+// ==========================================
+export const deleteTeacherMaterial = async (req, res) => {
+  try {
+    const { examId, materialId } = req.params;
+    const facultyId = req.user.id;
+
+    const material = await TeacherMaterial.findById(materialId);
+    if (!material) {
+      return res.status(404).json({ success: false, message: "Material not found." });
+    }
+
+    const exam = await Exam.findById(examId);
+    if (!exam) return res.status(404).json({ success: false, message: "Exam not found." });
+    if (exam.assignedFaculty.toString() !== facultyId) {
+      return res.status(403).json({ success: false, message: "Unauthorized: Only assigned faculty can delete materials." });
+    }
+
+    // Delete from ImageKit
+    if (material.imageKitFileId && material.imageKitFileId !== "unknown") {
+      try {
+        await imagekit.deleteFile(material.imageKitFileId);
+        console.log(`🗑️ Deleted file ${material.imageKitFileId} from ImageKit`);
+      } catch (ikErr) {
+        console.error("Failed to delete file from ImageKit:", ikErr.message);
+      }
+    }
+
+    // Delete chunks from Pinecone
+    try {
+      const deleteUrl = `${AI_BASE_URL}/teacher/materials/${materialId}?namespace=${exam.collegeId.toString()}`;
+      const aiResponse = await axios.delete(deleteUrl);
+      console.log(`✅ AI Chunks deletion complete:`, aiResponse.data);
+    } catch (aiErr) {
+      console.error("Failed to delete chunks from Pinecone via AI microservice:", aiErr.message);
+    }
+
+    // Delete from MongoDB
+    await TeacherMaterial.findByIdAndDelete(materialId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Material deleted successfully from database, storage, and vectors."
+    });
+
+  } catch (error) {
+    console.error("Delete Teacher Material Error:", error);
+    res.status(500).json({ success: false, message: "Server error during material deletion.", error: error.message });
   }
 };
 

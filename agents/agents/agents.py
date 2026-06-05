@@ -29,6 +29,7 @@ class AgentState(TypedDict):
     raw_input: str              # Path to image or PDF
     question: str               # question text
     exam_id: str                
+    course_id: Optional[str]    # Course ID for course-wide retrieval
     namespace: str              # college
     question_id: str  
     max_marks: float          
@@ -128,6 +129,7 @@ def vector_db_agent(state: AgentState):
 
     question = state.get("question", "")
     exam_id = state.get("exam_id", "")
+    course_id = state.get("course_id", "")
     namespace = state.get("namespace", "")
     question_id = state.get("question_id", "")
 
@@ -135,6 +137,7 @@ def vector_db_agent(state: AgentState):
     notes = retrieve_relevant_chunks(
         question_text=question,
         namespace=namespace,
+        course_id=course_id,
         exam_id=exam_id,
         question_id=question_id,
         content_type="notes",
@@ -145,6 +148,7 @@ def vector_db_agent(state: AgentState):
     answer_key = retrieve_relevant_chunks(
         question_text=question,
         namespace=namespace,
+        course_id=course_id,
         exam_id=exam_id,
         question_id=question_id,
         content_type="answer_key",
@@ -229,6 +233,7 @@ def recheck_agent(state: AgentState):
             print("="*50)
             traceback.print_exc() # Prints the raw API error from OpenAI
             print("="*50 + "\n")
+            result = f"Error during recheck validation: {str(e)}"
 
     return {
         "recheck_status": "Revision Needed",

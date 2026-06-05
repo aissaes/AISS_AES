@@ -68,10 +68,13 @@ const SecretTest = () => {
       });
       const { token, expire, signature, publicKey, folder, fileName } = authRes.data;
 
+      const ext = fullForm.file.name.split('.').pop();
+      const finalFileName = `${fileName}.${ext}`;
+
       // 2. Upload file directly to ImageKit bypassing Vercel limits
       const ikFormData = new FormData();
       ikFormData.append("file", fullForm.file);
-      ikFormData.append("fileName", fileName);
+      ikFormData.append("fileName", finalFileName);
       ikFormData.append("publicKey", publicKey);
       ikFormData.append("signature", signature);
       ikFormData.append("expire", expire);
@@ -117,12 +120,15 @@ const SecretTest = () => {
       const authRes = await axios.get(`${baseURL}/test/sandbox/imagekit/auth?uploadType=vectorize`, {
         withCredentials: true,
       });
-      const { token, expire, signature, publicKey, folder } = authRes.data;
+      const { token, expire, signature, publicKey, folder, fileName } = authRes.data;
+
+      const ext = vectorForm.file.name.split('.').pop();
+      const finalFileName = `${fileName}.${ext}`;
 
       // 2. Upload file directly to ImageKit bypassing Vercel limits
       const ikFormData = new FormData();
       ikFormData.append("file", vectorForm.file);
-      ikFormData.append("fileName", vectorForm.file.name);
+      ikFormData.append("fileName", finalFileName);
       ikFormData.append("publicKey", publicKey);
       ikFormData.append("signature", signature);
       ikFormData.append("expire", expire);
@@ -168,12 +174,15 @@ const SecretTest = () => {
       const authRes = await axios.get(`${baseURL}/test/sandbox/imagekit/auth?uploadType=ocr`, {
         withCredentials: true,
       });
-      const { token, expire, signature, publicKey, folder } = authRes.data;
+      const { token, expire, signature, publicKey, folder, fileName } = authRes.data;
+
+      const ext = ocrForm.file.name.split('.').pop();
+      const finalFileName = `${fileName}.${ext}`;
 
       // 2. Upload file directly to ImageKit bypassing Vercel limits
       const ikFormData = new FormData();
       ikFormData.append("file", ocrForm.file);
-      ikFormData.append("fileName", ocrForm.file.name);
+      ikFormData.append("fileName", finalFileName);
       ikFormData.append("publicKey", publicKey);
       ikFormData.append("signature", signature);
       ikFormData.append("expire", expire);

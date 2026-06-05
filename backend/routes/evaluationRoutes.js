@@ -4,6 +4,8 @@ import {
   getAllStudentsAppearedForExam,
   triggerAIEvaluation,
   uploadTeacherMaterials,
+  getTeacherMaterials,
+  deleteTeacherMaterial,
   overrideAIGrade,
   publishExamResults
 } from "../controllers/evaluation/evaluationController.js";
@@ -13,8 +15,10 @@ const evaluationRouter = express.Router();
 // 1. Get all students who appeared for an exam
 evaluationRouter.get("/:examId/students", verifyToken, getAllStudentsAppearedForExam);
 
-// 2. Upload teacher materials (notes or answer_key)
+// 2. Materials management routes (Upload, Retrieve, Delete)
 evaluationRouter.post("/:examId/upload-materials", verifyToken, uploadTeacherMaterials);
+evaluationRouter.get("/:examId/materials", verifyToken, getTeacherMaterials);
+evaluationRouter.delete("/:examId/materials/:materialId", verifyToken, deleteTeacherMaterial);
 
 // 3. Trigger AI evaluation for the exam
 evaluationRouter.post("/:examId/evaluate", verifyToken, triggerAIEvaluation);
