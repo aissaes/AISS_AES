@@ -16,17 +16,23 @@ const DownloadApp = () => {
   const githubRepoUrl = import.meta.env.VITE_GITHUB_REPO_URL || 'https://github.com/aissaes/AISS_AES';
   const apkUrl = `${githubRepoUrl}/releases/download/v1.1.1/AISS_AES_v1.1.1_arm64-v8a.apk`;
 
+  const triggerDownload = (url) => {
+    // Create an invisible iframe to trigger the download without navigating the page
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = url;
+    document.body.appendChild(iframe);
+    setTimeout(() => {
+      document.body.removeChild(iframe);
+    }, 3000);
+  };
+
   const handleDownload = () => {
     setDownloading(true);
     toast('Starting download of AISS Student Portal APK...', 'success');
     
     setTimeout(() => {
-      const link = document.createElement('a');
-      link.href = apkUrl; 
-      link.download = 'AISS_AES_v1.1.1_arm64-v8a.apk';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      triggerDownload(apkUrl);
       setDownloading(false);
       toast('Download initiated! Check your downloads folder.', 'success', 5000);
     }, 1500);
@@ -300,8 +306,26 @@ const DownloadApp = () => {
               <div>
                 <h4>Alternative Architecture Downloads</h4>
                 <p style={{ marginTop: 4, display: 'flex', gap: 12 }}>
-                  <a href={`${githubRepoUrl}/releases/download/v1.1.1/AISS_AES_v1.1.1_armeabi-v7a.apk`} download style={{ color: 'var(--accent-light)', textDecoration: 'underline', fontSize: '0.82rem' }}>32-bit ARMv7</a>
-                  <a href={`${githubRepoUrl}/releases/download/v1.1.1/AISS_AES_v1.1.1_x86_64.apk`} download style={{ color: 'var(--accent-light)', textDecoration: 'underline', fontSize: '0.82rem' }}>x86_64 (Emulator)</a>
+                  <a 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      triggerDownload(`${githubRepoUrl}/releases/download/v1.1.1/AISS_AES_v1.1.1_armeabi-v7a.apk`);
+                    }} 
+                    style={{ color: 'var(--accent-light)', textDecoration: 'underline', fontSize: '0.82rem' }}
+                  >
+                    32-bit ARMv7
+                  </a>
+                  <a 
+                    href="#" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      triggerDownload(`${githubRepoUrl}/releases/download/v1.1.1/AISS_AES_v1.1.1_x86_64.apk`);
+                    }} 
+                    style={{ color: 'var(--accent-light)', textDecoration: 'underline', fontSize: '0.82rem' }}
+                  >
+                    x86_64 (Emulator)
+                  </a>
                 </p>
               </div>
             </div>
