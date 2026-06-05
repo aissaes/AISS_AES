@@ -68,10 +68,18 @@ export const uploadPDF = async (req, res) => {
 // --- GET IMAGEKIT AUTH PARAMETERS FOR CLIENT-SIDE UPLOADS ---
 export const getAuthenticationParameters = async (req, res) => {
   try {
+    const { uploadType } = req.query;
     const authParams = imagekit.getAuthenticationParameters();
+
+    let folder = "/general";
+    if (uploadType === "materials") {
+      folder = "/teacher_materials";
+    }
+
     return res.status(200).json({
       ...authParams,
-      publicKey: imagekit.options.publicKey || process.env.IMAGEKIT_PUBLIC_KEY || "public_WFeQX8UkftEzxi+FHlGACEOfj1k="
+      publicKey: imagekit.options.publicKey || process.env.IMAGEKIT_PUBLIC_KEY || "public_WFeQX8UkftEzxi+FHlGACEOfj1k=",
+      folder
     });
   } catch (error) {
     console.error("ImageKit Auth Parameters Error:", error);

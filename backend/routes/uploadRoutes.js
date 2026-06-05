@@ -14,6 +14,6 @@ const upload = multer({
 
 uploadRouter.post("/upload-image", verifyToken, upload.single("answer_script"), uploadImage);
 uploadRouter.post("/upload-pdf", verifyToken, upload.single("pdf_file"), uploadPDF);
-uploadRouter.get("/imagekit-auth", verifyToken, getAuthenticationParameters);
+uploadRouter.get("/imagekit/auth", verifyToken, getAuthenticationParameters);
 
 export default uploadRouter;

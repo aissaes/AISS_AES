@@ -194,12 +194,30 @@ testRouter.post("/test/sandbox/vectorize", upload.single("file"), async (req, re
 });
 
 // ImageKit Auth Endpoint for Client-Side Direct Upload
-testRouter.get("/test/sandbox/imagekit-auth", (req, res) => {
+testRouter.get("/test/sandbox/imagekit/auth", async (req, res) => {
   try {
+    const { uploadType } = req.query;
     const authParams = imagekit.getAuthenticationParameters();
+
+    let folder = "/sandbox";
+    let fileName = `file_${Date.now()}`;
+
+    const sandbox = await getOrCreateSandboxRecords();
+
+    if (uploadType === "vectorize") {
+      folder = "/teacher_materials";
+    } else if (uploadType === "ocr") {
+      folder = "/answer_scripts";
+    } else if (uploadType === "full") {
+      folder = `/answers/${sandbox.examId}/${sandbox.studentId}`;
+      fileName = `student_page_${Date.now()}`;
+    }
+
     return res.status(200).json({
       ...authParams,
-      publicKey: imagekit.options.publicKey || process.env.IMAGEKIT_PUBLIC_KEY || "public_WFeQX8UkftEzxi+FHlGACEOfj1k="
+      publicKey: imagekit.options.publicKey || process.env.IMAGEKIT_PUBLIC_KEY || "public_WFeQX8UkftEzxi+FHlGACEOfj1k=",
+      folder,
+      fileName
     });
   } catch (error) {
     console.error("ImageKit Auth Error:", error);
@@ -304,6 +322,28 @@ testRouter.post("/test/sandbox/ocr", upload.single("file"), async (req, res) => 
   }
 });
 
+// 2b. OCR Test by URL
+testRouter.post("/test/sandbox/ocr-by-url", async (req, res) => {
+  try {
+    const { fileUrl } = req.body;
+    if (!fileUrl) {
+      return res.status(400).json({ success: false, message: "Missing fileUrl." });
+    }
+
+    // Call direct OCR Space API
+    const extractedText = await runOcrDirect(fileUrl);
+
+    return res.status(200).json({
+      success: true,
+      fileUrl,
+      extractedText: extractedText || "No text detected."
+    });
+  } catch (error) {
+    console.error("Sandbox OCR by URL Error:", error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // 3. Evaluation Test (Text-only)
 testRouter.post("/test/sandbox/evaluate-text", async (req, res) => {
   try {
@@ -389,6 +429,55 @@ testRouter.post("/test/sandbox/evaluate-full", upload.single("file"), async (req
     });
   } catch (error) {
     console.error("Sandbox Full Eval Error:", error.response?.data?.detail || error.message);
+    return res.status(500).json({ success: false, error: error.response?.data?.detail || error.message });
+  }
+});
+
+// 4b. Full Pipeline Evaluation Test by URL
+testRouter.post("/test/sandbox/evaluate-full-by-url", async (req, res) => {
+  try {
+    const { fileUrl, questionText, maxMarks } = req.body;
+
+    if (!fileUrl || !questionText) {
+      return res.status(400).json({ success: false, message: "Missing fileUrl or questionText." });
+    }
+
+    const sandbox = await getOrCreateSandboxRecords();
+
+    // Run direct OCR so the user can see what handwriting text was parsed for diagnostics
+    let extractedText = "";
+    try {
+      extractedText = await runOcrDirect(fileUrl);
+    } catch (ocrErr) {
+      console.warn("Direct OCR extraction for diagnostics failed:", ocrErr.message);
+      extractedText = "OCR Extraction failed/unavailable in backend: " + ocrErr.message;
+    }
+
+    // Call Python full evaluate endpoint
+    const aiResponse = await axios.post(`${AI_BASE_URL}/student/evaluate`, {
+      raw_input: fileUrl,
+      question: questionText,
+      max_marks: Number(maxMarks) || 10,
+      exam_id: sandbox.examId.toString(),
+      namespace: sandbox.collegeId.toString(),
+      question_id: "Q1"
+    });
+
+    // Enrich response with OCR diagnostic text for the UI
+    const enrichedResponse = {
+      ...aiResponse.data,
+      extracted_text: extractedText,
+      recheck_status: "AUDITED",
+      revision_count: 1
+    };
+
+    return res.status(200).json({
+      success: true,
+      fileUrl,
+      aiResponse: enrichedResponse
+    });
+  } catch (error) {
+    console.error("Sandbox Full Eval by URL Error:", error.response?.data?.detail || error.message);
     return res.status(500).json({ success: false, error: error.response?.data?.detail || error.message });
   }
 });

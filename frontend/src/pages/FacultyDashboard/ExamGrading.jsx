@@ -126,8 +126,8 @@ const ExamGrading = () => {
     setUploadingMaterials(true);
     try {
       toast("Requesting upload credentials...", "info");
-      const authRes = await apiClient.get('/imagekit-auth');
-      const { token, expire, signature, publicKey } = authRes.data;
+      const authRes = await apiClient.get('/imagekit/auth?uploadType=materials');
+      const { token, expire, signature, publicKey, folder } = authRes.data;
 
       toast("Uploading PDF directly to storage...", "info");
       const ikFormData = new FormData();
@@ -137,7 +137,7 @@ const ExamGrading = () => {
       ikFormData.append("signature", signature);
       ikFormData.append("expire", expire);
       ikFormData.append("token", token);
-      ikFormData.append("folder", "/teacher_materials");
+      ikFormData.append("folder", folder);
 
       const ikUploadRes = await axios.post("https://upload.imagekit.io/api/v1/files/upload", ikFormData);
       if (!ikUploadRes.data || !ikUploadRes.data.url) {

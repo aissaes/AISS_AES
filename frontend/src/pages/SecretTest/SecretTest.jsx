@@ -60,14 +60,37 @@ const SecretTest = () => {
       return;
     }
     setFullStatus({ loading: true, data: null, error: null });
-    const formData = new FormData();
-    formData.append('file', fullForm.file);
-    formData.append('questionText', fullForm.questionText);
-    formData.append('maxMarks', fullForm.maxMarks);
 
     try {
-      const res = await axios.post(`${baseURL}/test/sandbox/evaluate-full`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      // 1. Get ImageKit authentication parameters from backend
+      const authRes = await axios.get(`${baseURL}/test/sandbox/imagekit/auth?uploadType=full`, {
+        withCredentials: true,
+      });
+      const { token, expire, signature, publicKey, folder, fileName } = authRes.data;
+
+      // 2. Upload file directly to ImageKit bypassing Vercel limits
+      const ikFormData = new FormData();
+      ikFormData.append("file", fullForm.file);
+      ikFormData.append("fileName", fileName);
+      ikFormData.append("publicKey", publicKey);
+      ikFormData.append("signature", signature);
+      ikFormData.append("expire", expire);
+      ikFormData.append("token", token);
+      ikFormData.append("folder", folder);
+
+      const ikUploadRes = await axios.post("https://upload.imagekit.io/api/v1/files/upload", ikFormData);
+      if (!ikUploadRes.data || !ikUploadRes.data.url) {
+        throw new Error("Direct ImageKit upload failed.");
+      }
+
+      const fileUrl = ikUploadRes.data.url;
+
+      // 3. Send fileUrl and metadata to evaluate-full-by-url endpoint
+      const res = await axios.post(`${baseURL}/test/sandbox/evaluate-full-by-url`, {
+        fileUrl,
+        questionText: fullForm.questionText,
+        maxMarks: fullForm.maxMarks,
+      }, {
         withCredentials: true,
       });
       setFullStatus({ loading: false, data: res.data, error: null });
@@ -91,10 +114,10 @@ const SecretTest = () => {
 
     try {
       // 1. Get ImageKit authentication parameters from backend
-      const authRes = await axios.get(`${baseURL}/test/sandbox/imagekit-auth`, {
+      const authRes = await axios.get(`${baseURL}/test/sandbox/imagekit/auth?uploadType=vectorize`, {
         withCredentials: true,
       });
-      const { token, expire, signature, publicKey } = authRes.data;
+      const { token, expire, signature, publicKey, folder } = authRes.data;
 
       // 2. Upload file directly to ImageKit bypassing Vercel limits
       const ikFormData = new FormData();
@@ -104,7 +127,7 @@ const SecretTest = () => {
       ikFormData.append("signature", signature);
       ikFormData.append("expire", expire);
       ikFormData.append("token", token);
-      ikFormData.append("folder", "/teacher_materials");
+      ikFormData.append("folder", folder);
 
       const ikUploadRes = await axios.post("https://upload.imagekit.io/api/v1/files/upload", ikFormData);
       if (!ikUploadRes.data || !ikUploadRes.data.url) {
@@ -139,12 +162,35 @@ const SecretTest = () => {
       return;
     }
     setOcrStatus({ loading: true, data: null, error: null });
-    const formData = new FormData();
-    formData.append('file', ocrForm.file);
 
     try {
-      const res = await axios.post(`${baseURL}/test/sandbox/ocr`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      // 1. Get ImageKit authentication parameters from backend
+      const authRes = await axios.get(`${baseURL}/test/sandbox/imagekit/auth?uploadType=ocr`, {
+        withCredentials: true,
+      });
+      const { token, expire, signature, publicKey, folder } = authRes.data;
+
+      // 2. Upload file directly to ImageKit bypassing Vercel limits
+      const ikFormData = new FormData();
+      ikFormData.append("file", ocrForm.file);
+      ikFormData.append("fileName", ocrForm.file.name);
+      ikFormData.append("publicKey", publicKey);
+      ikFormData.append("signature", signature);
+      ikFormData.append("expire", expire);
+      ikFormData.append("token", token);
+      ikFormData.append("folder", folder);
+
+      const ikUploadRes = await axios.post("https://upload.imagekit.io/api/v1/files/upload", ikFormData);
+      if (!ikUploadRes.data || !ikUploadRes.data.url) {
+        throw new Error("Direct ImageKit upload failed.");
+      }
+
+      const fileUrl = ikUploadRes.data.url;
+
+      // 3. Send fileUrl to ocr-by-url endpoint
+      const res = await axios.post(`${baseURL}/test/sandbox/ocr-by-url`, {
+        fileUrl,
+      }, {
         withCredentials: true,
       });
       setOcrStatus({ loading: false, data: res.data, error: null });
