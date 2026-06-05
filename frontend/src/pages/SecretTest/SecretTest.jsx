@@ -282,7 +282,7 @@ const SecretTest = () => {
                 <label>Student Answer Sheet Image</label>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/*,application/pdf,.docx,.doc"
                   onChange={(e) => setFullForm({ ...fullForm, file: e.target.files[0] })}
                 />
               </div>
