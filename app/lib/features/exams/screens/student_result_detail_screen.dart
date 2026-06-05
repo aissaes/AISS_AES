@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../providers/student_results_provider.dart';
+
 import '../../../core/widgets/app_loading_indicator.dart';
 
 class StudentResultDetailScreen extends ConsumerWidget {
@@ -17,6 +21,7 @@ class StudentResultDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detailAsync = ref.watch(studentDetailedResultProvider(examId));
+
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -41,116 +46,123 @@ class StudentResultDetailScreen extends ConsumerWidget {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
-            child: detailAsync.when(
-              data: (result) {
-                final subjectName = result.subjectName;
-                final subjectCode = result.subjectCode;
-                final examType = result.examType;
-                final maxMarks = result.maxMarks;
-                final totalMarksObtained = result.totalMarksObtained;
-                final percent = result.percent;
-                final evaluations = result.evaluations;
+            child: Column(
+              children: [
 
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Overview Score Card
-                      _buildOverviewCard(
-                        context,
-                        subjectName: subjectName,
-                        subjectCode: subjectCode,
-                        examType: examType,
-                        totalMarks: totalMarksObtained,
-                        maxMarks: maxMarks,
-                        percent: percent,
-                      ),
-                      const SizedBox(height: 28),
+                Expanded(
+                  child: detailAsync.when(
+                    data: (result) {
+                      final subjectName = result.subjectName;
+                      final subjectCode = result.subjectCode;
+                      final examType = result.examType;
+                      final maxMarks = result.maxMarks;
+                      final totalMarksObtained = result.totalMarksObtained;
+                      final percent = result.percent;
+                      final evaluations = result.evaluations;
 
-                      const Text(
-                        'QUESTION BREAKDOWN',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
-                          color: AppTheme.textSecondary,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      if (evaluations.isEmpty)
-                        const Center(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 32),
-                            child: Text(
-                              'No question evaluation details found.',
-                              style: TextStyle(color: AppTheme.textSecondary),
-                            ),
-                          ),
-                        )
-                      else
-                        ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: evaluations.length,
-                          separatorBuilder: (context, index) => const SizedBox(height: 20),
-                          itemBuilder: (context, index) {
-                            final evaluation = evaluations[index];
-                            final questionId = evaluation.questionId;
-                            final marksAwarded = evaluation.marksAwarded;
-                            final isManuallyGraded = evaluation.isManuallyGraded;
-                            final feedback = evaluation.feedback;
-                            final reasoning = evaluation.reasoning;
-                            final fileUrl = evaluation.fileUrl;
-                            final fileType = evaluation.fileType;
-
-                            return _buildQuestionCard(
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Overview Score Card
+                            _buildOverviewCard(
                               context,
-                              questionId: questionId,
-                              marks: marksAwarded,
-                              isManuallyGraded: isManuallyGraded,
-                              feedback: feedback,
-                              reasoning: reasoning,
-                              fileUrl: fileUrl,
-                              fileType: fileType,
-                              strengths: evaluation.strengths,
-                              weaknesses: evaluation.weaknesses,
-                              overrideReason: evaluation.overrideReason,
-                            );
-                          },
+                              subjectName: subjectName,
+                              subjectCode: subjectCode,
+                              examType: examType,
+                              totalMarks: totalMarksObtained,
+                              maxMarks: maxMarks,
+                              percent: percent,
+                            ),
+                            const SizedBox(height: 28),
+
+                            const Text(
+                              'QUESTION BREAKDOWN',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                                color: AppTheme.textSecondary,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            if (evaluations.isEmpty)
+                              const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 32),
+                                  child: Text(
+                                    'No question evaluation details found.',
+                                    style: TextStyle(color: AppTheme.textSecondary),
+                                  ),
+                                ),
+                              )
+                            else
+                              ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: evaluations.length,
+                                separatorBuilder: (context, index) => const SizedBox(height: 20),
+                                itemBuilder: (context, index) {
+                                  final evaluation = evaluations[index];
+                                  final questionId = evaluation.questionId;
+                                  final marksAwarded = evaluation.marksAwarded;
+                                  final isManuallyGraded = evaluation.isManuallyGraded;
+                                  final feedback = evaluation.feedback;
+                                  final reasoning = evaluation.reasoning;
+                                  final fileUrl = evaluation.fileUrl;
+                                  final fileType = evaluation.fileType;
+
+                                  return _buildQuestionCard(
+                                    context,
+                                    questionId: questionId,
+                                    marks: marksAwarded,
+                                    isManuallyGraded: isManuallyGraded,
+                                    feedback: feedback,
+                                    reasoning: reasoning,
+                                    fileUrl: fileUrl,
+                                    fileType: fileType,
+                                    strengths: evaluation.strengths,
+                                    weaknesses: evaluation.weaknesses,
+                                    overrideReason: evaluation.overrideReason,
+                                  );
+                                },
+                              ),
+                            const SizedBox(height: 40),
+                          ],
                         ),
-                      const SizedBox(height: 40),
-                    ],
-                  ),
-                );
-              },
-              loading: () => const Center(child: AppLoadingIndicator(size: 50, logoSize: 24)),
-              error: (err, stack) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.errorColor),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Failed to load evaluation details\n$err',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: AppTheme.textSecondary, height: 1.5),
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: () => ref.invalidate(studentDetailedResultProvider(examId)),
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(180, 44),
+                      );
+                    },
+                    loading: () => const Center(child: AppLoadingIndicator(size: 50, logoSize: 24)),
+                    error: (err, stack) => Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.errorColor),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Failed to load evaluation details\n$err',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: AppTheme.textSecondary, height: 1.5),
+                            ),
+                            const SizedBox(height: 20),
+                            ElevatedButton(
+                              onPressed: () => ref.invalidate(studentDetailedResultProvider(examId)),
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: const Size(180, 44),
+                              ),
+                              child: const Text('Retry'),
+                            ),
+                          ],
                         ),
-                        child: const Text('Retry'),
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
@@ -312,18 +324,20 @@ class StudentResultDetailScreen extends ConsumerWidget {
     required String feedback,
     required String reasoning,
     required String? fileUrl,
-    required String fileType,
-    required String strengths,
+    required String fileType,    required String strengths,
     required String weaknesses,
     String? overrideReason,
   }) {
     final localFileUrl = fileUrl;
     final hasFile = localFileUrl != null && localFileUrl.isNotEmpty;
     final isPdf = hasFile && fileType == 'pdf';
+    
+    // Thumbnail logic using ImageKit transformation fallback
     final thumbnailUrl = isPdf
         ? (localFileUrl.contains('?') ? '$localFileUrl&tr=pg-1' : '$localFileUrl?tr=pg-1')
         : localFileUrl ?? '';
     final fileExtension = isPdf ? '.pdf' : '.png';
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -501,7 +515,7 @@ class StudentResultDetailScreen extends ConsumerWidget {
             ),
           ],
 
-          // Answer Script Page Image Attachment Redesigned
+          // Answer Script Page Attachment
           if (localFileUrl != null && localFileUrl.isNotEmpty) ...[
             const SizedBox(height: 20),
             const Text(
@@ -524,36 +538,29 @@ class StudentResultDetailScreen extends ConsumerWidget {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => _showFullScreenImage(context, localFileUrl, fileType, questionId),
+                    onTap: () => _showFullScreenViewer(context, localFileUrl, fileType, questionId),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(6),
                       child: Container(
                         width: 50,
                         height: 50,
                         color: Colors.black.withValues(alpha: 0.03),
-                        child: !isPdf || localFileUrl.toLowerCase().contains('.pdf')
+                        child: isPdf
                             ? Stack(
                                 alignment: Alignment.center,
                                 children: [
                                   Image.network(
                                     thumbnailUrl,
                                     fit: BoxFit.cover,
-                                    loadingBuilder: (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return const Center(
-                                        child: SizedBox(
-                                          width: 14,
-                                          height: 14,
-                                          child: CircularProgressIndicator(strokeWidth: 2),
-                                        ),
-                                      );
-                                    },
-                                    errorBuilder: (context, error, stackTrace) => const Center(
-                                      child: Icon(Icons.image_not_supported_rounded, color: AppTheme.outlineColor, size: 20),
+                                    errorBuilder: (context, error, stackTrace) => Container(
+                                      color: Colors.red.withValues(alpha: 0.08),
+                                      child: const Center(
+                                        child: Icon(Icons.picture_as_pdf_rounded, color: Colors.red, size: 24),
+                                      ),
                                     ),
                                   ),
                                   Container(
-                                    color: Colors.black.withValues(alpha: 0.15),
+                                    color: Colors.black.withValues(alpha: 0.1),
                                   ),
                                   const Icon(Icons.zoom_in_rounded, color: Colors.white, size: 18),
                                 ],
@@ -561,10 +568,17 @@ class StudentResultDetailScreen extends ConsumerWidget {
                             : Stack(
                                 alignment: Alignment.center,
                                 children: [
-                                  Container(
-                                    color: Colors.red.withValues(alpha: 0.08),
+                                  Image.network(
+                                    localFileUrl,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => const Center(
+                                      child: Icon(Icons.image_not_supported_rounded, color: AppTheme.outlineColor, size: 20),
+                                    ),
                                   ),
-                                  const Icon(Icons.picture_as_pdf_rounded, color: Colors.red, size: 24),
+                                  Container(
+                                    color: Colors.black.withValues(alpha: 0.1),
+                                  ),
+                                  const Icon(Icons.zoom_in_rounded, color: Colors.white, size: 18),
                                 ],
                               ),
                       ),
@@ -581,7 +595,7 @@ class StudentResultDetailScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 2),
                         const Text(
-                          'Tap thumbnail to view full resolution',
+                          'Tap to view document',
                           style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
                         ),
                       ],
@@ -589,7 +603,7 @@ class StudentResultDetailScreen extends ConsumerWidget {
                   ),
                   IconButton(
                     icon: const Icon(Icons.open_in_new_rounded, color: AppTheme.primaryColor, size: 20),
-                    onPressed: () => _showFullScreenImage(context, localFileUrl, fileType, questionId),
+                    onPressed: () => _showFullScreenViewer(context, localFileUrl, fileType, questionId),
                   ),
                 ],
               ),
@@ -600,13 +614,13 @@ class StudentResultDetailScreen extends ConsumerWidget {
     );
   }
 
-  void _showFullScreenImage(BuildContext context, String fileUrl, String fileType, String questionId) {
+  void _showFullScreenViewer(BuildContext context, String fileUrl, String fileType, String questionId) {
     showDialog(
       context: context,
       builder: (dialogContext) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.all(12),
-        child: _FullScreenPdfOrImageViewer(
+        child: _FullScreenFileViewer(
           fileUrl: fileUrl,
           fileType: fileType,
           questionId: questionId,
@@ -617,13 +631,13 @@ class StudentResultDetailScreen extends ConsumerWidget {
   }
 }
 
-class _FullScreenPdfOrImageViewer extends StatefulWidget {
+class _FullScreenFileViewer extends StatefulWidget {
   final String fileUrl;
   final String fileType;
   final String questionId;
   final VoidCallback onClose;
 
-  const _FullScreenPdfOrImageViewer({
+  const _FullScreenFileViewer({
     required this.fileUrl,
     required this.fileType,
     required this.questionId,
@@ -631,32 +645,51 @@ class _FullScreenPdfOrImageViewer extends StatefulWidget {
   });
 
   @override
-  State<_FullScreenPdfOrImageViewer> createState() => _FullScreenPdfOrImageViewerState();
+  State<_FullScreenFileViewer> createState() => _FullScreenFileViewerState();
 }
 
-class _FullScreenPdfOrImageViewerState extends State<_FullScreenPdfOrImageViewer> {
+class _FullScreenFileViewerState extends State<_FullScreenFileViewer> {
   late final bool _isPdf;
-  late final PageController _pageController;
-  int _currentPage = 1;
-  int? _maxPage;
   bool _hasError = false;
+  String? _localPdfPath;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _isPdf = widget.fileType == 'pdf';
-    _pageController = PageController();
+    if (_isPdf) {
+      _downloadPdf();
+    } else {
+      _isLoading = false;
+    }
   }
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
+  Future<void> _downloadPdf() async {
+    try {
+      final dio = Dio();
+      final tempDir = await getTemporaryDirectory();
+      
+      // Use a consistent name with .pdf extension to help the renderer
+      final fileName = "evaluation_script_${widget.questionId}.pdf";
+      final savePath = '${tempDir.path}/$fileName';
 
-  String _getPdfPageUrl(int pageNum) {
-    final separator = widget.fileUrl.contains('?') ? '&' : '?';
-    return '${widget.fileUrl}${separator}tr=pg-$pageNum';
+      await dio.download(widget.fileUrl, savePath);
+
+      if (mounted) {
+        setState(() {
+          _localPdfPath = savePath;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -668,10 +701,14 @@ class _FullScreenPdfOrImageViewerState extends State<_FullScreenPdfOrImageViewer
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Container(
-              color: Colors.black.withValues(alpha: 0.9),
+              color: Colors.black,
               width: double.infinity,
               height: double.infinity,
-              child: _isPdf ? _buildPdfPageView() : _buildStandardImageView(),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                  : (_hasError 
+                      ? _buildErrorView()
+                      : (_isPdf ? _buildPdfView() : _buildStandardImageView())),
             ),
           ),
         ),
@@ -689,6 +726,60 @@ class _FullScreenPdfOrImageViewerState extends State<_FullScreenPdfOrImageViewer
     );
   }
 
+  Widget _buildErrorView() {
+    return Container(
+      color: Colors.white,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline_rounded, color: AppTheme.errorColor, size: 64),
+            const SizedBox(height: 16),
+            const Text(
+              'Unable to Load Document',
+              style: TextStyle(
+                color: AppTheme.textPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                'The document could not be loaded. You can copy the link below and open it directly in your browser.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.5),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: widget.fileUrl));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Document link copied to clipboard!'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.copy_rounded, size: 16, color: Colors.white),
+              label: const Text('Copy Document Link'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildStandardImageView() {
     return InteractiveViewer(
       minScale: 0.5,
@@ -700,164 +791,29 @@ class _FullScreenPdfOrImageViewerState extends State<_FullScreenPdfOrImageViewer
           if (loadingProgress == null) return child;
           return const Center(child: CircularProgressIndicator(color: Colors.white));
         },
-        errorBuilder: (context, error, stackTrace) => Container(
-          color: Colors.white,
-          child: const Center(
-            child: Icon(Icons.broken_image_rounded, color: AppTheme.outlineColor, size: 48),
-          ),
-        ),
+        errorBuilder: (context, error, stackTrace) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && !_hasError) setState(() => _hasError = true);
+          });
+          return const SizedBox.shrink();
+        },
       ),
     );
   }
 
-  Widget _buildPdfPageView() {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          color: Colors.black26,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
-                onPressed: _currentPage > 1
-                    ? () {
-                        _pageController.previousPage(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        );
-                      }
-                    : null,
-              ),
-              const SizedBox(width: 16),
-              Text(
-                'Page $_currentPage${_maxPage != null ? ' of $_maxPage' : ''}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                ),
-              ),
-              const SizedBox(width: 16),
-              IconButton(
-                icon: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 18),
-                onPressed: (_maxPage == null || _currentPage < _maxPage!)
-                    ? () {
-                        _pageController.nextPage(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        );
-                      }
-                    : null,
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: PageView.builder(
-            controller: _pageController,
-            onPageChanged: (index) {
-              setState(() {
-                _currentPage = index + 1;
-              });
-            },
-            itemBuilder: (context, index) {
-              final pageNum = index + 1;
-              if (_maxPage != null && pageNum > _maxPage!) {
-                return null;
-              }
-
-              final pageUrl = _getPdfPageUrl(pageNum);
-
-              return InteractiveViewer(
-                minScale: 0.5,
-                maxScale: 4.0,
-                child: Image.network(
-                  pageUrl,
-                  fit: BoxFit.contain,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return const Center(child: CircularProgressIndicator(color: Colors.white));
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted && _maxPage == null && pageNum > 1) {
-                        setState(() {
-                          _maxPage = pageNum - 1;
-                          if (_currentPage > _maxPage!) {
-                            _currentPage = _maxPage!;
-                            _pageController.jumpToPage(_maxPage! - 1);
-                          }
-                        });
-                      } else if (mounted && pageNum == 1) {
-                        setState(() {
-                          _hasError = true;
-                        });
-                      }
-                    });
-
-                    if (pageNum == 1 || _hasError) {
-                      return Container(
-                        color: Colors.white,
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.broken_image_rounded, color: AppTheme.outlineColor, size: 48),
-                              const SizedBox(height: 12),
-                              const Text(
-                                'Failed to load PDF preview',
-                                style: TextStyle(
-                                  color: AppTheme.textPrimary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 24),
-                                child: Text(
-                                  'This legacy upload does not support real-time mobile preview.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 13, height: 1.4),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              ElevatedButton.icon(
-                                onPressed: () {
-                                  Clipboard.setData(ClipboardData(text: widget.fileUrl));
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Document link copied to clipboard!'),
-                                      duration: Duration(seconds: 2),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(Icons.copy_rounded, size: 16, color: Colors.white),
-                                label: const Text('Copy Document Link'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppTheme.primaryColor,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+  Widget _buildPdfView() {
+    if (_localPdfPath == null) return _buildErrorView();
+    return PDFView(
+      filePath: _localPdfPath,
+      enableSwipe: true,
+      swipeHorizontal: false,
+      autoSpacing: false,
+      pageFling: false,
+      onError: (error) {
+        setState(() {
+          _hasError = true;
+        });
+      },
     );
   }
 }

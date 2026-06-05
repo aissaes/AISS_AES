@@ -716,6 +716,7 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> with WidgetsB
   Widget build(BuildContext context) {
     final examsAsync = ref.watch(studentTimetableAndExamsProvider);
     final resultsAsync = ref.watch(studentResultsProvider);
+    final authState = ref.watch(authProvider);
 
     return PopScope(
       canPop: Navigator.of(context).canPop(),
@@ -742,7 +743,7 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> with WidgetsB
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 20),
-                    _buildHeader(context),
+                    _buildHeader(context, authState.isOffline),
                     const SizedBox(height: 24),
                     Expanded(
                       child: RefreshIndicator(
@@ -932,16 +933,46 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> with WidgetsB
                               ),
                             ),
                           ),
-                          error: (err, stack) => SingleChildScrollView(
+                           error: (err, stack) => SingleChildScrollView(
                             physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                            child: SizedBox(
-                              height: 300,
-                              child: Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(24.0),
-                                  child: Text(
-                                    'Error loading timetable: $err',
-                                    style: const TextStyle(color: Colors.red),
+                            child: Center(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 64.0, horizontal: 24.0),
+                                child: Container(
+                                  padding: const EdgeInsets.all(24),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.surfaceColor,
+                                    borderRadius: BorderRadius.circular(AppTheme.borderRadius2XL),
+                                    border: Border.all(color: AppTheme.errorColor.withValues(alpha: 0.15)),
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.error_outline_rounded, color: AppTheme.errorColor, size: 48),
+                                      const SizedBox(height: 16),
+                                      const Text(
+                                        'Sync Failure',
+                                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppTheme.textPrimary),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        err.toString().contains('Offline') 
+                                          ? 'No internet connection or AES server is offline.' 
+                                          : 'An unexpected error occurred while syncing your timetable.',
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                                      ),
+                                      const SizedBox(height: 20),
+                                      ElevatedButton.icon(
+                                        onPressed: () => ref.invalidate(studentTimetableAndExamsProvider),
+                                        icon: const Icon(Icons.refresh_rounded, size: 18),
+                                        label: const Text('Try Again'),
+                                        style: ElevatedButton.styleFrom(
+                                          minimumSize: const Size(180, 44),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.borderRadiusLarge)),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -982,7 +1013,7 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> with WidgetsB
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, bool isOffline) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -992,8 +1023,13 @@ class _ExamsListScreenState extends ConsumerState<ExamsListScreen> with WidgetsB
         ),
         const SizedBox(height: 4),
         Text(
-          'Verify tokens and submit your answer scripts securely.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.textSecondary),
+          isOffline 
+              ? 'Offline — Viewing Cached Schedule' 
+              : 'Verify tokens and submit your answer scripts securely.',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: isOffline ? Colors.orange.shade800 : AppTheme.textSecondary,
+            fontWeight: isOffline ? FontWeight.w600 : FontWeight.normal,
+          ),
         ),
       ],
     );

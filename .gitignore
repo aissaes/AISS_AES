@@ -79,6 +79,7 @@ out/
 .next/
 .nuxt/
 .vercel/
+local_builds/
 
 # Testing & Coverage
 coverage/

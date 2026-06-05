@@ -13,8 +13,8 @@ const DownloadApp = () => {
   const { toast } = useToast();
   const [downloading, setDownloading] = useState(false);
 
-  const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-  const apkUrl = `${backendUrl}/downloads/v1.1.0/AISS_AES_v1.1.0_arm64-v8a.apk`;
+  const githubRepoUrl = import.meta.env.VITE_GITHUB_REPO_URL || 'https://github.com/aissaes/AISS_AES';
+  const apkUrl = `${githubRepoUrl}/releases/download/v1.1.1/AISS_AES_v1.1.1_arm64-v8a.apk`;
 
   const handleDownload = () => {
     setDownloading(true);
@@ -23,7 +23,7 @@ const DownloadApp = () => {
     setTimeout(() => {
       const link = document.createElement('a');
       link.href = apkUrl; 
-      link.download = 'AISS_AES_v1.1.0_arm64-v8a.apk';
+      link.download = 'AISS_AES_v1.1.1_arm64-v8a.apk';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -59,7 +59,7 @@ const DownloadApp = () => {
               </div>
               <div className={`${styles.badge} ${styles.badgeStable}`}>
                 <span className={styles.badgeDotGreen} />
-                v1.1.0 Stable
+                v1.1.1 Stable
               </div>
             </div>
             <h1 className={styles.title}>
@@ -193,7 +193,7 @@ const DownloadApp = () => {
                 </div>
                 <div>
                   <h2 className={styles.cardTitle}>Android APK Package</h2>
-                  <span className={styles.versionTag}>v1.1.0 (Release)</span>
+                  <span className={styles.versionTag}>v1.1.1 (Release)</span>
                 </div>
               </div>
 
@@ -204,7 +204,7 @@ const DownloadApp = () => {
                 </div>
                 <div className={styles.detailRow}>
                   <span>Version:</span>
-                  <strong>1.1.0</strong>
+                  <strong>1.1.1</strong>
                 </div>
                 <div className={styles.detailRow}>
                   <span>Release Status:</span>
@@ -216,15 +216,15 @@ const DownloadApp = () => {
                 </div>
                 <div className={styles.detailRow}>
                   <span>Filename:</span>
-                  <strong>AISS_AES_v1.1.0_arm64-v8a.apk</strong>
+                  <strong>AISS_AES_v1.1.1_arm64-v8a.apk</strong>
                 </div>
                 <div className={styles.detailRow}>
                   <span>File Size:</span>
-                  <strong>~26.5 MB</strong>
+                  <strong>~34.0 MB</strong>
                 </div>
                 <div className={styles.detailRow}>
                   <span>Release Date:</span>
-                  <strong>June 4, 2026</strong>
+                  <strong>June 5, 2026</strong>
                 </div>
                 <div className={styles.detailRow}>
                   <span>Requirements:</span>
@@ -300,8 +300,8 @@ const DownloadApp = () => {
               <div>
                 <h4>Alternative Architecture Downloads</h4>
                 <p style={{ marginTop: 4, display: 'flex', gap: 12 }}>
-                  <a href={`${backendUrl}/downloads/v1.1.0/AISS_AES_v1.1.0_armeabi-v7a.apk`} download style={{ color: 'var(--accent-light)', textDecoration: 'underline', fontSize: '0.82rem' }}>32-bit ARMv7</a>
-                  <a href={`${backendUrl}/downloads/v1.1.0/AISS_AES_v1.1.0_x86_64.apk`} download style={{ color: 'var(--accent-light)', textDecoration: 'underline', fontSize: '0.82rem' }}>x86_64 (Emulator)</a>
+                  <a href={`${githubRepoUrl}/releases/download/v1.1.1/AISS_AES_v1.1.1_armeabi-v7a.apk`} download style={{ color: 'var(--accent-light)', textDecoration: 'underline', fontSize: '0.82rem' }}>32-bit ARMv7</a>
+                  <a href={`${githubRepoUrl}/releases/download/v1.1.1/AISS_AES_v1.1.1_x86_64.apk`} download style={{ color: 'var(--accent-light)', textDecoration: 'underline', fontSize: '0.82rem' }}>x86_64 (Emulator)</a>
                 </p>
               </div>
             </div>
@@ -315,10 +315,14 @@ const DownloadApp = () => {
                 Release Notes
               </h3>
               <div className={styles.releaseVersionHeader}>
-                <h4>Version 1.1.0</h4>
-                <span className={styles.releaseDateBadge}>June 4, 2026</span>
-              </div>
+                  <h4>Version 1.1.1</h4>
+                  <span className={styles.releaseDateBadge}>June 5, 2026</span>
+                </div>
               <ul className={styles.releaseNotesList}>
+                <li>
+                  <strong>Architecture Split Build</strong>
+                  <p>Added split-per-abi architecture release APKs direct from GitHub releases for optimized downloads.</p>
+                </li>
                 <li>
                   <strong>Improvements</strong>
                   <p>Enhanced AI evaluation stability, improved upload session validation, better exam workflow consistency, navigation/back-button fixes, and performance improvements for academic data loading.</p>
@@ -346,8 +350,16 @@ const DownloadApp = () => {
               <div className={styles.historyList}>
                 <div className={`${styles.historyItem} ${styles.historyActive}`}>
                   <div className={styles.historyMeta}>
-                    <strong>v1.1.0</strong>
+                    <strong>v1.1.1</strong>
                     <span className={styles.activeLabel}>Active</span>
+                  </div>
+                  <span className={styles.historyDate}>June 5, 2026</span>
+                  <p className={styles.historySummary}>Split-per-abi release. Optimized downloads directly from official GitHub releases.</p>
+                </div>
+                <div className={styles.historyItem}>
+                  <div className={styles.historyMeta}>
+                    <strong>v1.1.0</strong>
+                    <span className={styles.plannedLabel}>Superseded</span>
                   </div>
                   <span className={styles.historyDate}>June 4, 2026</span>
                   <p className={styles.historySummary}>Production-readiness update. Security hardening, rate-limited evaluations, index optimizations, and navigation fixes.</p>
@@ -359,9 +371,6 @@ const DownloadApp = () => {
                   </div>
                   <span className={styles.historyDate}>June 3, 2026</span>
                   <p className={styles.historySummary}>Maintenance release. Critical bug fixes for evaluation endpoints and authorization.</p>
-                  <p style={{ marginTop: 4 }}>
-                    <a href={`${backendUrl}/downloads/v1.0.1/AISS_AES_v1.0.1.apk`} download style={{ color: 'var(--accent-light)', textDecoration: 'underline', fontSize: '0.78rem' }}>Download v1.0.1 (Legacy APK)</a>
-                  </p>
                 </div>
                 <div className={styles.historyItem}>
                   <div className={styles.historyMeta}>
@@ -370,9 +379,6 @@ const DownloadApp = () => {
                   </div>
                   <span className={styles.historyDate}>June 3, 2026</span>
                   <p className={styles.historySummary}>Initial stable launch. Custom camera integration, AI grader client, and secure exams flow.</p>
-                  <p style={{ marginTop: 4 }}>
-                    <a href={`${backendUrl}/downloads/v1.0.0/AISS_AES_v1.0.0.apk`} download style={{ color: 'var(--accent-light)', textDecoration: 'underline', fontSize: '0.78rem' }}>Download v1.0.0 (Legacy APK)</a>
-                  </p>
                 </div>
                 <div className={styles.historyItem}>
                   <div className={styles.historyMeta}>
