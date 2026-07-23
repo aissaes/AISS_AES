@@ -1,11 +1,12 @@
 import express from "express";
 import { verifyToken } from "../middlewares/authMiddleware.js";
+import { isStudent } from "../middlewares/roleMiddleware.js";
 import { 
   getExamResultsOverview, 
   getStudentDetailedResult,
   getMyResult,
   getMyExamsList 
-} from "../controllers/resultController.js";
+} from "../controllers/evaluation/resultController.js";
 
 const resultRoutes = express.Router();
 
@@ -17,8 +18,8 @@ resultRoutes.get("/faculty/exam/:examId/student/:studentId", verifyToken, getStu
 
 // --- STUDENT ROUTES ---
 // 1. DASHBOARD: Get list of all exams this student has taken
-resultRoutes.get("/student/my-exams", verifyToken, getMyExamsList);
+resultRoutes.get("/student/my-exams", verifyToken, isStudent, getMyExamsList);
 // 2. DEEP DIVE: Get specific marks and AI feedback for one exam
-resultRoutes.get("/student/exam/:examId", verifyToken, getMyResult);
+resultRoutes.get("/student/exam/:examId", verifyToken, isStudent, getMyResult);
 
 export default resultRoutes;

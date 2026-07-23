@@ -1,16 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../upload/repositories/paper_repository.dart';
-import '../../upload/repositories/paper_repository_impl.dart';
-import '../../../core/models/exam_state.dart';
-import '../../../core/models/submission_model.dart';
+import '../../upload/services/upload_service.dart';
+import '../models/exam_state.dart';
+import '../../upload/models/submission_model.dart';
 
 final activeExamProvider = StateProvider<ExamState>((ref) => const ExamState());
 
 class SubmissionsNotifier extends StateNotifier<AsyncValue<SubmissionModel>> {
-  final PaperRepository _paperRepository;
+  final UploadService _uploadService;
   final String? _examId;
 
-  SubmissionsNotifier(this._paperRepository, this._examId) : super(const AsyncValue.loading()) {
+  SubmissionsNotifier(this._uploadService, this._examId) : super(const AsyncValue.loading()) {
     fetchSubmissions();
   }
 
@@ -21,7 +20,7 @@ class SubmissionsNotifier extends StateNotifier<AsyncValue<SubmissionModel>> {
     }
     
     try {
-      final data = await _paperRepository.getStudentSubmissions(_examId!);
+      final data = await _uploadService.getStudentSubmissions(_examId!);
       state = AsyncValue.data(data);
     } catch (exception) {
       state = AsyncValue.error(exception, StackTrace.current);
@@ -38,6 +37,6 @@ class SubmissionsNotifier extends StateNotifier<AsyncValue<SubmissionModel>> {
 }
 
 final examSubmissionsProvider = StateNotifierProvider.family<SubmissionsNotifier, AsyncValue<SubmissionModel>, String>((ref, examId) {
-  final paperRepository = ref.watch(paperRepositoryProvider);
-  return SubmissionsNotifier(paperRepository, examId);
+  final uploadService = ref.watch(uploadServiceProvider);
+  return SubmissionsNotifier(uploadService, examId);
 });

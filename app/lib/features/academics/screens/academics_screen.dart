@@ -5,6 +5,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/models/semester_model.dart';
 import '../providers/academics_providers.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../../shared/widgets/app_error_card.dart';
+import '../../../shared/widgets/app_empty_card.dart';
 
 class AcademicsScreen extends ConsumerStatefulWidget {
   const AcademicsScreen({super.key});
@@ -120,10 +122,12 @@ class _AcademicsScreenState extends ConsumerState<AcademicsScreen> with WidgetsB
                         if (semesters.isEmpty) {
                           return const SingleChildScrollView(
                             physics: AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                            child: SizedBox(
-                              height: 300,
-                              child: Center(
-                                child: Text('No academic records found.'),
+                            child: Padding(
+                              padding: EdgeInsets.only(top: 40),
+                              child: AppEmptyCard(
+                                title: 'No Academic Records',
+                                message: 'No academic records were found for your student profile.',
+                                icon: Icons.school_outlined,
                               ),
                             ),
                           );
@@ -160,29 +164,12 @@ class _AcademicsScreenState extends ConsumerState<AcademicsScreen> with WidgetsB
                       ),
                       error: (err, stack) => SingleChildScrollView(
                         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
-                        child: SizedBox(
-                          height: 400,
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.errorColor),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Failed to load academic records.',
-                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(err.toString(), textAlign: TextAlign.center, style: const TextStyle(fontSize: 12)),
-                                const SizedBox(height: 16),
-                                ElevatedButton(
-                                  onPressed: () => ref.refresh(semestersProvider.future),
-                                  child: const Text('Retry'),
-                                ),
-                              ],
-                            ),
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 40),
+                          child: AppErrorCard(
+                            title: 'Failed to load academic records.',
+                            message: err.toString(),
+                            onRetry: () => ref.invalidate(semestersProvider),
                           ),
                         ),
                       ),

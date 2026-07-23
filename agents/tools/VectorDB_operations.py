@@ -2,6 +2,7 @@ from langchain_core.documents import Document
 from langchain_pinecone import PineconeVectorStore
 from pinecone import Pinecone
 import os
+import hashlib
 from dotenv import load_dotenv
 from tools.get_models import get_gemini_embedding_model
 
@@ -22,26 +23,55 @@ vector_store = PineconeVectorStore(
 )
 
 
+def check_duplicate_exists(namespace, content_hash):
+    try:
+        stats = index.describe_index_stats()
+        dimension = stats.get("dimension", 768)
+        dummy_vector = [0.0] * dimension
+        res = index.query(
+            namespace=namespace,
+            vector=dummy_vector,
+            filter={"content_hash": {"$eq": content_hash}},
+            top_k=1
+        )
+        if res and res.get("matches"):
+            return True
+    except Exception as e:
+        print(f"Error checking duplicate in Pinecone: {e}")
+    return False
+
 
 #storing teacher notes and answer keys in vectorDB
 def store_teacher_chunks(chunks, question_id, content_type, subject, exam_id, NAMESPACE, material_id, course_id, faculty_id):
     docs = []
     
     for chunk in chunks:
+        # Calculate SHA-256 hash of the content
+        content_hash = hashlib.sha256(chunk.encode("utf-8")).hexdigest()
+        
+        # Deduplication check
+        if check_duplicate_exists(NAMESPACE, content_hash):
+            print(f"⏩ Skipping duplicate chunk with hash {content_hash}")
+            continue
+
         # We wrap the chunk in a Document object
         metadata = {
             "material_id": str(material_id),
             "course_id": str(course_id),
+            "college_id": str(NAMESPACE),
             "exam_id": str(exam_id) if exam_id else "course_wide",
             "faculty_id": str(faculty_id),
             "type": content_type,
             "subject": subject.lower(),
             "status": "active",
-            "text": chunk
+            "text": chunk,
+            "content_hash": content_hash
         }
 
-        # Add question number only for answer keys
-        if question_id is not None:
+        # Add question number for answer keys or rubrics
+        if content_type in ["answer_key", "rubric"]:
+            metadata["question_id"] = str(question_id) if question_id else "entire_exam"
+        elif question_id is not None:
             metadata["question_id"] = str(question_id)
 
         doc = Document(
@@ -55,7 +85,7 @@ def store_teacher_chunks(chunks, question_id, content_type, subject, exam_id, NA
         vector_store.add_documents(docs, namespace=NAMESPACE)
         print(f"✅ Successfully stored {len(docs)} chunks in namespace: {NAMESPACE}")
     else:
-        print("⚠️ No chunks were provided.")
+        print("⚠️ No new chunks were stored (all duplicates or empty).")
 
 
 # delete chunks belonging to a specific material ID
@@ -69,6 +99,17 @@ def delete_material_chunks(namespace, material_id):
         return False
 
 
+# delete all vectors in a specific namespace
+def delete_namespace_vectors(namespace):
+    try:
+        index.delete(delete_all=True, namespace=namespace)
+        print(f"✅ Successfully deleted all vectors in namespace: {namespace}")
+        return True
+    except Exception as e:
+        print(f"❌ Failed to delete vectors in namespace {namespace}: {e}")
+        return False
+
+
 #retrive relavant notes for a question from vectorDB
 def retrieve_relevant_chunks(question_text, namespace, course_id, exam_id, question_id, content_type, top_k=3):
     """
@@ -77,6 +118,7 @@ def retrieve_relevant_chunks(question_text, namespace, course_id, exam_id, quest
     # Define strict filters to prevent 'data leakage' from other courses/status
     strict_filter = {
         "course_id": {"$eq": str(course_id)},
+        "college_id": {"$eq": str(namespace)},
         "status": {"$eq": "active"},
         "type": {"$eq": content_type}
     }
@@ -85,7 +127,7 @@ def retrieve_relevant_chunks(question_text, namespace, course_id, exam_id, quest
     if content_type in ["answer_key", "rubric"]:
         if exam_id:
             strict_filter["exam_id"] = {"$eq": str(exam_id)}
-        if question_id:
+        if question_id and content_type != "rubric":
             strict_filter["question_id"] = {"$eq": str(question_id)}
 
     retriever = vector_store.as_retriever(

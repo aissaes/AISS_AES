@@ -67,6 +67,11 @@ const facultySchema = new mongoose.Schema({
     type:Date
   },
 
+  otpAttempts:{
+    type:Number,
+    default:0
+  },
+
   questionPapersPrepared:[{
     type:mongoose.Schema.Types.ObjectId,
     ref:"QuestionPaper"
@@ -96,6 +101,11 @@ const facultySchema = new mongoose.Schema({
   collegeAdminRole:{
     type:String,
     default:"Dean"
+  },
+
+  refreshToken: {
+    type: String,
+    default: null
   }
 
 });

@@ -21,6 +21,14 @@ const overallAdminSchema = new mongoose.Schema({
   otpExpires: {
     type: Date,
     default: null
+  },
+  otpAttempts: {
+    type: Number,
+    default: 0
+  },
+  refreshToken: {
+    type: String,
+    default: null
   }
 }, { timestamps: true });
 

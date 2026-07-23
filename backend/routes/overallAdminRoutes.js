@@ -1,7 +1,7 @@
 import express from "express";
 import { verifyToken } from "../middlewares/authMiddleware.js";
 import { isOverallAdmin } from "../middlewares/roleMiddleware.js";
-import { changeOverallAdminPassword, getPendingColleges, approveCollege, rejectCollege, transferOverallAdmin } from "../controllers/overallAdminController.js"; // Direct import
+import { changeOverallAdminPassword, getPendingColleges, approveCollege, rejectCollege, transferOverallAdmin } from "../controllers/admin/overallAdminController.js"; // Direct import
 
 const overallAdminRouter = express.Router();
 

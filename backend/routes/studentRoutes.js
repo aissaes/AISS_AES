@@ -52,15 +52,15 @@
 import express from "express";
 import { verifyToken } from "../middlewares/authMiddleware.js";
 import { isStudent } from "../middlewares/roleMiddleware.js";
-import { getExamByIdByToken , startUploadSession, getStudentSubmissions, getStudentTimetableAndExams } from "../controllers/studentController.js";
+import { getExamByIdByToken , startUploadSession, getStudentSubmissions, getStudentTimetableAndExams } from "../controllers/student/studentController.js";
 import { 
   getSemesters, 
   getSemesterCourses, 
   getSemesterTimetableCategories, 
   getTimetableCategoryExams, 
   getCourseDetail 
-} from "../controllers/academicsController.js";
-import { getStudentDashboard } from "../controllers/dashboardController.js";
+} from "../controllers/student/academicsController.js";
+import { getStudentDashboard } from "../controllers/student/dashboardController.js";
 
 const studentRouter = express.Router();
 

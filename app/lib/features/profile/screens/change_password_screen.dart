@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../auth/repositories/auth_repository_impl.dart';
+import '../../auth/services/auth_service.dart';
 import '../../../shared/widgets/custom_text_field.dart';
 import '../../../shared/widgets/primary_button.dart';
 
@@ -54,7 +54,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     });
 
     try {
-      await ref.read(authRepositoryProvider).changePassword(oldPassword, newPassword);
+      await ref.read(authServiceProvider).changePassword(oldPassword, newPassword);
       if (mounted) {
         context.pop();
         ScaffoldMessenger.of(context).showSnackBar(

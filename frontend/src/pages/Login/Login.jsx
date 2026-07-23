@@ -39,7 +39,11 @@ const Login = () => {
       setStep(2);
       setTimeout(() => refs[0].current?.focus(), 120);
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      if (err.response?.status === 429) {
+        setError('Too many login attempts. Please try again after 15 minutes.');
+      } else {
+        setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      }
     } finally {
       setLoading(false);
     }
@@ -68,9 +72,19 @@ const Login = () => {
       else if (role === 'hod')          navigate('/hod', { replace: true });
       else                              navigate('/faculty', { replace: true });
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid or expired OTP.');
-      setOtp(['', '', '', '', '', '']);
-      refs[0].current?.focus();
+      const isLockout = err.response?.data?.message?.includes('exceeded') || 
+                        (err.response?.status === 400 && err.response?.data?.message?.includes('Maximum attempts'));
+      
+      if (err.response?.status === 429) {
+        setError('Too many verification attempts. Please try again after 15 minutes.');
+      } else if (isLockout) {
+        toast(err.response?.data?.message || 'Maximum OTP attempts exceeded. Please request a new OTP.', 'error');
+        goBack();
+      } else {
+        setError(err.response?.data?.message || 'Invalid or expired OTP.');
+        setOtp(['', '', '', '', '', '']);
+        refs[0].current?.focus();
+      }
     } finally {
       setLoading(false);
     }

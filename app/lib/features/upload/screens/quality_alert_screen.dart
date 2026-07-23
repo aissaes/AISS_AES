@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/services/scan_quality_service.dart';
+import '../services/scan_quality_service.dart';
 import '../providers/scanner_provider.dart';
 
 class QualityAlertScreen extends ConsumerWidget {

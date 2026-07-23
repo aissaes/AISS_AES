@@ -32,6 +32,21 @@ const questionResultSchema = new mongoose.Schema({
   overrideReason: {
     type: String,
     default: null // Why the teacher changed the AI's grade
+  },
+  retrievedContext: {
+    type: [String],
+    default: []
+  },
+  recheckLogs: [{
+    revisionNumber: { type: Number },
+    recheckStatus: { type: String },
+    feedback: { type: String },
+    timestamp: { type: Date, default: Date.now }
+  }],
+  evaluationConfidence: {
+    type: String,
+    enum: ["High", "Medium", "Low", "Uncertain"],
+    default: "High"
   }
 }, { _id: false });
 
@@ -66,7 +81,7 @@ const resultSchema = new mongoose.Schema({
   // To let the frontend know if it's safe to view
   status: {
     type: String,
-    enum: ["Evaluating", "Completed", "Failed"],
+    enum: ["Evaluating", "Completed", "Failed", "Uncertain"],
     default: "Evaluating"
   }
 }, { timestamps: true });

@@ -10,7 +10,7 @@ import {
   getTimetableById,
   getExamById,
   generateExamQR,
-} from "../controllers/timetableController.js";
+} from "../controllers/academic/timetableController.js";
 
 const timeTableRouter = express.Router();
 

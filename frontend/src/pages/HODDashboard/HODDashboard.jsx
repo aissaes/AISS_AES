@@ -252,6 +252,11 @@ const HODStudents = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const limit = 10;
+
   // Course & HOD details
   const [hodInfo, setHodInfo] = useState(null);
 
@@ -283,11 +288,13 @@ const HODStudents = () => {
     availableCourses: []
   });
 
-  const fetchStudents = useCallback(async () => {
+  const fetchStudents = useCallback(async (page = 1) => {
     setLoading(true);
     try {
-      const { data } = await hodAPI.getStudents();
+      const { data } = await hodAPI.getStudents({ page, limit });
       setStudents(Array.isArray(data.students) ? data.students : []);
+      setTotalCount(data.totalCount || 0);
+      setCurrentPage(data.page || page);
     } catch {
       toast('Error loading student directory.', 'error');
     } finally {
@@ -333,7 +340,7 @@ const HODStudents = () => {
       await hodAPI.updateStudentAcademics(payload);
       toast('Student academic details updated successfully!', 'success');
       setEditStudentModal(prev => ({ ...prev, open: false }));
-      fetchStudents();
+      fetchStudents(currentPage);
     } catch (err) {
       toast(err.response?.data?.message || 'Failed to update student academic details.', 'error');
     } finally {
@@ -349,7 +356,7 @@ const HODStudents = () => {
   }, []);
 
   useEffect(() => {
-    fetchStudents();
+    fetchStudents(1);
     fetchHODInfo();
   }, [fetchStudents, fetchHODInfo]);
 
@@ -442,7 +449,7 @@ const HODStudents = () => {
       await hodAPI.assignStudents(payload);
       toast(`Successfully enrolled ${selectedStudentIds.length} students.`, 'success');
       setAssignModal(false);
-      fetchStudents();
+      fetchStudents(1);
     } catch (err) {
       toast(err.response?.data?.message || 'Failed to complete assignment.', 'error');
     } finally {
@@ -469,7 +476,7 @@ const HODStudents = () => {
       );
       toast('Student unenrolled successfully.', 'success');
       setUnenrollModal({ open: false, studentId: null, studentName: '', courseId: '', courses: [] });
-      fetchStudents();
+      fetchStudents(currentPage);
     } catch (err) {
       toast(err.response?.data?.message || 'Failed to unenroll student.', 'error');
     } finally {
@@ -625,6 +632,43 @@ const HODStudents = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+        
+        {totalCount > limit && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', padding: '10px 16px', borderTop: '1px solid var(--border-2)' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-3)' }}>
+              Showing {(currentPage - 1) * limit + 1} - {Math.min(currentPage * limit, totalCount)} of {totalCount} students
+            </span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => {
+                  if (currentPage > 1) {
+                    fetchStudents(currentPage - 1);
+                  }
+                }}
+                disabled={currentPage === 1}
+                className={styles.refreshBtn}
+                style={{ padding: '6px 12px', fontSize: '13px', height: 'auto' }}
+              >
+                Previous
+              </button>
+              <span style={{ display: 'flex', alignItems: 'center', padding: '0 8px', fontWeight: 600, color: 'var(--text-1)', fontSize: '13px' }}>
+                Page {currentPage} of {Math.ceil(totalCount / limit)}
+              </span>
+              <button
+                onClick={() => {
+                  if (currentPage < Math.ceil(totalCount / limit)) {
+                    fetchStudents(currentPage + 1);
+                  }
+                }}
+                disabled={currentPage === Math.ceil(totalCount / limit)}
+                className={styles.refreshBtn}
+                style={{ padding: '6px 12px', fontSize: '13px', height: 'auto' }}
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>

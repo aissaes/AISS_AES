@@ -9,7 +9,7 @@ import {
   reviewQuestionPaper,
   getQuestionPaperById,
   updateQuestionPaper
-} from "../controllers/questionPaperController.js";
+} from "../controllers/academic/questionPaperController.js";
 
 const questionPaperRouter = express.Router();
 

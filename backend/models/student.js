@@ -49,6 +49,14 @@ const studentSchema = new mongoose.Schema({
     },
     otpExpires: {
         type: Date
+    },
+    otpAttempts: {
+        type: Number,
+        default: 0
+    },
+    refreshToken: {
+        type: String,
+        default: null
     }
 });
 

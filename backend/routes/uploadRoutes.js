@@ -1,19 +1,12 @@
 import express from "express";
-import multer from "multer";
-import { uploadImage, uploadPDF, getAuthenticationParameters } from "../controllers/uploadController.js";
+import { uploadImage, uploadPDF, getAuthenticationParameters } from "../controllers/common/uploadController.js";
 import { verifyToken } from "../middlewares/authMiddleware.js";
+import { uploadImageInstance, uploadPdfInstance } from "../middlewares/uploadMiddleware.js";
 
 const uploadRouter = express.Router();
 
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
-  }
-});
-
-uploadRouter.post("/upload-image", verifyToken, upload.single("answer_script"), uploadImage);
-uploadRouter.post("/upload-pdf", verifyToken, upload.single("pdf_file"), uploadPDF);
+uploadRouter.post("/upload-image", verifyToken, uploadImageInstance.single("answer_script"), uploadImage);
+uploadRouter.post("/upload-pdf", verifyToken, uploadPdfInstance.single("pdf_file"), uploadPDF);
 uploadRouter.get("/imagekit/auth", verifyToken, getAuthenticationParameters);
 
 export default uploadRouter;

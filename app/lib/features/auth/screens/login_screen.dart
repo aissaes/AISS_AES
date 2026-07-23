@@ -4,7 +4,7 @@ import '../../../shared/widgets/custom_text_field.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../providers/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/app_logo.dart';
+import '../../../shared/widgets/app_logo.dart';
 
 import 'package:go_router/go_router.dart';
 

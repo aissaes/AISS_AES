@@ -1,5 +1,6 @@
 # schemas/student_answer_eval.py
 from pydantic import BaseModel, Field, HttpUrl
+from typing import List
 
 class StudentEvaluateRequest(BaseModel):
     raw_input: HttpUrl = Field(
@@ -48,3 +49,33 @@ class StudentEvaluateRequest(BaseModel):
         description="The specific semantic question ID (e.g., S1-Q1a).",
         json_schema_extra={"example": "S1-Q1"}
     )
+
+class QuestionEvaluateItem(BaseModel):
+    raw_input: HttpUrl = Field(
+        ..., 
+        title="Student Answer URL", 
+        description="The URL pointing to the student's handwritten answer script."
+    )
+    question: str = Field(
+        ..., 
+        min_length=5, 
+        max_length=2000,
+        title="Question Text"
+    )
+    max_marks: float = Field(
+        ..., 
+        title="Maximum Marks"
+    )
+    question_id: str = Field(
+        ..., 
+        min_length=1,
+        title="Question Id"
+    )
+
+class StudentEvaluateAsyncRequest(BaseModel):
+    student_id: str = Field(..., title="Student ID")
+    exam_id: str = Field(..., title="Exam ID")
+    course_id: str = Field(..., title="Course ID")
+    namespace: str = Field(..., title="Namespace")
+    webhook_url: HttpUrl = Field(..., title="Webhook Callback URL")
+    questions: List[QuestionEvaluateItem] = Field(..., title="Questions to Evaluate")

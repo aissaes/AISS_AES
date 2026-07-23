@@ -4,6 +4,8 @@ import jwt from "jsonwebtoken";
 import FacultyCourseAssignment from "../../models/facultyCourseAssignment.js";
 import StudentCourseEnrollment from "../../models/studentCourseEnrollment.js";
 import sendEmail from "../../configurations/nodemailer.js";
+import { generateOTPTemplate } from "../../utils/emailTemplates.js";
+import crypto from "crypto";
 
 // ==========================================
 // 1. LOGIN STUDENT
@@ -29,25 +31,51 @@ export const loginStudent = async (req, res) => {
       return res.status(401).json({ success: false, message: "Invalid credentials." });
     }
 
-    // Create standard 1-day login token
+    // 1. Access Token (6 hours)
     const token = jwt.sign(
       { id: student._id, role: "student" },
       process.env.JWT_SECRET,
-      { expiresIn: "1d" }
+      { expiresIn: "6h" }
     );
+
+    // 2. Refresh Token (Perpetual / Non-Expiring: 10 Years for Student Mobile App)
+    const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET || (process.env.JWT_SECRET + "_refresh");
+    const refreshToken = jwt.sign(
+      { id: student._id, role: "student" },
+      refreshTokenSecret,
+      { expiresIn: "3650d" } // 10 years
+    );
+
+    // 3. Store Refresh Token in DB for instant revocation
+    student.refreshToken = refreshToken;
+    await student.save();
 
     // Send token in HTTP-only cookie for high security
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: true,
+      sameSite: "none",
+      maxAge: 6 * 60 * 60 * 1000, // 6 hours
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      maxAge: 3650 * 24 * 60 * 60 * 1000, // 10 years
     });
 
     // Remove password from the response object
     const studentData = student.toObject();
     delete studentData.password;
 
-    res.status(200).json({ success: true, message: "Login successful.", student: studentData, token });
+    res.status(200).json({ 
+      success: true, 
+      message: "Login successful.", 
+      student: studentData,
+      token,
+      refreshToken
+    });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ success: false, message: "Internal server error." });
@@ -57,12 +85,75 @@ export const loginStudent = async (req, res) => {
 // ==========================================
 // 2. LOGOUT STUDENT
 // ==========================================
-export const logoutStudent = (req, res) => {
+export const logoutStudent = async (req, res) => {
   try {
-    res.clearCookie("token");
-    res.status(200).json({ success: true, message: "Logged out successfully." });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Internal server error during logout." });
+    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+    if (refreshToken) {
+      const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET || (process.env.JWT_SECRET + "_refresh");
+      try {
+        const decoded = jwt.verify(refreshToken, refreshTokenSecret);
+        await Student.findByIdAndUpdate(decoded.id, { refreshToken: null });
+      } catch (e) {}
+    }
+  } catch (e) {}
+
+  res.clearCookie("token", { httpOnly: true, secure: true, sameSite: "none" });
+  res.clearCookie("refreshToken", { httpOnly: true, secure: true, sameSite: "none" });
+  res.status(200).json({ success: true, message: "Logged out successfully." });
+};
+
+// ==========================================
+// REFRESH STUDENT TOKEN
+// ==========================================
+export const refreshStudentToken = async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+    if (!refreshToken) {
+      return res.status(401).json({ success: false, message: "Refresh Token is required" });
+    }
+
+    const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET || (process.env.JWT_SECRET + "_refresh");
+    const decoded = jwt.verify(refreshToken, refreshTokenSecret);
+
+    const student = await Student.findById(decoded.id);
+    if (!student || student.refreshToken !== refreshToken) {
+      return res.status(403).json({ success: false, message: "Invalid or revoked Refresh Token. Please log in again." });
+    }
+
+    // ROTATION: Issue NEW 6-hour Access Token & NEW 10-year Refresh Token
+    const newToken = jwt.sign(
+      { id: student._id, role: "student" },
+      process.env.JWT_SECRET,
+      { expiresIn: "6h" }
+    );
+
+    const newRefreshToken = jwt.sign(
+      { id: student._id, role: "student" },
+      refreshTokenSecret,
+      { expiresIn: "3650d" } // 10 years
+    );
+
+    // Update DB with rotated Refresh Token
+    student.refreshToken = newRefreshToken;
+    await student.save();
+
+    res.cookie("token", newToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      maxAge: 6 * 60 * 60 * 1000, // 6 hours
+    });
+
+    res.cookie("refreshToken", newRefreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      maxAge: 3650 * 24 * 60 * 60 * 1000, // 10 years
+    });
+
+    return res.status(200).json({ success: true, token: newToken, refreshToken: newRefreshToken, message: "Token refreshed and rotated successfully" });
+  } catch (err) {
+    return res.status(403).json({ success: false, message: "Expired or invalid Refresh Token", error: err.message });
   }
 };
 
@@ -177,26 +268,24 @@ export const forgotPasswordStudent = async (req, res) => {
     }
 
     // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = crypto.randomInt(100000, 999999).toString();
     student.otp = otp;
     student.otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
-    await student.save();
+    student.otpAttempts = 0;
+    const otpHtml = generateOTPTemplate({
+      recipientName: student.name || "Student",
+      otpCode: otp,
+      title: "Student Portal Password Reset OTP",
+      subtitle: "Use the 6-digit One-Time Password below to reset your student portal password.",
+      expireMinutes: 10
+    });
 
     // Send reset OTP via email
     await sendEmail(
       email,
-      "Password Reset Verification OTP - AISS",
-      `Dear ${student.name},
-
-      We received a request to reset your student account password on the AISS Exam Portal.
-      
-      Your One-Time Password (OTP) for password reset is: ${otp}
-      This code is valid for 10 minutes. Please do not share this OTP with anyone.
-
-      If you did not request this, please ignore this email.
-
-      Best Regards,
-      The AISS Team`
+      "Password Reset OTP - AISS Platform",
+      `Your One-Time Password (OTP) for password reset is: ${otp}`,
+      otpHtml
     );
 
     res.status(200).json({ success: true, message: "Verification OTP sent to your email address." });
@@ -228,7 +317,20 @@ export const resetForgottenPasswordStudent = async (req, res) => {
     }
 
     // Verify OTP matching and expiration
-    if (!student.otp || student.otp !== otp || !student.otpExpires || student.otpExpires < Date.now()) {
+    if (!student.otp || student.otpExpires < Date.now()) {
+      return res.status(400).json({ success: false, message: "Invalid or expired verification OTP." });
+    }
+
+    if (student.otp !== otp) {
+      student.otpAttempts = (student.otpAttempts || 0) + 1;
+      if (student.otpAttempts >= 5) {
+        student.otp = null;
+        student.otpExpires = null;
+        student.otpAttempts = 0;
+        await student.save();
+        return res.status(400).json({ success: false, message: "Invalid OTP. Maximum attempts exceeded. Please request a new OTP." });
+      }
+      await student.save();
       return res.status(400).json({ success: false, message: "Invalid or expired verification OTP." });
     }
 
@@ -236,6 +338,7 @@ export const resetForgottenPasswordStudent = async (req, res) => {
     student.password = await bcrypt.hash(newPassword, 10);
     student.otp = null;
     student.otpExpires = null;
+    student.otpAttempts = 0;
     await student.save();
 
     res.status(200).json({ success: true, message: "Your password has been successfully reset! You can now log in." });

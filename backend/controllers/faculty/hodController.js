@@ -101,9 +101,9 @@ export const assignStudentsToCourse = async (req, res) => {
     }
 
     // Query students
-    const students = await Student.find({ _id: { $in: studentIds }, collegeId: hod.collegeId });
+    const students = await Student.find({ _id: { $in: studentIds }, collegeId: hod.collegeId, department: hod.department });
     if (students.length === 0) {
-      return res.status(404).json({ message: "No matching student accounts found in your college." });
+      return res.status(404).json({ message: "No matching student accounts found in your department." });
     }
 
     let count = 0;
@@ -156,9 +156,16 @@ export const unassignStudentsFromCourse = async (req, res) => {
       return res.status(403).json({ message: "Only HODs can unassign students from courses." });
     }
 
-    const students = await Student.find({ _id: { $in: studentIds }, collegeId: hod.collegeId });
+    if (courseId) {
+      const courseDoc = await Course.findOne({ _id: courseId, collegeId: hod.collegeId, department: hod.department });
+      if (!courseDoc) {
+        return res.status(403).json({ message: "Selected course not found in your department." });
+      }
+    }
+
+    const students = await Student.find({ _id: { $in: studentIds }, collegeId: hod.collegeId, department: hod.department });
     if (students.length === 0) {
-      return res.status(404).json({ message: "No matching student accounts found in your college." });
+      return res.status(404).json({ message: "No matching student accounts found in your department." });
     }
 
     let count = 0;
@@ -223,10 +230,19 @@ export const getDepartmentStudents = async (req, res) => {
       }
     }
 
+    // Pagination support
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 50;
+    const skip = (page - 1) * limit;
+
+    const totalCount = await Student.countDocuments(filter);
+
     const students = await Student.find(filter)
       .select("-password")
       .populate("semester", "semesterNumber semesterName academicYear status")
-      .sort({ rollNumber: 1 });
+      .sort({ rollNumber: 1 })
+      .skip(skip)
+      .limit(limit);
 
     const studentIds = students.map(s => s._id);
     const enrollments = await StudentCourseEnrollment.find({ student: { $in: studentIds } })
@@ -250,7 +266,13 @@ export const getDepartmentStudents = async (req, res) => {
       return studentObj;
     });
 
-    res.status(200).json({ count: formattedStudents.length, students: formattedStudents });
+    res.status(200).json({
+      totalCount,
+      page,
+      limit,
+      count: formattedStudents.length,
+      students: formattedStudents
+    });
   } catch (error) {
     console.error("Error fetching HOD department students:", error);
     res.status(500).json({ message: "Server error fetching department students." });
@@ -290,7 +312,7 @@ export const generateToken = async (req, res) => {
 
     const hod = await Faculty.findById(req.user.id);
     // 2. SECURITY CHECK: Does this HOD own this exam?
-    if (exam.collegeId.toString() !== hod.collegeId.toString() || exam.courseId.department.toString() !== hod.department.toString()) {
+    if (!exam.courseId || !exam.courseId.department || exam.collegeId.toString() !== hod.collegeId.toString() || exam.courseId.department.toString() !== hod.department.toString()) {
       return res.status(403).json({ success: false, message: "Unauthorized: You do not have permission to manage this exam." });
     }
 
@@ -348,7 +370,7 @@ export const generateQRCode = async (req, res) => {
     
     const hod = await Faculty.findById(req.user.id);
     // 2. SECURITY CHECK: Does this HOD own this exam?
-    if (exam.collegeId.toString() !== hod.collegeId.toString() || exam.courseId.department.toString() !== hod.department.toString()) {
+    if (!exam.courseId || !exam.courseId.department || exam.collegeId.toString() !== hod.collegeId.toString() || exam.courseId.department.toString() !== hod.department.toString()) {
       return res.status(403).json({ success: false, message: "Unauthorized: You do not have permission to manage this exam." });
     }
     

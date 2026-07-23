@@ -1,7 +1,7 @@
 import Answers from "../../models/answer.js";
 import Exam from "../../models/exam.js"
 import axios from "axios";
-import QuestionPaper from "../../models/questionPapers.js"; 
+import QuestionPaper from "../../models/questionPapers.js";
 import Result from "../../models/result.js";
 import Student from "../../models/student.js";
 import Upload from "../../models/uploadSession.js";
@@ -36,15 +36,25 @@ export const getAllStudentsAppearedForExam = async (req, res) => {
       return res.status(403).json({ success: false, message: "Unauthorized access" });
     }
 
-    // 3. Get students who appeared
+    // 3. Get students who appeared (with pagination support)
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 50;
+    const skip = (page - 1) * limit;
+
+    const totalCount = await Answers.countDocuments({ for_exam: examId });
     const students = await Answers.find({ for_exam: examId })
       .populate("uploaded_student", "name email rollNumber")
-      .select("uploaded_student");
+      .select("uploaded_student")
+      .skip(skip)
+      .limit(limit);
 
     const result = students.map((entry) => entry.uploaded_student);
 
     return res.status(200).json({
       success: true,
+      totalCount,
+      page,
+      limit,
       count: result.length,
       students: result,
     });
@@ -80,8 +90,8 @@ export const triggerAIEvaluation = async (req, res) => {
   let studentId;
   try {
     examId = req.params.examId;
-    studentId = req.body.studentId; 
-    const facultyId = req.user.id; 
+    studentId = req.body.studentId;
+    const facultyId = req.user.id;
 
     // 1. Validate Exam & Permissions
     const exam = await Exam.findById(examId);
@@ -93,13 +103,19 @@ export const triggerAIEvaluation = async (req, res) => {
     const paper = await QuestionPaper.findById(exam.questionPaper);
     if (!paper) return res.status(404).json({ success: false, message: "Question paper data is missing." });
 
-    // 3. Fetch ONLY this specific student's submission
-    const submission = await Answers.findOne({ for_exam: examId, uploaded_student: studentId });
+    // 3. Fetch and lock student's submission
+    const submission = await Answers.findOneAndUpdate(
+      { for_exam: examId, uploaded_student: studentId },
+      { $set: { isLockedForEvaluation: true } },
+      { new: true }
+    );
     if (!submission) return res.status(400).json({ success: false, message: "No submission found for this student." });
 
     // 4. Assert that the student has no active upload session
     const activeSession = await Upload.findOne({ student: studentId, exam: examId });
     if (activeSession) {
+      submission.isLockedForEvaluation = false;
+      await submission.save();
       return res.status(400).json({
         success: false,
         message: "Student's upload session is still active. Please wait for the student to finalize submission or for the upload window to close."
@@ -125,152 +141,287 @@ export const triggerAIEvaluation = async (req, res) => {
       await resultDoc.save();
     }
 
-    // 6. Evaluate all questions synchronously with concurrency limit
-    const tasks = Array.from(submission.answers.entries()).map(([questionNoStr, answerData]) => async () => {
-      try {
-        let questionText = "Question text missing"; 
-        let maxMarks = 10;
-        
-        for (const section of paper.sections) {
-          for (const q of section) {
-            if (q.questionId === questionNoStr) {
-              questionText = q.text;
-              maxMarks = q.marks;
+    // 6. Compile questions to evaluate
+    const questionsToEvaluate = [];
+    for (const [questionNoStr, answerData] of submission.answers.entries()) {
+      let questionText = "Question text missing";
+      let maxMarks = 10;
+
+      for (const section of paper.sections) {
+        for (const q of section) {
+          if (q.questionId === questionNoStr) {
+            questionText = q.text;
+            maxMarks = q.marks;
+            break;
+          }
+          if (q.children && q.children.length > 0) {
+            const foundSub = q.children.find(sub => sub.questionId === questionNoStr);
+            if (foundSub) {
+              questionText = foundSub.text;
+              maxMarks = foundSub.marks;
               break;
             }
-            if (q.children && q.children.length > 0) {
-              const foundSub = q.children.find(sub => sub.questionId === questionNoStr);
-              if (foundSub) {
-                questionText = foundSub.text;
-                maxMarks = foundSub.marks;
-                break;
-              }
-            }
           }
-          if (questionText !== "Question text missing") break;
         }
-
-        const fileUrl = (answerData && typeof answerData === "object") ? answerData.fileUrl : answerData;
-
-        const aiResponse = await axios.post(`${AI_BASE_URL}/student/evaluate`, {
-          raw_input: fileUrl,
-          question: questionText,
-          exam_id: examId,
-          course_id: exam.courseId.toString(),
-          namespace: exam.collegeId.toString(), 
-          question_id: questionNoStr,
-          max_marks: maxMarks
-        });
-
-        let score = 0, reasoning = "Pending", strengths = "", weakness = "", feedback = "";
-        let aiOutput = aiResponse.data.evaluation;
-
-        if (typeof aiOutput === 'string') {
-          try {
-            const cleanedText = aiOutput.replace(/```json/gi, '').replace(/```/g, '').trim();
-            aiOutput = JSON.parse(cleanedText); 
-          } catch (e) {}
-        }
-
-        if (typeof aiOutput === 'object' && aiOutput !== null && aiOutput.score !== undefined) {
-          score = Number(aiOutput.score) || 0;
-          reasoning = aiOutput.reasoning || "";
-          strengths = aiOutput.strengths || "";
-          weakness = aiOutput.weaknesses || "";
-          feedback = aiOutput.feedback || "";
-        } else {
-          reasoning = typeof aiOutput === 'string' ? aiOutput : "Evaluation failed format.";
-        }
-
-        return { questionNoStr, score, reasoning, strengths, weakness, feedback };
-
-      } catch (aiError) {
-        const exactReason = aiError.response?.data?.detail || aiError.response?.data?.message || aiError.message || "Unknown AI error";
-        console.error(`❌ AI failed for question ${questionNoStr}:`, exactReason);
-        return { questionNoStr, score: 0, reasoning: `AI Error: ${exactReason}`, strengths: "", weakness: "", feedback: "" };
+        if (questionText !== "Question text missing") break;
       }
-    });
 
-    const aiResults = await limitConcurrency(tasks, 2);
-
-    // Reload Result document to prevent version conflict
-    resultDoc = await Result.findOne({ student: studentId, exam: examId });
-    if (!resultDoc) {
-      return res.status(404).json({ success: false, message: "Result document not found after evaluation." });
+      const fileUrl = (answerData && typeof answerData === "object") ? answerData.fileUrl : answerData;
+      questionsToEvaluate.push({
+        question_id: questionNoStr,
+        question: questionText,
+        max_marks: maxMarks,
+        raw_input: fileUrl
+      });
     }
 
-    let finalTotal = 0;
-    for (const resData of aiResults) {
-      const existingEvalIndex = resultDoc.evaluations.findIndex(e => e.questionId === resData.questionNoStr);
+    // 7. Fire async evaluation task on Python microservice
+    const backendUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
+    const webhookUrl = `${backendUrl}/faculty/exam/webhook-callback`;
 
-      if (existingEvalIndex >= 0) {
-        resultDoc.evaluations[existingEvalIndex].aiMarks = resData.score;
-        resultDoc.evaluations[existingEvalIndex].aiReasoning = resData.reasoning;
-        resultDoc.evaluations[existingEvalIndex].strengths = resData.strengths; 
-        resultDoc.evaluations[existingEvalIndex].weakness = resData.weakness;
-        resultDoc.evaluations[existingEvalIndex].aiFeedback = resData.feedback;
-      } else {
-        resultDoc.evaluations.push({
-          questionId: resData.questionNoStr,
-          aiMarks: resData.score,
-          aiReasoning: resData.reasoning,
-          strengths: resData.strengths, 
-          weakness: resData.weakness,
-          aiFeedback: resData.feedback
-        });
-      }
-    }
+    const payload = {
+      student_id: studentId.toString(),
+      exam_id: examId.toString(),
+      course_id: exam.courseId.toString(),
+      namespace: exam.collegeId.toString(),
+      webhook_url: webhookUrl,
+      questions: questionsToEvaluate
+    };
 
-    for (const ev of resultDoc.evaluations) {
-      finalTotal += (ev.overrideMarks !== null && ev.overrideMarks !== undefined) ? ev.overrideMarks : ev.aiMarks;
-    }
+    const pythonApiKey = process.env.PYTHON_AGENT_KEY;
+    if (!pythonApiKey) throw new Error("PYTHON_AGENT_KEY environment variable is not configured.");
     
-    resultDoc.totalMarksObtained = finalTotal;
+    try {
+      await axios.post(`${AI_BASE_URL}/student/evaluate-async`, payload, {
+        headers: {
+          "X-API-Key": pythonApiKey,
+          "Content-Type": "application/json"
+        },
+        timeout: 10000
+      });
 
-    const hasFailedQuestion = aiResults.some(r => r.reasoning && r.reasoning.startsWith("AI Error:"));
-    resultDoc.status = hasFailedQuestion ? "Failed" : "Completed"; 
+      return res.status(202).json({
+        success: true,
+        message: "AI evaluation queued successfully in the background.",
+        status: "Evaluating"
+      });
 
-    await resultDoc.save();
-    console.log(`✅ Student ${studentId} grading finalized with status ${resultDoc.status}! Total Marks: ${finalTotal}`);
+    } catch (aiError) {
+      console.error("Failed to trigger async AI evaluation:", aiError.message);
+      
+      // Unlock submission and mark result as Failed
+      submission.isLockedForEvaluation = false;
+      await submission.save();
 
-    return res.status(200).json({ 
-      success: true, 
-      message: hasFailedQuestion ? `Student evaluation finished with some failures.` : `Student evaluated successfully.`,
-      status: resultDoc.status,
-      totalMarks: finalTotal
-    });
+      resultDoc.status = "Failed";
+      await resultDoc.save();
+
+      return res.status(500).json({
+        success: false,
+        message: "Failed to queue evaluation on AI microservice: " + (aiError.response?.data?.detail || aiError.message)
+      });
+    }
 
   } catch (error) {
     const exactReason = error.message || "Unknown server error";
     console.error("Trigger Evaluation Error:", exactReason);
-    
-    // Set result document status to Failed on uncaught exceptions
+
+    // Fallback unlock and status setting
     try {
       if (studentId && examId) {
-        const resultDoc = await Result.findOne({ student: studentId, exam: examId });
-        if (resultDoc) {
-          resultDoc.status = "Failed";
-          await resultDoc.save();
+        await Answers.findOneAndUpdate(
+          { uploaded_student: studentId, for_exam: examId },
+          { $set: { isLockedForEvaluation: false } }
+        );
+        const rDoc = await Result.findOne({ student: studentId, exam: examId });
+        if (rDoc) {
+          rDoc.status = "Failed";
+          await rDoc.save();
         }
       }
     } catch (saveErr) {
-      console.error("Failed to save error status to Result doc:", saveErr);
+      console.error("Failed to reset error states:", saveErr);
     }
 
     return res.status(500).json({ success: false, message: `Server Error: ${exactReason}` });
   }
 };
 
+// ==========================================
+// 2A. WEBHOOK CALLBACK FOR ASYNC EVALUATION
+// ==========================================
+export const evaluationWebhookCallback = async (req, res) => {
+  try {
+    const expectedKey = process.env.PYTHON_AGENT_KEY;
+
+    if (!expectedKey) {
+      return res.status(500).json({ success: false, message: "Server configuration error: PYTHON_AGENT_KEY is missing." });
+    }
+
+    const apiKey = req.get("X-API-Key") || req.headers["x-api-key"];
+    if (!apiKey || apiKey !== expectedKey) {
+      return res.status(401).json({ success: false, message: "Unauthorized callback API Key" });
+    }
+
+    const { student_id, exam_id, results } = req.body;
+    if (!student_id || !exam_id || !results) {
+      return res.status(400).json({ success: false, message: "Missing required callback payload fields" });
+    }
+
+    // 1. Fetch Result document
+    const resultDoc = await Result.findOne({ student: student_id, exam: exam_id });
+    if (!resultDoc) {
+      return res.status(404).json({ success: false, message: "Result document not found" });
+    }
+
+    // 2. Fetch the Exam & QuestionPaper to bound marks
+    const exam = await Exam.findById(exam_id);
+    if (!exam) {
+      return res.status(404).json({ success: false, message: "Exam not found" });
+    }
+
+    const paper = await QuestionPaper.findById(exam.questionPaper);
+    if (!paper) {
+      return res.status(404).json({ success: false, message: "Question paper not found" });
+    }
+
+    // Map to quickly get maxMarks for each questionId
+    const maxMarksMap = {};
+    for (const section of paper.sections) {
+      for (const q of section) {
+        maxMarksMap[q.questionId] = q.marks;
+        if (q.children && q.children.length > 0) {
+          for (const sub of q.children) {
+            maxMarksMap[sub.questionId] = sub.marks;
+          }
+        }
+      }
+    }
+
+    let hasFailedQuestion = false;
+    let hasUncertainQuestion = false;
+
+    // 3. Process results
+    for (const qRes of results) {
+      const questionId = qRes.question_id;
+      const maxMarks = maxMarksMap[questionId] || 10;
+
+      let score = 0;
+      let reasoning = "";
+      let strengths = "";
+      let weakness = "";
+      let feedback = "";
+
+      if (qRes.status === "success" && qRes.evaluation) {
+        let aiOutput = qRes.evaluation;
+        if (typeof aiOutput === 'string') {
+          try {
+            const cleanedText = aiOutput.replace(/```json/gi, '').replace(/```/g, '').trim();
+            aiOutput = JSON.parse(cleanedText);
+          } catch (e) {
+            // Treat as raw text if JSON parse fails
+          }
+        }
+
+        if (typeof aiOutput === 'object' && aiOutput !== null && aiOutput.score !== undefined) {
+          score = Number(aiOutput.score) || 0;
+          if (score < 0) score = 0;
+          if (score > maxMarks) score = maxMarks;
+          reasoning = aiOutput.reasoning || "";
+          strengths = aiOutput.strengths || "";
+          weakness = aiOutput.weaknesses || "";
+          feedback = aiOutput.feedback || "";
+
+          const isUncertain = qRes.recheck_status === "Uncertain" || 
+                              (qRes.recheck_status === "Revision Needed" && qRes.revision_count >= 3);
+          if (isUncertain) {
+            hasUncertainQuestion = true;
+          }
+        } else {
+          reasoning = typeof aiOutput === 'string' ? aiOutput : "Evaluation failed format.";
+          if (reasoning.startsWith("OCR_FAILED:")) {
+            score = 0;
+            hasFailedQuestion = true; // Flag as failed so faculty must manually grade
+          } else {
+            hasFailedQuestion = true;
+          }
+        }
+      } else {
+        hasFailedQuestion = true;
+        reasoning = qRes.error || "AI evaluation failed.";
+      }
+
+      const retrievedContext = qRes.retrieved_context || [];
+      const recheckLogs = qRes.recheck_logs || [];
+      const evaluationConfidence = qRes.evaluation_confidence || "High";
+
+      const existingEvalIndex = resultDoc.evaluations.findIndex(e => e.questionId === questionId);
+      if (existingEvalIndex >= 0) {
+        resultDoc.evaluations[existingEvalIndex].aiMarks = score;
+        resultDoc.evaluations[existingEvalIndex].aiReasoning = reasoning;
+        resultDoc.evaluations[existingEvalIndex].strengths = strengths;
+        resultDoc.evaluations[existingEvalIndex].weakness = weakness;
+        resultDoc.evaluations[existingEvalIndex].aiFeedback = feedback;
+        resultDoc.evaluations[existingEvalIndex].retrievedContext = retrievedContext;
+        resultDoc.evaluations[existingEvalIndex].recheckLogs = recheckLogs;
+        resultDoc.evaluations[existingEvalIndex].evaluationConfidence = evaluationConfidence;
+      } else {
+        resultDoc.evaluations.push({
+          questionId,
+          aiMarks: score,
+          aiReasoning: reasoning,
+          strengths,
+          weakness,
+          aiFeedback: feedback,
+          retrievedContext,
+          recheckLogs,
+          evaluationConfidence
+        });
+      }
+    }
+
+    let finalTotal = 0;
+    for (const ev of resultDoc.evaluations) {
+      finalTotal += (ev.overrideMarks !== null && ev.overrideMarks !== undefined) ? ev.overrideMarks : ev.aiMarks;
+    }
+    resultDoc.totalMarksObtained = finalTotal;
+
+    if (hasFailedQuestion) {
+      resultDoc.status = "Failed";
+    } else if (hasUncertainQuestion) {
+      resultDoc.status = "Uncertain";
+    } else {
+      resultDoc.status = "Completed";
+    }
+
+    await resultDoc.save();
+
+    // Unlock Answers document
+    await Answers.findOneAndUpdate(
+      { uploaded_student: student_id, for_exam: exam_id },
+      { $set: { isLockedForEvaluation: false } }
+    );
+
+    console.log(`[Webhook] Asynchronous evaluation finished for student ${student_id}. Status: ${resultDoc.status}. Total Marks: ${finalTotal}`);
+    return res.status(200).json({ success: true, status: resultDoc.status, totalMarks: finalTotal });
+
+  } catch (error) {
+    console.error("[Webhook] Callback error:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 
 // ==========================================
-// 3. UPLOAD TEACHER MATERIALS (RUBRIC/NOTES)
+// 3. UPLOAD TEACHER MATERIALS (RUBRIC/NOTES/SYLLABUS/KEYS)
 // ==========================================
 export const uploadTeacherMaterials = async (req, res) => {
-  try {
-    const { examId } = req.params;
-    const { fileUrl, contentType, questionId, imageKitFileId, title } = req.body; 
-    const facultyId = req.user.id; 
+  let newMaterial = null;
+  const { examId } = req.params;
+  const { fileUrl, contentType, questionId, scope, replaceMaterialId, imageKitFileId, title } = req.body;
+  const facultyId = req.user.id;
 
+  try {
     if (!fileUrl || !contentType) {
       return res.status(400).json({ success: false, message: "File URL and Content Type are required." });
     }
@@ -282,10 +433,41 @@ export const uploadTeacherMaterials = async (req, res) => {
       return res.status(403).json({ success: false, message: "Unauthorized: Only assigned faculty can upload materials." });
     }
 
+    let version = 1;
+    let parentMaterialId = null;
+    let oldMaterial = null;
+
+    if (replaceMaterialId) {
+      oldMaterial = await TeacherMaterial.findById(replaceMaterialId);
+      if (!oldMaterial) {
+        return res.status(404).json({ success: false, message: "Material to replace not found." });
+      }
+      if (oldMaterial.collegeId.toString() !== exam.collegeId.toString() || 
+          oldMaterial.courseId.toString() !== exam.courseId.toString()) {
+        return res.status(403).json({ success: false, message: "Unauthorized: Material boundaries mismatch." });
+      }
+      version = (oldMaterial.version || 1) + 1;
+      parentMaterialId = oldMaterial.parentMaterialId || oldMaterial._id;
+    }
+
     const namespace = exam.collegeId.toString();
 
-    // Create MongoDB document
-    const newMaterial = await TeacherMaterial.create({
+    // Determine scope and question ID based on content type
+    let finalScope = null;
+    let finalQuestionId = null;
+
+    if (contentType === "answer_key" || contentType === "rubric") {
+      if (replaceMaterialId && oldMaterial) {
+        finalScope = oldMaterial.scope || "entire_exam";
+        finalQuestionId = oldMaterial.questionId || null;
+      } else {
+        finalScope = scope || "entire_exam";
+        finalQuestionId = finalScope === "question" ? questionId : null;
+      }
+    }
+
+    // Create MongoDB document with status "pending" and isActiveVersion false
+    newMaterial = await TeacherMaterial.create({
       collegeId: exam.collegeId,
       courseId: exam.courseId,
       examId: (contentType === "notes" || contentType === "syllabus") ? null : examId,
@@ -293,11 +475,16 @@ export const uploadTeacherMaterials = async (req, res) => {
       title: title || "Uploaded Material",
       imageKitUrl: fileUrl,
       imageKitFileId: imageKitFileId || "unknown",
-      questionId: contentType === "answer_key" ? questionId : null,
-      uploadedBy: facultyId
+      questionId: finalQuestionId,
+      scope: finalScope,
+      version,
+      parentMaterialId,
+      isActiveVersion: false,
+      uploadedBy: facultyId,
+      status: "pending"
     });
 
-    console.log(`\n📤 Sending ${contentType} to AI for vectorization...`);
+    console.log(`[AI] Sending ${contentType} to AI for vectorization...`);
 
     const payload = {
       raw_input: fileUrl,
@@ -310,13 +497,45 @@ export const uploadTeacherMaterials = async (req, res) => {
       faculty_id: facultyId
     };
 
-    if (contentType === "answer_key") {
-      payload.question_id = questionId;
+    if (contentType === "answer_key" || contentType === "rubric") {
+      payload.question_id = finalScope === "question" ? finalQuestionId : "entire_exam";
     }
 
+    const pythonApiKey = process.env.PYTHON_AGENT_KEY;
+    if (!pythonApiKey) throw new Error("PYTHON_AGENT_KEY environment variable is not configured.");
+
     try {
-      const aiResponse = await axios.post(`${AI_BASE_URL}/teacher/upload`, payload);
-      console.log(`✅ AI Vectorization Complete:`, aiResponse.data);
+      const aiResponse = await axios.post(`${AI_BASE_URL}/teacher/upload`, payload, {
+        headers: {
+          "X-API-Key": pythonApiKey
+        }
+      });
+      const chunkCount = aiResponse.data.chunk_count || 0;
+      console.log(`[AI] Vectorization Complete. Chunks count: ${chunkCount}`, aiResponse.data);
+
+      // Successfully vectorized: activate the new material
+      newMaterial.status = "active";
+      newMaterial.isActiveVersion = true;
+      newMaterial.chunkCount = chunkCount;
+      await newMaterial.save();
+
+      // Deactivate old version and delete its chunks in Pinecone
+      if (oldMaterial) {
+        oldMaterial.isActiveVersion = false;
+        await oldMaterial.save();
+        
+        try {
+          const deleteUrl = `${AI_BASE_URL}/teacher/materials/${oldMaterial._id}?namespace=${exam.collegeId.toString()}`;
+          await axios.delete(deleteUrl, {
+            headers: {
+              "X-API-Key": pythonApiKey
+            }
+          });
+          console.log(`[AI] Deleted chunks of replaced material ${oldMaterial._id} from Pinecone.`);
+        } catch (delErr) {
+          console.error(`[AI] Failed to delete chunks of replaced material ${oldMaterial._id}:`, delErr.message);
+        }
+      }
 
       return res.status(200).json({
         success: true,
@@ -325,13 +544,46 @@ export const uploadTeacherMaterials = async (req, res) => {
         ai_status: aiResponse.data
       });
     } catch (aiError) {
-      console.error("AI Vectorization failed, cleaning up MongoDB document...", aiError.message);
-      await TeacherMaterial.findByIdAndDelete(newMaterial._id);
+      console.error("AI Vectorization failed, cleaning up MongoDB document and ImageKit...", aiError.message);
+
+      if (imageKitFileId && imageKitFileId !== "unknown") {
+        try {
+          await imagekit.deleteFile(imageKitFileId);
+          console.log(`[ImageKit] Deleted file ${imageKitFileId} due to AI failure`);
+        } catch (ikErr) {
+          console.error("Failed to delete file from ImageKit during AI cleanup:", ikErr.message);
+        }
+      }
+
+      if (newMaterial) {
+        await TeacherMaterial.findByIdAndDelete(newMaterial._id);
+      }
       throw aiError;
     }
 
   } catch (error) {
     console.error("Teacher Upload Error:", error);
+
+    // Safety fallback cleanup
+    if (newMaterial && !newMaterial.isActiveVersion) {
+      try {
+        const checkMat = await TeacherMaterial.findById(newMaterial._id);
+        if (checkMat) {
+          await TeacherMaterial.findByIdAndDelete(newMaterial._id);
+        }
+      } catch (dbErr) {
+        console.error("Cleanup of Mongoose doc failed:", dbErr);
+      }
+
+      if (imageKitFileId && imageKitFileId !== "unknown") {
+        try {
+          await imagekit.deleteFile(imageKitFileId);
+        } catch (ikErr) {
+          console.error("Failed to delete file from ImageKit:", ikErr.message);
+        }
+      }
+    }
+
     res.status(500).json({ success: false, message: "Server error during AI vectorization.", error: error.message });
   }
 };
@@ -352,6 +604,9 @@ export const getTeacherMaterials = async (req, res) => {
     }
 
     const materials = await TeacherMaterial.find({
+      collegeId: exam.collegeId,
+      status: "active",
+      isActiveVersion: true,
       $or: [
         { courseId: exam.courseId, materialType: { $in: ["notes", "syllabus"] } },
         { examId: examId, materialType: { $in: ["answer_key", "rubric"] } }
@@ -369,7 +624,51 @@ export const getTeacherMaterials = async (req, res) => {
 };
 
 // ==========================================
-// 3B. DELETE TEACHER MATERIAL
+// 3B. GET TEACHER MATERIAL HISTORY
+// ==========================================
+export const getMaterialHistory = async (req, res) => {
+  try {
+    const { examId, materialId } = req.params;
+    const facultyId = req.user.id;
+
+    const exam = await Exam.findById(examId);
+    if (!exam) return res.status(404).json({ success: false, message: "Exam not found." });
+
+    if (exam.assignedFaculty.toString() !== facultyId) {
+      return res.status(403).json({ success: false, message: "Unauthorized." });
+    }
+
+    const material = await TeacherMaterial.findById(materialId);
+    if (!material) return res.status(404).json({ success: false, message: "Material not found." });
+
+    // Enforce boundaries
+    if (material.collegeId.toString() !== exam.collegeId.toString() || material.courseId.toString() !== exam.courseId.toString()) {
+      return res.status(403).json({ success: false, message: "Unauthorized: Material boundaries mismatch." });
+    }
+
+    const rootId = material.parentMaterialId || material._id;
+
+    const history = await TeacherMaterial.find({
+      $or: [
+        { _id: rootId },
+        { parentMaterialId: rootId }
+      ]
+    })
+    .sort({ version: -1 })
+    .populate("uploadedBy", "name email");
+
+    return res.status(200).json({
+      success: true,
+      history
+    });
+  } catch (error) {
+    console.error("Get Material History Error:", error);
+    res.status(500).json({ success: false, message: "Server error during history retrieval.", error: error.message });
+  }
+};
+
+// ==========================================
+// 3C. DELETE TEACHER MATERIAL
 // ==========================================
 export const deleteTeacherMaterial = async (req, res) => {
   try {
@@ -387,31 +686,58 @@ export const deleteTeacherMaterial = async (req, res) => {
       return res.status(403).json({ success: false, message: "Unauthorized: Only assigned faculty can delete materials." });
     }
 
-    // Delete from ImageKit
+    // Enforce college and course multi-tenant boundaries
+    if (material.collegeId.toString() !== exam.collegeId.toString() || material.courseId.toString() !== exam.courseId.toString()) {
+      return res.status(403).json({ success: false, message: "Unauthorized: Material boundaries mismatch." });
+    }
+
+    // Block if evaluation is in progress
+    const activeEval = await Result.findOne({ exam: examId, status: "Evaluating" });
+    if (activeEval) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot delete material while AI evaluation is in progress for this exam."
+      });
+    }
+
+    // 1. Delete chunks from Pinecone FIRST
+    try {
+      const pythonApiKey = process.env.PYTHON_AGENT_KEY;
+      if (!pythonApiKey) throw new Error("PYTHON_AGENT_KEY environment variable is not configured.");
+
+      const deleteUrl = `${AI_BASE_URL}/teacher/materials/${materialId}?namespace=${exam.collegeId.toString()}`;
+      const aiResponse = await axios.delete(deleteUrl, {
+        headers: {
+          "X-API-Key": pythonApiKey
+        }
+      });
+      console.log(`[AI] Chunks deletion complete:`, aiResponse.data);
+    } catch (aiErr) {
+      console.error("Failed to delete chunks from Pinecone via AI microservice:", aiErr.message);
+      // Abort deletion to prevent out-of-sync state
+      return res.status(500).json({
+        success: false,
+        message: "Failed to delete vectors from Pinecone. Deletion aborted to maintain consistency.",
+        error: aiErr.message
+      });
+    }
+
+    // 2. Delete from ImageKit SECOND
     if (material.imageKitFileId && material.imageKitFileId !== "unknown") {
       try {
         await imagekit.deleteFile(material.imageKitFileId);
-        console.log(`🗑️ Deleted file ${material.imageKitFileId} from ImageKit`);
+        console.log(`[ImageKit] Deleted file ${material.imageKitFileId}`);
       } catch (ikErr) {
         console.error("Failed to delete file from ImageKit:", ikErr.message);
       }
     }
 
-    // Delete chunks from Pinecone
-    try {
-      const deleteUrl = `${AI_BASE_URL}/teacher/materials/${materialId}?namespace=${exam.collegeId.toString()}`;
-      const aiResponse = await axios.delete(deleteUrl);
-      console.log(`✅ AI Chunks deletion complete:`, aiResponse.data);
-    } catch (aiErr) {
-      console.error("Failed to delete chunks from Pinecone via AI microservice:", aiErr.message);
-    }
-
-    // Delete from MongoDB
+    // 3. Delete from MongoDB LAST
     await TeacherMaterial.findByIdAndDelete(materialId);
 
     return res.status(200).json({
       success: true,
-      message: "Material deleted successfully from database, storage, and vectors."
+      message: "Material deleted successfully from vectors, storage, and database."
     });
 
   } catch (error) {
@@ -436,6 +762,35 @@ export const overrideAIGrade = async (req, res) => {
       return res.status(403).json({ success: false, message: "Unauthorized." });
     }
 
+    const paper = await QuestionPaper.findById(exam.questionPaper);
+    if (!paper) return res.status(404).json({ success: false, message: "Question paper not found." });
+
+    let maxMarks = null;
+    for (const section of paper.sections) {
+      for (const q of section) {
+        if (q.questionId === questionId) {
+          maxMarks = q.marks;
+          break;
+        }
+        if (q.children && q.children.length > 0) {
+          const foundSub = q.children.find(sub => sub.questionId === questionId);
+          if (foundSub) {
+            maxMarks = foundSub.marks;
+            break;
+          }
+        }
+      }
+      if (maxMarks !== null) break;
+    }
+
+    if (maxMarks === null) {
+      return res.status(400).json({ success: false, message: "Question ID not found in the question paper." });
+    }
+
+    if (overrideMarks < 0 || overrideMarks > maxMarks) {
+      return res.status(400).json({ success: false, message: `Override marks must be between 0 and ${maxMarks}.` });
+    }
+
     const resultDoc = await Result.findOne({ exam: examId, student: studentId });
     if (!resultDoc) return res.status(404).json({ success: false, message: "Result not found." });
 
@@ -455,7 +810,7 @@ export const overrideAIGrade = async (req, res) => {
         newTotal += ev.aiMarks;
       }
     }
-    
+
     resultDoc.totalMarksObtained = newTotal;
     await resultDoc.save();
 
@@ -503,4 +858,4 @@ export const publishExamResults = async (req, res) => {
     console.error("Error publishing results:", error);
     res.status(500).json({ success: false, message: "Server error during results publication." });
   }
-};
+};

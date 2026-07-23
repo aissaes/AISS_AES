@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../providers/student_results_provider.dart';
-import '../../../core/widgets/app_loading_indicator.dart';
+import '../../../shared/widgets/app_loading_indicator.dart';
+import '../../../shared/widgets/app_error_card.dart';
 
 class StudentResultsListScreen extends ConsumerWidget {
   const StudentResultsListScreen({super.key});
@@ -53,7 +54,39 @@ class StudentResultsListScreen extends ConsumerWidget {
                     final examType = result.examType;
                     final maxMarks = result.maxMarks.toStringAsFixed(0);
                     final totalMarksObtained = result.totalMarksObtained.toStringAsFixed(0);
-                    final isGraded = result.isGraded;
+                    final statusLower = result.status.toLowerCase();
+                    final isCompleted = statusLower == 'completed' || statusLower == 'graded';
+                    final isEvaluating = statusLower == 'evaluating';
+                    final isUncertain = statusLower == 'uncertain';
+                    final isFailed = statusLower == 'failed';
+                    final isOCRFailed = isFailed && result.evaluations.any((ev) => ev.reasoning.startsWith('OCR_FAILED:'));
+
+                    String statusText = 'PENDING EVALUATION';
+                    Color badgeBg = Colors.amber.withValues(alpha: 0.1);
+                    Color badgeTextColor = Colors.amber[800]!;
+
+                    if (isCompleted) {
+                      statusText = 'GRADED';
+                      badgeBg = AppTheme.primaryColor.withValues(alpha: 0.08);
+                      badgeTextColor = AppTheme.primaryColor;
+                    } else if (isEvaluating) {
+                      statusText = 'GRADING IN PROGRESS';
+                      badgeBg = Colors.blue.withValues(alpha: 0.08);
+                      badgeTextColor = Colors.blue[800]!;
+                    } else if (isUncertain) {
+                      statusText = 'MANUAL REVIEW REQUIRED';
+                      badgeBg = Colors.orange.withValues(alpha: 0.08);
+                      badgeTextColor = Colors.orange[800]!;
+                    } else if (isOCRFailed) {
+                      statusText = 'OCR FAILED';
+                      badgeBg = AppTheme.errorColor.withValues(alpha: 0.08);
+                      badgeTextColor = AppTheme.errorColor;
+                    } else if (isFailed) {
+                      statusText = 'EVALUATION FAILED';
+                      badgeBg = AppTheme.errorColor.withValues(alpha: 0.08);
+                      badgeTextColor = AppTheme.errorColor;
+                    }
+
                     final dateStr = result.date != null 
                         ? result.date!.toLocal().toString().split(' ').first 
                         : 'N/A';
@@ -64,9 +97,13 @@ class StudentResultsListScreen extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(AppTheme.borderRadius2XL),
                         boxShadow: AppTheme.softShadow,
                         border: Border.all(
-                          color: isGraded 
+                          color: isCompleted 
                               ? AppTheme.primaryColor.withValues(alpha: 0.1) 
-                              : Colors.amber.withValues(alpha: 0.2),
+                              : isFailed
+                                  ? AppTheme.errorColor.withValues(alpha: 0.2)
+                                  : isUncertain
+                                      ? Colors.orange.withValues(alpha: 0.2)
+                                      : Colors.amber.withValues(alpha: 0.2),
                           width: 1,
                         ),
                       ),
@@ -75,12 +112,22 @@ class StudentResultsListScreen extends ConsumerWidget {
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            onTap: isGraded && examId.isNotEmpty
+                            onTap: isCompleted && examId.isNotEmpty
                                 ? () => context.push('/results/detail/$examId')
                                 : () {
+                                    String snackText = 'This exam script is currently being evaluated. Please check back later.';
+                                    if (isEvaluating) {
+                                      snackText = 'This exam script is currently being evaluated by AISS AI. Please check back later.';
+                                    } else if (isUncertain) {
+                                      snackText = 'AI evaluation is complete and pending faculty verification. Please check back later.';
+                                    } else if (isOCRFailed) {
+                                      snackText = 'OCR processing failed for this paper (unreadable handwriting or scan). Faculty will manually grade it.';
+                                    } else if (isFailed) {
+                                      snackText = 'AI evaluation failed for this paper. Faculty will manually grade it soon.';
+                                    }
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('This exam script is currently being evaluated by examiners. Please check back later.'),
+                                      SnackBar(
+                                        content: Text(snackText),
                                         behavior: SnackBarBehavior.floating,
                                       ),
                                     );
@@ -98,15 +145,13 @@ class StudentResultsListScreen extends ConsumerWidget {
                                             Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                               decoration: BoxDecoration(
-                                                color: isGraded
-                                                    ? AppTheme.primaryColor.withValues(alpha: 0.08)
-                                                    : Colors.amber.withValues(alpha: 0.1),
+                                                color: badgeBg,
                                                 borderRadius: BorderRadius.circular(6),
                                               ),
                                               child: Text(
-                                                isGraded ? 'GRADED' : 'PENDING EVALUATION',
+                                                statusText,
                                                 style: TextStyle(
-                                                  color: isGraded ? AppTheme.primaryColor : Colors.amber[800],
+                                                  color: badgeTextColor,
                                                   fontSize: 9,
                                                   fontWeight: FontWeight.w900,
                                                   letterSpacing: 0.5,
@@ -146,7 +191,7 @@ class StudentResultsListScreen extends ConsumerWidget {
                                     ),
                                   ),
                                   const SizedBox(width: 16),
-                                  if (isGraded)
+                                  if (isCompleted)
                                     Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       crossAxisAlignment: CrossAxisAlignment.end,
@@ -189,12 +234,26 @@ class StudentResultsListScreen extends ConsumerWidget {
                                     Container(
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: Colors.amber.withValues(alpha: 0.08),
+                                        color: isFailed 
+                                            ? AppTheme.errorColor.withValues(alpha: 0.08) 
+                                            : isUncertain 
+                                                ? Colors.orange.withValues(alpha: 0.08)
+                                                : Colors.amber.withValues(alpha: 0.08),
                                         shape: BoxShape.circle,
                                       ),
-                                      child: const Icon(
-                                        Icons.hourglass_empty_rounded,
-                                        color: Colors.amber,
+                                      child: Icon(
+                                        isFailed
+                                            ? Icons.error_outline_rounded
+                                            : isUncertain
+                                                ? Icons.announcement_outlined
+                                                : isEvaluating
+                                                    ? Icons.sync_rounded
+                                                    : Icons.hourglass_empty_rounded,
+                                        color: isFailed 
+                                            ? AppTheme.errorColor 
+                                            : isUncertain 
+                                                ? Colors.orange 
+                                                : Colors.amber,
                                         size: 24,
                                       ),
                                     ),
@@ -212,25 +271,10 @@ class StudentResultsListScreen extends ConsumerWidget {
               error: (err, stack) => Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.errorColor),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Failed to load results\n$err',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: AppTheme.textSecondary, height: 1.5),
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: () => ref.invalidate(studentResultsProvider),
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(180, 44),
-                        ),
-                        child: const Text('Retry'),
-                      ),
-                    ],
+                  child: AppErrorCard(
+                    title: 'Failed to load results',
+                    message: err.toString(),
+                    onRetry: () => ref.invalidate(studentResultsProvider),
                   ),
                 ),
               ),

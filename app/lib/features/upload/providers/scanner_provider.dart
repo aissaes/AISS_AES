@@ -1,12 +1,15 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:io' show File;
 import 'dart:typed_data';
+import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:path/path.dart' as p;
 import 'package:camera/camera.dart' show XFile;
-import '../../../core/services/scan_quality_service.dart';
+import 'package:crypto/crypto.dart';
+import '../services/scan_quality_service.dart';
+import '../../../core/security/secure_pdf_storage_service.dart';
 
 class ScannerState {
   final List<String> imagePaths;
@@ -88,19 +91,60 @@ class ScannerNotifier extends StateNotifier<ScannerState> {
 
     state = state.copyWith(isGeneratingPdf: true);
 
-    final pdf = pw.Document();
+    final timestampUtc = DateTime.now().toUtc();
+    final timestampStr = timestampUtc.toIso8601String();
+    
+    // Calculate SHA-256 Integrity Hash of (imagePaths + timestamp)
+    final integrityPayload = '${state.imagePaths.join(",")}:$timestampStr:${state.imagePaths.length}';
+    final integrityHash = sha256.convert(utf8.encode(integrityPayload)).toString();
+    final shortHash = integrityHash.substring(0, 16).toUpperCase();
+
+    final pdf = pw.Document(
+      title: 'AISS_AES Answer Script',
+      author: 'AISS_AES Secure Kiosk',
+      subject: 'Integrity SHA256:$integrityHash',
+      keywords: 'AISS_AES,SECURE,HASH:$integrityHash',
+    );
+
+    int pageNum = 1;
+    final totalPages = state.imagePaths.length;
 
     for (final imagePath in state.imagePaths) {
       final Uint8List bytes = await XFile(imagePath).readAsBytes();
       final image = pw.MemoryImage(bytes);
+      final currentPage = pageNum;
       
       pdf.addPage(
         pw.Page(
+          margin: const pw.EdgeInsets.all(16),
           build: (pw.Context context) {
-            return pw.Center(child: pw.Image(image));
+            return pw.Stack(
+              children: [
+                pw.Center(child: pw.Image(image, fit: pw.BoxFit.contain)),
+                pw.Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text(
+                        'AISS_AES SECURED • Page $currentPage of $totalPages',
+                        style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+                      ),
+                      pw.Text(
+                        'HASH: $shortHash • $timestampStr',
+                        style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
           },
         ),
       );
+      pageNum++;
     }
 
     final pdfData = await pdf.save();
@@ -114,15 +158,17 @@ class ScannerNotifier extends StateNotifier<ScannerState> {
       return 'memory:exam_submission.pdf';
     } else {
       final output = await getTemporaryDirectory();
-      final file = File(p.join(output.path, "exam_submission_${DateTime.now().millisecondsSinceEpoch}.pdf"));
-      await file.writeAsBytes(pdfData);
+      final targetPath = p.join(output.path, "exam_submission_${DateTime.now().millisecondsSinceEpoch}.pdf");
+      
+      // Write encrypted bytes to disk using AES-256 master key in Hardware Keystore
+      final encryptedFile = await SecurePdfStorageService.writeEncryptedPdf(targetPath, pdfData);
 
       state = state.copyWith(
         isGeneratingPdf: false, 
-        pdfPath: file.path,
+        pdfPath: encryptedFile.path,
         pdfBytes: pdfData,
       );
-      return file.path;
+      return encryptedFile.path;
     }
   }
 

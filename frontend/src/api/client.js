@@ -9,10 +9,29 @@ const client = axios.create({
   withCredentials: true,
 });
 
-// Global error handler
+// Automatic token refresh interceptor on 401
 client.interceptors.response.use(
   (res) => res,
-  (error) => {
+  async (error) => {
+    const originalRequest = error?.config;
+
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes('/refresh-token') &&
+      !originalRequest.url?.includes('/login')
+    ) {
+      originalRequest._retry = true;
+      try {
+        const refreshEndpoint = originalRequest.url?.includes('/overallAdmin')
+          ? '/overallAdmin/auth/refresh-token'
+          : '/faculty/auth/refresh-token';
+        await client.post(refreshEndpoint);
+        return client(originalRequest);
+      } catch (_) {}
+    }
+
     let errorMessage = 'An unexpected error occurred.';
 
     if (error.response) {
@@ -22,7 +41,7 @@ client.interceptors.response.use(
       if (status === 400) {
         errorMessage = data?.message || 'Invalid request. Please check your input.';
       } else if (status === 401) {
-        errorMessage = data?.message || 'Invalid credentials. Please log in again.';
+        errorMessage = data?.message || 'Invalid credentials or session expired. Please log in again.';
       } else if (status === 403) {
         errorMessage = data?.message || 'You do not have permission to perform this action.';
       } else if (status === 404) {
@@ -203,13 +222,14 @@ export const collegeAPI = {
    Routes: /faculty/exam/*, /results/*
 ══════════════════════════════════════════════════════ */
 export const evaluationAPI = {
-  getAppearedStudents: (examId) => client.get(`/faculty/exam/${examId}/students`),
-  getResultOverview: (examId) => client.get(`/results/faculty/exam/${examId}`),
+  getAppearedStudents: (examId, params) => client.get(`/faculty/exam/${examId}/students`, { params }),
+  getResultOverview: (examId, params) => client.get(`/results/faculty/exam/${examId}`, { params }),
   getDetailedResult: (examId, studentId) => client.get(`/results/faculty/exam/${examId}/student/${studentId}`),
   triggerAIEvaluation: (examId, studentId) => client.post(`/faculty/exam/${examId}/evaluate`, { studentId }),
   overrideGrade: (examId, studentId, data) => client.put(`/faculty/exam/${examId}/student/${studentId}/override`, data),
   uploadMaterials: (examId, data) => client.post(`/faculty/exam/${examId}/upload-materials`, data),
   getMaterials: (examId) => client.get(`/faculty/exam/${examId}/materials`),
+  getMaterialHistory: (examId, materialId) => client.get(`/faculty/exam/${examId}/materials/${materialId}/history`),
   deleteMaterial: (examId, materialId) => client.delete(`/faculty/exam/${examId}/materials/${materialId}`),
   publishResults: (examId, publish) => client.put(`/faculty/exam/${examId}/publish-results`, { publish }),
 };

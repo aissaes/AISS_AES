@@ -16,7 +16,7 @@ import {
   getSemesters,
   updateSemester,
   toggleSemesterStatus
-} from "../controllers/faculty/semesterController.js";
+} from "../controllers/academic/semesterController.js";
 
 import {
   createCourse,
@@ -24,7 +24,7 @@ import {
   updateCourse,
   archiveCourse,
   assignFacultyToCourse
-} from "../controllers/faculty/courseController.js";
+} from "../controllers/academic/courseController.js";
 
 const hodRouter = express.Router();
 

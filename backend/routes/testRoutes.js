@@ -12,8 +12,26 @@ import Result from "../models/result.js";
 import Department from "../models/department.js";
 import Semester from "../models/semester.js";
 import Course from "../models/course.js";
+import TeacherMaterial from "../models/teacherMaterial.js";
 
 const testRouter = express.Router();
+
+import { verifyToken } from "../middlewares/authMiddleware.js";
+
+const restrictSandbox = (req, res, next) => {
+  if (process.env.NODE_ENV === "production") {
+    return verifyToken(req, res, () => {
+      const role = req.user?.role;
+      if (role === "overallAdmin" || role === "collegeAdmin") {
+        return next();
+      }
+      return res.status(403).json({ success: false, message: "Access denied. Sandbox is restricted to admins in production." });
+    });
+  }
+  next();
+};
+
+testRouter.use(restrictSandbox);
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -156,6 +174,10 @@ testRouter.post("/test/sandbox/vectorize", upload.single("file"), async (req, re
       return res.status(400).json({ success: false, message: "Missing file or contentType." });
     }
 
+    if (file.mimetype !== "application/pdf") {
+      return res.status(400).json({ success: false, message: "Invalid file type. Only PDFs are allowed for vectorization." });
+    }
+
     const sandbox = await getOrCreateSandboxRecords();
 
     // Upload to ImageKit
@@ -175,7 +197,7 @@ testRouter.post("/test/sandbox/vectorize", upload.single("file"), async (req, re
       content_type: contentType,
       subject: sandbox.subjectName,
       exam_id: sandbox.examId.toString(),
-      namespace: sandbox.collegeId.toString(),
+      namespace: `sandbox-${sandbox.collegeId.toString()}`,
       material_id: new mongoose.Types.ObjectId().toString(),
       course_id: sandbox.courseId.toString(),
       faculty_id: sandbox.facultyId.toString()
@@ -185,7 +207,14 @@ testRouter.post("/test/sandbox/vectorize", upload.single("file"), async (req, re
       payload.question_id = "Q1";
     }
 
-    const aiResponse = await axios.post(`${AI_BASE_URL}/teacher/upload`, payload);
+    const apiKey = process.env.PYTHON_AGENT_KEY;
+    if (!apiKey) throw new Error("PYTHON_AGENT_KEY environment variable is not configured.");
+
+    const aiResponse = await axios.post(`${AI_BASE_URL}/teacher/upload`, payload, {
+      headers: {
+        "X-API-Key": apiKey
+      }
+    });
 
     return res.status(200).json({
       success: true,
@@ -221,7 +250,7 @@ testRouter.get("/test/sandbox/imagekit/auth", async (req, res) => {
 
     return res.status(200).json({
       ...authParams,
-      publicKey: imagekit.options.publicKey || process.env.IMAGEKIT_PUBLIC_KEY || "public_WFeQX8UkftEzxi+FHlGACEOfj1k=",
+      publicKey: imagekit.options.publicKey || process.env.IMAGEKIT_PUBLIC_KEY,
       folder,
       fileName
     });
@@ -248,7 +277,7 @@ testRouter.post("/test/sandbox/vectorize-by-url", async (req, res) => {
       content_type: contentType,
       subject: sandbox.subjectName,
       exam_id: sandbox.examId.toString(),
-      namespace: sandbox.collegeId.toString(),
+      namespace: `sandbox-${sandbox.collegeId.toString()}`,
       material_id: new mongoose.Types.ObjectId().toString(),
       course_id: sandbox.courseId.toString(),
       faculty_id: sandbox.facultyId.toString()
@@ -258,7 +287,14 @@ testRouter.post("/test/sandbox/vectorize-by-url", async (req, res) => {
       payload.question_id = "Q1";
     }
 
-    const aiResponse = await axios.post(`${AI_BASE_URL}/teacher/upload`, payload);
+    const apiKey = process.env.PYTHON_AGENT_KEY;
+    if (!apiKey) throw new Error("PYTHON_AGENT_KEY environment variable is not configured.");
+
+    const aiResponse = await axios.post(`${AI_BASE_URL}/teacher/upload`, payload, {
+      headers: {
+        "X-API-Key": apiKey
+      }
+    });
 
     return res.status(200).json({
       success: true,
@@ -274,9 +310,16 @@ testRouter.post("/test/sandbox/vectorize-by-url", async (req, res) => {
 
 // Helper for OCR Space API delegating to Python Agent
 const runOcrDirect = async (fileUrl) => {
+  const apiKey = process.env.PYTHON_AGENT_KEY;
+  if (!apiKey) throw new Error("PYTHON_AGENT_KEY environment variable is not configured.");
+
   const response = await axios.post(`${AI_BASE_URL}/testing/test`, {
     action: "ocr",
     file_url: fileUrl
+  }, {
+    headers: {
+      "X-API-Key": apiKey
+    }
   });
   if (!response.data?.success) {
     throw new Error(response.data?.detail || "Agent OCR processing failed.");
@@ -286,12 +329,19 @@ const runOcrDirect = async (fileUrl) => {
 
 // Helper for direct LLM evaluation delegating to Python Agent
 const runEvaluationDirect = async ({ studentAnswer, answerKey, contextNotes, maxMarks }) => {
+  const apiKey = process.env.PYTHON_AGENT_KEY;
+  if (!apiKey) throw new Error("PYTHON_AGENT_KEY environment variable is not configured.");
+
   const response = await axios.post(`${AI_BASE_URL}/testing/test`, {
     action: "evaluate-text",
     studentAnswer,
     answerKey,
     contextNotes,
     maxMarks: Number(maxMarks) || 10
+  }, {
+    headers: {
+      "X-API-Key": apiKey
+    }
   });
   if (!response.data?.success) {
     throw new Error(response.data?.detail || "Agent direct evaluation failed.");
@@ -305,6 +355,11 @@ testRouter.post("/test/sandbox/ocr", upload.single("file"), async (req, res) => 
     const file = req.file;
     if (!file) {
       return res.status(400).json({ success: false, message: "Missing file." });
+    }
+
+    const allowedOcrMimeTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+    if (!allowedOcrMimeTypes.includes(file.mimetype)) {
+      return res.status(400).json({ success: false, message: "Invalid file type. Only JPEG, PNG, WEBP, and PDF are allowed for OCR." });
     }
 
     // Upload to ImageKit
@@ -392,6 +447,11 @@ testRouter.post("/test/sandbox/evaluate-full", upload.single("file"), async (req
       return res.status(400).json({ success: false, message: "Missing file or questionText." });
     }
 
+    const allowedOcrMimeTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+    if (!allowedOcrMimeTypes.includes(file.mimetype)) {
+      return res.status(400).json({ success: false, message: "Invalid file type. Only JPEG, PNG, WEBP, and PDF are allowed for evaluation." });
+    }
+
     const sandbox = await getOrCreateSandboxRecords();
 
     // Upload answer sheet page to ImageKit
@@ -413,14 +473,21 @@ testRouter.post("/test/sandbox/evaluate-full", upload.single("file"), async (req
       extractedText = "OCR Extraction failed/unavailable in backend: " + ocrErr.message;
     }
 
+    const apiKey = process.env.PYTHON_AGENT_KEY;
+    if (!apiKey) throw new Error("PYTHON_AGENT_KEY environment variable is not configured.");
+
     // Call Python full evaluate endpoint
     const aiResponse = await axios.post(`${AI_BASE_URL}/student/evaluate`, {
       raw_input: fileUrl,
       question: questionText,
       max_marks: Number(maxMarks) || 10,
       exam_id: sandbox.examId.toString(),
-      namespace: sandbox.collegeId.toString(),
+      namespace: `sandbox-${sandbox.collegeId.toString()}`,
       question_id: "Q1"
+    }, {
+      headers: {
+        "X-API-Key": apiKey
+      }
     });
 
     // Enrich response with OCR diagnostic text for the UI
@@ -462,14 +529,21 @@ testRouter.post("/test/sandbox/evaluate-full-by-url", async (req, res) => {
       extractedText = "OCR Extraction failed/unavailable in backend: " + ocrErr.message;
     }
 
+    const apiKey = process.env.PYTHON_AGENT_KEY;
+    if (!apiKey) throw new Error("PYTHON_AGENT_KEY environment variable is not configured.");
+
     // Call Python full evaluate endpoint
     const aiResponse = await axios.post(`${AI_BASE_URL}/student/evaluate`, {
       raw_input: fileUrl,
       question: questionText,
       max_marks: Number(maxMarks) || 10,
       exam_id: sandbox.examId.toString(),
-      namespace: sandbox.collegeId.toString(),
+      namespace: `sandbox-${sandbox.collegeId.toString()}`,
       question_id: "Q1"
+    }, {
+      headers: {
+        "X-API-Key": apiKey
+      }
     });
 
     // Enrich response with OCR diagnostic text for the UI
@@ -496,6 +570,23 @@ testRouter.delete("/test/sandbox/cleanup", async (req, res) => {
   try {
     const college = await College.findOne({ collegeName: "AISS AI Sandbox College" });
     if (college) {
+      const namespace = `sandbox-${college._id.toString()}`;
+      const apiKey = process.env.PYTHON_AGENT_KEY;
+      if (!apiKey) throw new Error("PYTHON_AGENT_KEY environment variable is not configured.");
+
+      try {
+        await axios.post(`${AI_BASE_URL}/testing/test`, {
+          action: "cleanup-namespace",
+          namespace: namespace
+        }, {
+          headers: {
+            "X-API-Key": apiKey
+          }
+        });
+      } catch (err) {
+        console.error("Failed to delete sandbox namespace vectors from Pinecone:", err.message);
+      }
+
       const exams = await Exam.find({ collegeId: college._id });
       const examIds = exams.map(e => e._id);
       
@@ -514,6 +605,110 @@ testRouter.delete("/test/sandbox/cleanup", async (req, res) => {
     return res.status(200).json({ success: true, message: "Sandbox mock objects deleted successfully." });
   } catch (error) {
     console.error("Sandbox Cleanup Error:", error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST /test/admin/reconcile
+testRouter.post("/test/admin/reconcile", async (req, res) => {
+  try {
+    // 1. Find and delete all pending materials older than 1 hour
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const pendingMaterials = await TeacherMaterial.find({
+      status: "pending",
+      createdAt: { $lt: oneHourAgo }
+    });
+    
+    let deletedPendingCount = 0;
+    for (const mat of pendingMaterials) {
+      if (mat.imageKitFileId && mat.imageKitFileId !== "unknown") {
+        try {
+          await imagekit.deleteFile(mat.imageKitFileId);
+        } catch (ikErr) {
+          console.error(`Failed to delete ImageKit file ${mat.imageKitFileId} for pending material:`, ikErr.message);
+        }
+      }
+      await TeacherMaterial.findByIdAndDelete(mat._id);
+      deletedPendingCount++;
+    }
+
+    // 2. Query all active materials and call Python agent to reconcile Pinecone vectors
+    const allMaterials = await TeacherMaterial.find({}, "_id");
+    const allMaterialIds = allMaterials.map(m => m._id.toString());
+
+    let pythonAgentReconciliationStatus = "Skipped";
+    try {
+      const apiKey = process.env.PYTHON_AGENT_KEY;
+      if (!apiKey) throw new Error("PYTHON_AGENT_KEY environment variable is not configured.");
+
+      const aiResponse = await axios.post(`${AI_BASE_URL}/testing/reconcile-vectors`, {
+        valid_material_ids: allMaterialIds
+      }, {
+        headers: {
+          "X-API-Key": apiKey,
+          "Content-Type": "application/json"
+        }
+      });
+      pythonAgentReconciliationStatus = aiResponse.data.message;
+    } catch (aiErr) {
+      console.error("Failed to reconcile Pinecone vectors via Python agent:", aiErr.message);
+      pythonAgentReconciliationStatus = "Failed: " + aiErr.message;
+    }
+
+    // 3. Clean up ImageKit CDN files that are no longer referenced in Answers or TeacherMaterial schemas
+    let ikFiles = [];
+    try {
+      ikFiles = await imagekit.listFiles({
+        limit: 1000
+      });
+    } catch (ikListErr) {
+      console.error("Failed to list files from ImageKit during reconciliation:", ikListErr.message);
+    }
+
+    const referencedMaterialFileIds = new Set(
+      (await TeacherMaterial.find({}, "imageKitFileId")).map(m => m.imageKitFileId).filter(Boolean)
+    );
+
+    const answers = await Answers.find({});
+    const referencedAnswerFileIds = new Set();
+    for (const ansDoc of answers) {
+      if (ansDoc.answers) {
+        for (const [qId, ansFile] of ansDoc.answers.entries()) {
+          if (ansFile && ansFile.imageKitFileId) {
+            referencedAnswerFileIds.add(ansFile.imageKitFileId);
+          }
+        }
+      }
+    }
+
+    let deletedImageKitFilesCount = 0;
+    const deletedImageKitFiles = [];
+    for (const file of ikFiles) {
+      const fileId = file.fileId;
+      if (!referencedMaterialFileIds.has(fileId) && !referencedAnswerFileIds.has(fileId)) {
+        try {
+          await imagekit.deleteFile(fileId);
+          deletedImageKitFilesCount++;
+          deletedImageKitFiles.push(file.name);
+          console.log(`Deleted orphaned ImageKit file: ${fileId} (${file.name})`);
+        } catch (delErr) {
+          console.error(`Failed to delete orphaned ImageKit file ${fileId}:`, delErr.message);
+        }
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      summary: {
+        deletedPendingMaterialsCount: deletedPendingCount,
+        deletedImageKitFilesCount,
+        deletedImageKitFiles,
+        pineconeReconciliation: pythonAgentReconciliationStatus
+      }
+    });
+
+  } catch (error) {
+    console.error("Reconciliation Error:", error);
     return res.status(500).json({ success: false, error: error.message });
   }
 });

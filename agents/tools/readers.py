@@ -11,7 +11,7 @@ OCR_API_KEY = os.getenv("OCR_SPACE_API_KEY")
 
 def OCR_image_to_text(image_url):
     # download file locally first
-    img_response = requests.get(image_url)
+    img_response = requests.get(image_url, timeout=30)
 
     if img_response.status_code != 200:
         raise Exception("Failed to download file from ImageKit")
@@ -41,7 +41,8 @@ def OCR_image_to_text(image_url):
     response = requests.post(
         "https://api.ocr.space/parse/image",
         files=files,
-        data=payload
+        data=payload,
+        timeout=30
     )
 
     result = response.json()
@@ -60,7 +61,7 @@ def OCR_image_to_text(image_url):
 
 
 def load_pdf_text(pdf_url):
-    response = requests.get(pdf_url)
+    response = requests.get(pdf_url, timeout=30)
 
     if response.status_code != 200:
         raise Exception("Failed to download PDF")

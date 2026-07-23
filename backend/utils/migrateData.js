@@ -7,6 +7,7 @@ import Faculty from "../models/faculty.js";
 import Student from "../models/student.js";
 import Timetable from "../models/timetable.js";
 import Exam from "../models/exam.js";
+import TeacherMaterial from "../models/teacherMaterial.js";
 
 async function runMigration() {
   try {
@@ -103,7 +104,49 @@ async function runMigration() {
       }
     }
 
-    console.log("\n🎉 Database migration completed successfully!");
+    // 5. Migrate Teacher Materials
+    console.log("\n[Migration] Migrating Teacher Materials...");
+    const result = await TeacherMaterial.updateMany(
+      { scope: { $exists: false } },
+      [
+        {
+          $set: {
+            scope: {
+              $cond: {
+                if: { $eq: ["$materialType", "answer_key"] },
+                then: {
+                  $cond: {
+                    if: { $and: [{ $ne: ["$questionId", null] }, { $ne: ["$questionId", ""] }] },
+                    then: "question",
+                    else: "entire_exam"
+                  }
+                },
+                else: {
+                  $cond: {
+                    if: { $eq: ["$materialType", "rubric"] },
+                    then: {
+                      $cond: {
+                        if: { $and: [{ $ne: ["$questionId", null] }, { $ne: ["$questionId", ""] }] },
+                        then: "question",
+                        else: "entire_exam"
+                      }
+                    },
+                    else: null
+                  }
+                }
+              }
+            },
+            version: 1,
+            isActiveVersion: true,
+            parentMaterialId: null,
+            chunkCount: 0
+          }
+        }
+      ]
+    );
+    console.log(`[Migration] Migrated ${result.modifiedCount} TeacherMaterial records.`);
+
+    console.log("\nDatabase migration completed successfully!");
     process.exit(0);
   } catch (err) {
     console.error("❌ Migration failed:", err);

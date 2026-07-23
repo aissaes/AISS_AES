@@ -1,6 +1,6 @@
 import express from "express";
 import { uploadExam } from "../middlewares/uploadMiddleware.js";
-import { reuploadAnswer, UploadAnswer, finalizeSubmission } from "../controllers/answerController.js";
+import { reuploadAnswer, UploadAnswer, finalizeSubmission, getActiveExamSession } from "../controllers/student/answerController.js";
 import { verifyToken } from "../middlewares/authMiddleware.js";
 import { isStudent } from "../middlewares/roleMiddleware.js"; // Ensures only students can upload
 
@@ -10,5 +10,6 @@ const answerRoutes = express.Router();
 answerRoutes.post('/upload', verifyToken, isStudent, uploadExam.single("file"), UploadAnswer);
 answerRoutes.post('/reupload', verifyToken, isStudent, uploadExam.single("file"), reuploadAnswer);
 answerRoutes.post("/finalize", verifyToken, isStudent, finalizeSubmission);
+answerRoutes.get("/active-session", verifyToken, isStudent, getActiveExamSession);
 
 export default answerRoutes;

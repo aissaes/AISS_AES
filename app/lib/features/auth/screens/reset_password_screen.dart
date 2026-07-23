@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
-import '../repositories/auth_repository_impl.dart';
+import '../services/auth_service.dart';
 import '../../../shared/widgets/custom_text_field.dart';
 import '../../../shared/widgets/primary_button.dart';
 
@@ -69,7 +69,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> with 
     });
 
     try {
-      await ref.read(authRepositoryProvider).resetForgottenPassword(widget.email, widget.otp, newPassword);
+      await ref.read(authServiceProvider).resetForgottenPassword(widget.email, widget.otp, newPassword);
       setState(() {
         _successMessage = 'Your password has been successfully reset! Redirecting to login...';
       });

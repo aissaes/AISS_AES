@@ -77,77 +77,64 @@ export const registerFaculty = async (req, res) => {
       phone
     });
 
-    // 2. Route the approval to the correct authority
-    const hod = await Faculty.findOne({
-      collegeId,
-      department: deptId,
-      role: "hod"
-    });
+    const detailsGrid = [
+      { label: 'Applicant Name', value: faculty.name },
+      { label: 'Email Address', value: faculty.email },
+      { label: 'College', value: collegeDoc?.collegeName || 'N/A' },
+      { label: 'Department', value: deptName },
+      { label: 'Assigned Course', value: courseName },
+      { label: 'Phone Number', value: faculty.phone || 'Not provided' }
+    ];
 
-    if (hod) {
-      hod.pendingApprovals.push(faculty._id);
-      await hod.save();
-      await sendEmail(hod.email,"New Faculty Registration Request",
-        `Dear ${hod.name},
-        A new faculty member has submitted a registration request and is awaiting your approval.
+    // 2. Route approval to HOD if assigned, fallback to College Admin
+    const authority = (await Faculty.findOne({ collegeId, department: deptId, role: "hod" }))
+                   || (await Faculty.findOne({ collegeId, role: "collegeAdmin" }));
 
-        Faculty Details:
-        - Name: ${faculty.name}
-        - Email: ${faculty.email}
-        - Department: ${deptName}
-        - Course: ${courseName}
-        - College: ${collegeDoc.collegeName}
-        - Phone: ${faculty.phone}
+    if (authority) {
+      authority.pendingApprovals.push(faculty._id);
+      await authority.save();
 
-        Please review and approve or reject this request from your dashboard.
-
-        Regards,
-        AISS Team`
-        );
-    } else {
-      const collegeAdmin = await Faculty.findOne({
-        collegeId,
-        role: "collegeAdmin"
+      const isHOD = authority.role === "hod";
+      const htmlContent = generateRegistrationDetailsTemplate({
+        recipientName: authority.name,
+        title: isHOD ? "New Faculty Registration Request" : "Faculty Approval Required (No HOD Assigned)",
+        subtitle: isHOD 
+          ? "A new faculty member has submitted a registration request and is awaiting your review."
+          : "A new faculty registration has been received for a department without an assigned HOD.",
+        badgeText: isHOD ? "HOD Approval Required" : "Admin Approval Required",
+        badgeColor: isHOD ? "#f59e0b" : "#ea580c",
+        details: detailsGrid,
+        footerNote: isHOD 
+          ? "Please review and approve or reject this request from your HOD Dashboard."
+          : "Since no HOD is assigned to this department, please review and approve or reject this registration from your Admin Dashboard."
       });
 
-      // 3. Safety check and pushing to collegeAdmin's pending list
-      if (collegeAdmin) {
-        collegeAdmin.pendingApprovals.push(faculty._id);
-        await collegeAdmin.save();
-        await sendEmail(collegeAdmin.email,"Faculty Approval Required (No HOD Assigned)",
-              `Dear ${collegeAdmin.name},
-
-            A new faculty registration has been received for a department without an assigned HOD.
-
-            Faculty Details:
-            - Name: ${faculty.name}
-            - Email: ${faculty.email}
-            - Department: ${deptName}
-            - Course: ${courseName}
-            - College: ${collegeDoc.collegeName}
-            - Phone: ${faculty.phone}
-
-            Since no HOD is assigned, you are requested to review and approve or reject this registration.
-
-            Regards,
-            AISS Team`
-            );
-      } else {
-        console.warn(`No College Admin or HOD found for college: ${collegeId}`);
-        // Optionally, handle what happens if a college has zero admins yet.
-      }
+      await sendEmail(
+        authority.email,
+        isHOD ? "New Faculty Registration Request - AISS AES" : "Faculty Approval Required (No HOD Assigned) - AISS AES",
+        `New registration request from ${faculty.name} awaiting your approval.`,
+        htmlContent
+      );
+    } else {
+      console.warn(`[Registration] No HOD or College Admin found for collegeId: ${collegeId}`);
     }
+
+    // 3. Send confirmation email to applicant
+    const recipientHtml = generateRegistrationDetailsTemplate({
+      recipientName: faculty.name,
+      title: "Registration Request Received",
+      subtitle: "We have successfully received your registration request for the AISS AES platform. Your account is currently PENDING approval by your College Administration.",
+      badgeText: "Pending Approval",
+      badgeColor: "#3b82f6",
+      details: detailsGrid,
+      footerNote: "You will receive another email notification once your account has been approved and activated."
+    });
 
     await sendEmail(
       faculty.email,
-      "Registration Request Received - AISS",
-      `Dear ${faculty.name},
-      \n\nWe have successfully received your registration request for the AISS platform.
-      \n\nYour account is currently PENDING approval by your College Administration.
-       You will receive another email once your account is activated.
-       \n\nHere are the details you submitted:
-       \n- Name: ${faculty.name}\n- College: ${collegeDoc.collegeName}\n- Department: ${deptName}\n- Course: ${courseName}\n- Phone: ${faculty.phone}
-       \n\nIf any of these details are incorrect, please contact your administration.\n\nBest Regards,\nThe AISS Team`
+      "Registration Request Received - AISS AES",
+      "Your registration request has been received and is pending approval.",
+      recipientHtml
     );
 
     res.json({
@@ -218,18 +205,34 @@ export const verifyOTP = async(req,res)=>{
 
     await faculty.save();
 
-    // JWT creation
+    // 1. Access Token (6 hours)
     const token = jwt.sign(
-      {
-        id: faculty._id,
-        role: faculty.role
-      },
+      { id: faculty._id, role: faculty.role },
       process.env.JWT_SECRET,
+      { expiresIn: "6h" }
+    );
+
+    // 2. Refresh Token (7 days)
+    const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET || (process.env.JWT_SECRET + "_refresh");
+    const refreshToken = jwt.sign(
+      { id: faculty._id, role: faculty.role },
+      refreshTokenSecret,
       { expiresIn: "7d" }
     );
 
+    // 3. Store Refresh Token in DB for instant revocation
+    faculty.refreshToken = refreshToken;
+    await faculty.save();
+
     // ✅ Set token in cookie
     res.cookie("token", token, {
+      httpOnly: true,     // cannot be accessed by JS
+      secure: true,       // required for SameSite=None
+      sameSite: "none",   // required for cross-domain cookies
+      maxAge: 6 * 60 * 60 * 1000, // 6 hours
+    });
+
+    res.cookie("refreshToken", refreshToken, {
       httpOnly: true,     // cannot be accessed by JS
       secure: true,       // required for SameSite=None
       sameSite: "none",   // required for cross-domain cookies
@@ -238,24 +241,94 @@ export const verifyOTP = async(req,res)=>{
 
     res.json({
       message: "Login successful",
-      role: faculty.role 
+      role: faculty.role,
+      token,
+      refreshToken
     });
 
   }
-    catch(err) {
+  catch (err) {
     console.error(" CRASH IN VERIFY OTP:", err); // This forces it to print in the terminal!
-    res.status(500).json({ 
-      message: "Internal server error", 
-      error: err.message 
+    res.status(500).json({
+      message: "Internal server error",
+      error: err.message
     });
   }
 };
 
-export const logoutFaculty = (req, res) => {
+export const logoutFaculty = async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+    if (refreshToken) {
+      const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET || (process.env.JWT_SECRET + "_refresh");
+      try {
+        const decoded = jwt.verify(refreshToken, refreshTokenSecret);
+        await Faculty.findByIdAndUpdate(decoded.id, { refreshToken: null });
+      } catch (e) {}
+    }
+  } catch (e) {}
+
   res.clearCookie("token", {
     httpOnly: true,
     secure: true,
     sameSite: "none",
   });
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+  });
   res.status(200).json({ message: "Logged out successfully" });
+};
+
+export const refreshFacultyToken = async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+    if (!refreshToken) {
+      return res.status(401).json({ message: "Refresh Token is required" });
+    }
+
+    const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET || (process.env.JWT_SECRET + "_refresh");
+    const decoded = jwt.verify(refreshToken, refreshTokenSecret);
+
+    const faculty = await Faculty.findById(decoded.id);
+    if (!faculty || faculty.refreshToken !== refreshToken) {
+      return res.status(403).json({ message: "Invalid or revoked Refresh Token. Please log in again." });
+    }
+
+    // ROTATION: Issue NEW 6-hour Access Token & NEW 7-day Refresh Token
+    const newToken = jwt.sign(
+      { id: faculty._id, role: faculty.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "6h" }
+    );
+
+    const newRefreshToken = jwt.sign(
+      { id: faculty._id, role: faculty.role },
+      refreshTokenSecret,
+      { expiresIn: "7d" }
+    );
+
+    // Update DB with rotated Refresh Token
+    faculty.refreshToken = newRefreshToken;
+    await faculty.save();
+
+    res.cookie("token", newToken, {
+      httpOnly: true,     // cannot be accessed by JS
+      secure: true,       // required for SameSite=None
+      sameSite: "none",   // required for cross-domain cookies
+      maxAge: 6 * 60 * 60 * 1000, // 6 hours
+    });
+
+    res.cookie("refreshToken", newRefreshToken, {
+      httpOnly: true,     // cannot be accessed by JS
+      secure: true,       // required for SameSite=None
+      sameSite: "none",   // required for cross-domain cookies
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    return res.json({ token: newToken, refreshToken: newRefreshToken, message: "Token refreshed and rotated successfully" });
+  } catch (err) {
+    return res.status(403).json({ message: "Expired or invalid Refresh Token", error: err.message });
+  }
 };

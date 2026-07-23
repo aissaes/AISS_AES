@@ -40,6 +40,30 @@ const teacherMaterialSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  scope: {
+    type: String,
+    enum: ["entire_exam", "question"],
+    default: null
+  },
+  version: {
+    type: Number,
+    default: 1
+  },
+  parentMaterialId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "TeacherMaterial",
+    default: null,
+    index: true
+  },
+  isActiveVersion: {
+    type: Boolean,
+    default: true,
+    index: true
+  },
+  chunkCount: {
+    type: Number,
+    default: 0
+  },
   uploadedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Faculty",
@@ -49,6 +73,12 @@ const teacherMaterialSchema = new mongoose.Schema({
   uploadedAt: {
     type: Date,
     default: Date.now
+  },
+  status: {
+    type: String,
+    enum: ["pending", "active", "failed"],
+    default: "pending",
+    index: true
   }
 }, { timestamps: true });
 

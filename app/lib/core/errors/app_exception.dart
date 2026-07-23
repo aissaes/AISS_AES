@@ -25,3 +25,7 @@ class OfflineException extends AppException {
   OfflineException([String message = 'No internet connection or server is offline.']) 
       : super(message, "Offline: ");
 }
+
+class RateLimitException extends AppException {
+  RateLimitException(String message) : super(message, "Rate Limit Error: ");
+}

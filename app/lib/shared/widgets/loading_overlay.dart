@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/widgets/app_loading_indicator.dart';
+import 'app_loading_indicator.dart';
 
 class LoadingOverlay extends StatelessWidget {
   final bool isLoading;

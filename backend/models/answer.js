@@ -6,7 +6,8 @@ const answerFileSchema = new mongoose.Schema({
   mimeType: { type: String, required: true },
   originalFileName: { type: String, required: true },
   size: { type: Number, required: true },
-  uploadedAt: { type: Date, required: true, default: Date.now }
+  uploadedAt: { type: Date, required: true, default: Date.now },
+  imageKitFileId: { type: String, required: false }
 }, { _id: false });
 
 const answersSchema = new mongoose.Schema({
@@ -24,6 +25,18 @@ const answersSchema = new mongoose.Schema({
     type: Map,
     of: answerFileSchema,
   },
+  isLockedForEvaluation: {
+    type: Boolean,
+    default: false
+  },
+  isSubmitted: {
+    type: Boolean,
+    default: false
+  },
+  submittedAt: {
+    type: Date,
+    default: null
+  }
 });
 
 // 1 student per exam

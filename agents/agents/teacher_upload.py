@@ -49,46 +49,55 @@ def ocr_agent(state: TeacherUploadState):
     url = state["raw_input"]
     extracted_text = ""
 
-    # Check headers for actual content type
+    # Check headers for actual content type with timeout
     try:
-        head_response = requests.head(url, allow_redirects=True)
+        head_response = requests.head(url, allow_redirects=True, timeout=10)
         content_type = head_response.headers.get('Content-Type', '').lower()
     except Exception as e:
         print(f"Could not fetch headers: {e}")
         content_type = ""
 
-    # 1. Handle PDFs (Robust checking matches agents.py)
+    # 1. Handle PDFs
     if 'pdf' in content_type or '.pdf' in url.lower():
         print("Input is a PDF. Checking for digital text...")
-        response = requests.get(url)
-        pdf_file = BytesIO(response.content)
         
         try:
+            response = requests.get(url, timeout=30)
+            pdf_file = BytesIO(response.content)
             reader = PdfReader(pdf_file)
             digital_text = ""
             
-            # Check the first few pages for actual digital text
-            for i in range(min(len(reader.pages), 3)):
-                page_text = reader.pages[i].extract_text()
+            # Check ALL pages for digital text
+            for page in reader.pages:
+                page_text = page.extract_text()
                 if page_text:
                     digital_text += page_text
 
-            # Decision Logic: If mostly empty, it's a scanned PDF. Use OCR.
-            if len(digital_text.strip()) < 50:
-                print("PDF is scanned or empty. Switching to OCR...")
+            # Decision Logic: Check average characters per page
+            avg_chars = len(digital_text.strip()) / len(reader.pages) if len(reader.pages) > 0 else 0
+            if avg_chars < 100:
+                print(f"PDF average characters per page ({avg_chars:.1f}) is low. Switching to OCR...")
                 extracted_text = OCR_image_to_text(url)
             else:
-                print("Digital text found. Using PDF Loader...")
+                print(f"Digital text found (avg {avg_chars:.1f} chars/page). Using PDF Loader...")
                 extracted_text = load_pdf_text(url)
                 
         except Exception as e:
             print(f"Error reading PDF: {e}. Falling back to OCR.")
-            extracted_text = OCR_image_to_text(url)
+            try:
+                extracted_text = OCR_image_to_text(url)
+            except Exception as ocr_err:
+                print(f"OCR fallback failed: {ocr_err}")
+                extracted_text = ""
     
-    # 2. Handle Images Directly (or anything else we don't recognize)
+    # 2. Handle Images Directly
     else:
         print("Input is an image or unknown. Calling OCR...")
-        extracted_text = OCR_image_to_text(url)
+        try:
+            extracted_text = OCR_image_to_text(url)
+        except Exception as ocr_err:
+            print(f"OCR failed: {ocr_err}")
+            extracted_text = ""
 
     return {"extracted_text": extracted_text}
 

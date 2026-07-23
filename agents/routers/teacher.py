@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from tools.auth import verify_api_key
 
 from schemas.teacher_key_upload import TeacherUploadRequest 
 
@@ -6,7 +7,8 @@ from agents.teacher_upload import upload_app as teacher_upload
 
 router = APIRouter(
     prefix="/teacher",
-    tags=["Teacher Operations"]
+    tags=["Teacher Operations"],
+    dependencies=[Depends(verify_api_key)]
 )
 
 @router.post(
@@ -25,7 +27,8 @@ async def upload_teacher_data(request: TeacherUploadRequest):
         
         return {
             "status": "success",
-            "message": final_state.get("upload_status", "Upload complete.")
+            "message": final_state.get("upload_status", "Upload complete."),
+            "chunk_count": len(final_state.get("chunks", []))
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
