@@ -94,10 +94,10 @@ app.use("/faculty/exam", evaluationRouter);
 app.use("/results", resultRoutes);
 
 
-// Local dev server — Vercel uses the export below instead
+// Local dev server - Vercel uses the export below instead
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`🚀 Backend running on http://localhost:${PORT}`);
+  console.log(` Backend running on http://localhost:${PORT}`);
 });
 
 export default app;

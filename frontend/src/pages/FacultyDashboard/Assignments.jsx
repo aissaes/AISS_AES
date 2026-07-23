@@ -11,12 +11,12 @@ const Assignments = () => {
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  /* ── Draft Modal state ── */
+  /* -- Draft Modal state -- */
   const [draftModal, setDraftModal] = useState({ open: false, examId: null, examName: '', paperId: null, maxMarks: 0, isRevision: false });
   const [builderData, setBuilderData] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  /* ── Fetch ── */
+  /* -- Fetch -- */
   useEffect(() => { fetchExams(); }, []);
 
   const fetchExams = async () => {
@@ -31,7 +31,7 @@ const Assignments = () => {
     }
   };
 
-  /* ── Open draft modal (new or revision) ── */
+  /* -- Open draft modal (new or revision) -- */
   const openDraft = async (exam, isRevision = false) => {
     let paperData = null;
 
@@ -57,7 +57,7 @@ const Assignments = () => {
     });
   };
 
-  /* ── Submit paper ── */
+  /* -- Submit paper -- */
   const handleSubmit = async (payload) => {
     const hasContent = payload.sections.some(sec => sec.some(q => q.text.trim()));
     if (!hasContent) { toast('Please add at least one question.', 'warning'); return; }
@@ -165,7 +165,7 @@ const Assignments = () => {
         </div>
       </div>
 
-      {/* ── Draft Modal ── */}
+      {/* -- Draft Modal -- */}
       <Modal
         isOpen={draftModal.open}
         onClose={() => !submitting && closeDraftModal()}

@@ -55,7 +55,7 @@ const QuestionPaperBuilder = ({ initialData, maxMarks, onCancel, onSubmit, submi
     }
   }, [initialData]);
 
-  /* ── Section & Question helpers ── */
+  /* -- Section & Question helpers -- */
   const addSection = () => {
     setSections([...sections, [{ ...baseQuestion }]]);
     setSectionChoices([...sectionChoices, { attempt: 0 }]);
@@ -104,7 +104,7 @@ const QuestionPaperBuilder = ({ initialData, maxMarks, onCancel, onSubmit, submi
     setSections(next);
   };
 
-  /* ── Instruction helpers ── */
+  /* -- Instruction helpers -- */
   const addInstruction = () => setInstructions([...instructions, '']);
   const updateInstruction = (idx, val) => {
     const next = [...instructions];
@@ -396,7 +396,7 @@ const QuestionPaperBuilder = ({ initialData, maxMarks, onCancel, onSubmit, submi
                                     <div className={styles.orLinkerActive}>
                                       <div className={styles.orLine} />
                                       <button onClick={() => updateSubQuestion(sIdx, qIdx, subIdx, 'isOrNext', false)} className={styles.orBtnActive}>
-                                        — OR — (unlink)
+                                        - OR - (unlink)
                                       </button>
                                       <div className={styles.orLine} />
                                     </div>
@@ -423,7 +423,7 @@ const QuestionPaperBuilder = ({ initialData, maxMarks, onCancel, onSubmit, submi
                           <div className={styles.orLinkerActive}>
                             <div className={styles.orLine} />
                             <button onClick={() => updateQuestion(sIdx, qIdx, 'isOrNext', false)} className={styles.orBtnActive}>
-                              — OR — (unlink)
+                              - OR - (unlink)
                             </button>
                             <div className={styles.orLine} />
                           </div>

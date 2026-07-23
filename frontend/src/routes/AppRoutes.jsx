@@ -34,28 +34,28 @@ const AppRoutes = () => (
 
     <Route path="/admin/login" element={<AdminLogin />} />
 
-    {/* Faculty Dashboard — accessible by faculty, hod, collegeAdmin */}
+    {/* Faculty Dashboard - accessible by faculty, hod, collegeAdmin */}
     <Route path="/faculty/*" element={
       <ProtectedRoute allowedRoles={['faculty', 'hod', 'collegeAdmin']}>
         <FacultyDashboard />
       </ProtectedRoute>
     } />
 
-    {/* HOD Dashboard — accessible by hod */}
+    {/* HOD Dashboard - accessible by hod */}
     <Route path="/hod/*" element={
       <ProtectedRoute allowedRoles={['hod']}>
         <HODDashboard />
       </ProtectedRoute>
     } />
 
-    {/* College Admin Dashboard — accessible by collegeAdmin */}
+    {/* College Admin Dashboard - accessible by collegeAdmin */}
     <Route path="/collegeadmin/*" element={
       <ProtectedRoute allowedRoles={['collegeAdmin']}>
         <CollegeAdminDashboard />
       </ProtectedRoute>
     } />
 
-    {/* Overall Admin Dashboard — accessible by overallAdmin */}
+    {/* Overall Admin Dashboard - accessible by overallAdmin */}
     <Route path="/admin/*" element={
       <ProtectedRoute allowedRoles={['overallAdmin']}>
         <OverallAdminDashboard />

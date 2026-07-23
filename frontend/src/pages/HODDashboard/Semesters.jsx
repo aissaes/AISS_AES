@@ -189,7 +189,7 @@ const Semesters = () => {
         </div>
       </div>
 
-      {/* ── Create Semester Modal ── */}
+      {/* -- Create Semester Modal -- */}
       <Modal
         isOpen={createModal}
         onClose={() => !submitting && setCreateModal(false)}
@@ -233,7 +233,7 @@ const Semesters = () => {
         </div>
       </Modal>
 
-      {/* ── Edit Semester Modal ── */}
+      {/* -- Edit Semester Modal -- */}
       <Modal
         isOpen={editModal.open}
         onClose={() => !submitting && setEditModal({ open: false, id: null, semesterName: '', academicYear: '', semesterNumber: 1 })}

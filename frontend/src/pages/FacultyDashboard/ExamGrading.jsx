@@ -827,7 +827,7 @@ const ExamGrading = () => {
                     statusColor = 'var(--danger)';
                   }
 
-                  const marks = (isCompleted || isUncertain) ? `${result.totalMarksObtained} / ${exam?.maxMarks || 30}` : '—';
+                  const marks = (isCompleted || isUncertain) ? `${result.totalMarksObtained} / ${exam?.maxMarks || 30}` : '-';
                   const isPendingAI = actionLoading[student._id];
 
                   return (
@@ -933,7 +933,7 @@ const ExamGrading = () => {
         </div>
       </div>
 
-      {/* ── Teaching Materials Upload/Replace Modal ── */}
+      {/* -- Teaching Materials Upload/Replace Modal -- */}
       <Modal
         isOpen={isMaterialsModalOpen}
         onClose={() => !uploadingMaterials && setIsMaterialsModalOpen(false)}
@@ -1149,7 +1149,7 @@ const ExamGrading = () => {
         </form>
       </Modal>
 
-      {/* ── Version History Modal (Emoji-free) ── */}
+      {/* -- Version History Modal (Emoji-free) -- */}
       <Modal
         isOpen={isHistoryModalOpen}
         onClose={() => setIsHistoryModalOpen(false)}
@@ -1234,7 +1234,7 @@ const ExamGrading = () => {
         </div>
       </Modal>
 
-      {/* ── Publish/Unpublish Results Confirmation Modal ── */}
+      {/* -- Publish/Unpublish Results Confirmation Modal -- */}
       <Modal
         isOpen={publishConfirm.open}
         onClose={() => setPublishConfirm({ open: false, isCurrentlyPublished: false })}

@@ -2,7 +2,7 @@ import React from 'react';
 import { Plus, Users, Trash2 } from 'lucide-react';
 import styles from './TimetableEditor.module.css';
 
-/* ── Single Exam Form (used in both create and add-exam modals) ── */
+/* -- Single Exam Form (used in both create and add-exam modals) -- */
 export const ExamForm = ({ exam, index, onChange, onRemove, canRemove, facultyList, coursesList = [] }) => {
   const handleCourseChange = (courseId) => {
     const selectedCourse = coursesList.find(c => c._id === courseId);
@@ -116,7 +116,7 @@ export const ExamForm = ({ exam, index, onChange, onRemove, canRemove, facultyLi
   );
 };
 
-/* ── Timetable Meta Form (semester, exam type) ── */
+/* -- Timetable Meta Form (semester, exam type) -- */
 export const TimetableMetaForm = ({ formData, onChange, semestersList = [] }) => (
   <div className={styles.metaSection}>
     <h4 className={styles.metaTitle}>Timetable Details</h4>
@@ -153,7 +153,7 @@ export const TimetableMetaForm = ({ formData, onChange, semestersList = [] }) =>
   </div>
 );
 
-/* ── Add Another Subject Button ── */
+/* -- Add Another Subject Button -- */
 export const AddSubjectButton = ({ onClick }) => (
   <button type="button" onClick={onClick} className={styles.addSubjectBtn}>
     <Plus size={16} /> Add Another Subject

@@ -13,9 +13,9 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../components/Toast/Toast';
 import styles from './CollegeAdminDashboard.module.css';
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    Departments Tab Component
-══════════════════════════════════════════════════════ */
+====================================================== */
 const CollegeAdminDepartments = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -315,9 +315,9 @@ const CollegeAdminDepartments = () => {
   );
 };
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    Faculty Roles Tab Component
-══════════════════════════════════════════════════════ */
+====================================================== */
 const CollegeAdminFaculty = () => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -505,7 +505,7 @@ const CollegeAdminFaculty = () => {
       <Modal isOpen={makeHODModal.open} onClose={() => !makeHODLoading && setMakeHODModal({ open: false, id: null, name: '', dept: '' })} title="Promote to HOD" footer={<><button className={styles.cancelModalBtn} onClick={() => setMakeHODModal({ open: false, id: null, name: '', dept: '' })} disabled={makeHODLoading}>Cancel</button><button className={styles.successModalBtn} onClick={confirmMakeHOD} disabled={makeHODLoading}>{makeHODLoading ? 'Promoting...' : 'Confirm Promotion'}</button></>}>
         <div className={styles.modalConfirmBox}>
           <Crown size={28} color="var(--success)" style={{marginBottom:10}}/>
-          <p className={styles.modalConfirmText}>Promote <strong>{makeHODModal.name}</strong> to <strong>Head of Department</strong>{makeHODModal.dept ? ` — ${makeHODModal.dept}` : ''}.</p>
+          <p className={styles.modalConfirmText}>Promote <strong>{makeHODModal.name}</strong> to <strong>Head of Department</strong>{makeHODModal.dept ? ` - ${makeHODModal.dept}` : ''}.</p>
           <p className={styles.modalConfirmSub}>They will receive an email notification indicating their new administrative scope.</p>
         </div>
       </Modal>
@@ -615,9 +615,9 @@ const CollegeAdminFaculty = () => {
 };
 
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    College Admin OVERVIEW (Includes Approvals)
-══════════════════════════════════════════════════════ */
+====================================================== */
 const CollegeAdminHome = () => {
   const { toast } = useToast();
   const [pending, setPending] = useState([]);
@@ -735,7 +735,7 @@ const CollegeAdminHome = () => {
                   <tr key={item._id} className={isApproving ? styles.rowApproving : ''}>
                     <td><div className={styles.nameCell}><div className={styles.miniAvatar}>{(item.name||'U')[0].toUpperCase()}</div>{item.name}</div></td>
                     {tab !== 'rejected' && <td className={styles.mutedCell}>{item.email}</td>}
-                    <td className={styles.mutedCell}>{typeof item.department === 'object' ? (item.department?.name || '—') : (item.department || '—')}</td>
+                    <td className={styles.mutedCell}>{typeof item.department === 'object' ? (item.department?.name || '-') : (item.department || '-')}</td>
                     {tab === 'rejected' && <td className={styles.reasonCell}>{item.rejectedReason || 'N/A'}</td>}
                     {tab === 'pending' && (
                       <td>
@@ -757,7 +757,7 @@ const CollegeAdminHome = () => {
         </div>}
       </div>
 
-      <Modal isOpen={rejectModal.open} onClose={() => !rejectLoading && setRejectModal({ open: false, id: null, name: '' })} title={`Reject — ${rejectModal.name}`} footer={<><button className={styles.cancelModalBtn} onClick={() => setRejectModal({ open: false, id: null, name: '' })} disabled={rejectLoading}>Cancel</button><button className={styles.dangerModalBtn} onClick={confirmReject} disabled={rejectLoading}>{rejectLoading ? 'Rejecting...' : 'Confirm Rejection'}</button></>}>
+      <Modal isOpen={rejectModal.open} onClose={() => !rejectLoading && setRejectModal({ open: false, id: null, name: '' })} title={`Reject - ${rejectModal.name}`} footer={<><button className={styles.cancelModalBtn} onClick={() => setRejectModal({ open: false, id: null, name: '' })} disabled={rejectLoading}>Cancel</button><button className={styles.dangerModalBtn} onClick={confirmReject} disabled={rejectLoading}>{rejectLoading ? 'Rejecting...' : 'Confirm Rejection'}</button></>}>
         <div className={styles.modalAlertWarn}><AlertTriangle size={16} /> This permanently deletes the request and emails the applicant.</div>
         <div className={styles.modalField}>
           <label className={styles.modalLabel}>Rejection Reason <span style={{color:'var(--danger)'}}>*</span></label>
@@ -775,9 +775,9 @@ const Empty = ({ text }) => (
   </div>
 );
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    COLLEGE ADMIN MANAGE STUDENTS TAB
-══════════════════════════════════════════════════════ */
+====================================================== */
 const CollegeAdminStudents = () => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -1145,12 +1145,12 @@ const CollegeAdminStudents = () => {
                       </span>
                     </td>
                     <td className={styles.mutedCell}>
-                      {student.departmentName || (typeof student.department === 'object' ? student.department?.name : student.department) || '—'}
+                      {student.departmentName || (typeof student.department === 'object' ? student.department?.name : student.department) || '-'}
                     </td>
                     <td className={styles.mutedCell}>
                       {Array.isArray(student.courses) && student.courses.length > 0
                         ? student.courses.map(c => typeof c === 'object' && c !== null ? (c.courseCode || c.courseName) : c).join(', ')
-                        : '—'}
+                        : '-'}
                     </td>
                     <td>
                       <div className={styles.actionBtns} style={{ justifyContent: 'flex-end', gap: '8px' }}>
@@ -1279,7 +1279,7 @@ const CollegeAdminStudents = () => {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, textAlign: 'center', padding: '10px 0' }}>
           <div className={styles.miniAvatar} style={{ width: 60, height: 60, fontSize: '1.5rem', margin: '0 auto', background: 'linear-gradient(135deg, var(--success), #059669)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            🔑
+            
           </div>
           <h4 style={{ margin: '8px 0 0 0', color: 'var(--text-1)', fontSize: '1.1rem', fontWeight: 700 }}>
             Temporary Password Generated
@@ -1555,7 +1555,7 @@ const CollegeAdminStudents = () => {
   );
 };
 
-/* ══ Dashboard shell ══ */
+/* == Dashboard shell == */
 const CollegeAdminDashboard = () => {
   const [pendingCount, setPendingCount] = useState(0);
 

@@ -267,7 +267,7 @@ export const reuploadAnswer = async (req, res) => {
     if (oldFileId) {
       try {
         await imagekit.deleteFile(oldFileId);
-        console.log(`🗑️ Successfully deleted old answer file ${oldFileId} from ImageKit`);
+        console.log(`️ Successfully deleted old answer file ${oldFileId} from ImageKit`);
       } catch (deleteError) {
         console.error("Failed to delete old file from ImageKit during reupload:", deleteError.message);
       }

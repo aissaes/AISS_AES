@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }) => {
   const checkAuth = useCallback(async () => {
     const cachedRole = storage.getRole();
 
-    // For overallAdmin, we don't have /me endpoint — they just stay if cookie valid
+    // For overallAdmin, we don't have /me endpoint - they just stay if cookie valid
     if (cachedRole === 'overallAdmin') {
       setIsOverallAdmin(true);
       setUser({ role: 'overallAdmin', name: 'Overall Admin' });
@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
-    // Always verify with server — profile lives ONLY in React memory
+    // Always verify with server - profile lives ONLY in React memory
     try {
       const res = await facultyAPI.getMe();
       const profile = res.data.profile;
@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }) => {
       setIsOverallAdmin(false);
       storage.setRole(profile.role);
     } catch {
-      // Not authenticated or token expired — clear everything
+      // Not authenticated or token expired - clear everything
       setUser(null);
       setIsOverallAdmin(false);
       storage.clear();

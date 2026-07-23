@@ -17,9 +17,9 @@ import Semesters from './Semesters';
 import Courses from './Courses';
 import styles from './HODDashboard.module.css';
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    HOD MANAGE FACULTY TAB
-══════════════════════════════════════════════════════ */
+====================================================== */
 const HODFaculty = () => {
   const { toast } = useToast();
   const [faculty, setFaculty] = useState([]);
@@ -101,9 +101,9 @@ const HODFaculty = () => {
 };
 
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    HOD HOME (OVERVIEW)
-══════════════════════════════════════════════════════ */
+====================================================== */
 const HODHome = () => {
   const { toast } = useToast();
 
@@ -235,7 +235,7 @@ const HODHome = () => {
         )}
       </div>
 
-      <Modal isOpen={rejectModal.open} onClose={() => !rejectLoading && setRejectModal({ open: false, id: null, name: '' })} title={`Reject — ${rejectModal.name}`} footer={<><button className={styles.cancelModalBtn} onClick={() => setRejectModal({ open: false, id: null, name: '' })} disabled={rejectLoading}>Cancel</button><button className={styles.dangerModalBtn} onClick={confirmReject} disabled={rejectLoading}>{rejectLoading ? 'Rejecting...' : 'Confirm Rejection'}</button></>}>
+      <Modal isOpen={rejectModal.open} onClose={() => !rejectLoading && setRejectModal({ open: false, id: null, name: '' })} title={`Reject - ${rejectModal.name}`} footer={<><button className={styles.cancelModalBtn} onClick={() => setRejectModal({ open: false, id: null, name: '' })} disabled={rejectLoading}>Cancel</button><button className={styles.dangerModalBtn} onClick={confirmReject} disabled={rejectLoading}>{rejectLoading ? 'Rejecting...' : 'Confirm Rejection'}</button></>}>
         <div className={styles.modalAlertWarn}><AlertTriangle size={16} /> This will permanently remove the registration and notify the applicant.</div>
         <div className={styles.modalField}>
           <label className={styles.modalLabel}>Reason for Rejection <span style={{color:'var(--danger)'}}>*</span></label>
@@ -673,7 +673,7 @@ const HODStudents = () => {
         )}
       </div>
 
-      {/* ── MULTI-STEP WIZARD MODAL ── */}
+      {/* -- MULTI-STEP WIZARD MODAL -- */}
       <Modal
         isOpen={assignModal}
         onClose={() => !actionLoading && setAssignModal(false)}
@@ -1023,7 +1023,7 @@ const HODStudents = () => {
       <Modal
         isOpen={unenrollModal.open}
         onClose={() => !actionLoading && setUnenrollModal({ open: false, studentId: null, studentName: '', courseId: '', courses: [] })}
-        title={`Unenroll — ${unenrollModal.studentName}`}
+        title={`Unenroll - ${unenrollModal.studentName}`}
         footer={
           <>
             <button className={styles.cancelModalBtn} onClick={() => setUnenrollModal({ open: false, studentId: null, studentName: '', courseId: '', courses: [] })} disabled={actionLoading}>
@@ -1061,11 +1061,11 @@ const HODStudents = () => {
         </div>
       </Modal>
 
-      {/* ── STUDENT EDIT ACADEMIC DETAILS MODAL ── */}
+      {/* -- STUDENT EDIT ACADEMIC DETAILS MODAL -- */}
       <Modal
         isOpen={editStudentModal.open}
         onClose={() => !actionLoading && setEditStudentModal(prev => ({ ...prev, open: false }))}
-        title={`Edit Student Academics — ${editStudentModal.studentName}`}
+        title={`Edit Student Academics - ${editStudentModal.studentName}`}
         className={styles.wideModal}
         footer={
           <>
@@ -1195,7 +1195,7 @@ const HODStudents = () => {
 
 
 
-/* ── Empty state ── */
+/* -- Empty state -- */
 const Empty = ({ text }) => (
   <div className={styles.empty}>
     <Inbox size={36} style={{ color: 'var(--text-3)', display: 'block', margin: '0 auto 12px auto' }} />
@@ -1203,7 +1203,7 @@ const Empty = ({ text }) => (
   </div>
 );
 
-/* ── Dashboard shell ── */
+/* -- Dashboard shell -- */
 const HODDashboard = () => {
   const [pendingCount, setPendingCount] = useState(0);
 

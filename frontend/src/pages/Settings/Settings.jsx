@@ -177,7 +177,7 @@ const Settings = () => {
         </div>
       </form>
 
-      {/* ── Change Password Section ── */}
+      {/* -- Change Password Section -- */}
       <div className={styles.divider} style={{ margin: '40px 0 24px 0' }} />
 
       <div className={styles.header}>

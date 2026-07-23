@@ -65,7 +65,7 @@ const SearchableSelect = ({ id, icon: Icon, placeholder, options, value, onChang
   );
 };
 
-/* ── Register page ── */
+/* -- Register page -- */
 const Register = () => {
   const navigate  = useNavigate();
   const { toast } = useToast();

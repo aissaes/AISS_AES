@@ -236,7 +236,7 @@ const Courses = () => {
         </div>
       </div>
 
-      {/* ── Add Course Modal ── */}
+      {/* -- Add Course Modal -- */}
       <Modal
         isOpen={createModal}
         onClose={() => !submitting && setCreateModal(false)}
@@ -295,7 +295,7 @@ const Courses = () => {
         </div>
       </Modal>
 
-      {/* ── Edit Course Modal ── */}
+      {/* -- Edit Course Modal -- */}
       <Modal
         isOpen={editModal.open}
         onClose={() => !submitting && setEditModal({ open: false, id: null, courseName: '', credits: 3 })}
@@ -333,7 +333,7 @@ const Courses = () => {
         </div>
       </Modal>
 
-      {/* ── Assign Faculty Modal ── */}
+      {/* -- Assign Faculty Modal -- */}
       <Modal
         isOpen={assignModal.open}
         onClose={() => !submitting && setAssignModal({ open: false, courseId: null, courseName: '', facultyId: '', academicYear: '2026-2027', isReassign: false })}
@@ -371,7 +371,7 @@ const Courses = () => {
         </div>
       </Modal>
 
-      {/* ── Delete/Archive Confirmation Modal ── */}
+      {/* -- Delete/Archive Confirmation Modal -- */}
       <Modal
         isOpen={deleteConfirmModal.open}
         onClose={() => setDeleteConfirmModal({ open: false, id: null })}

@@ -144,7 +144,7 @@ const QuestionPapers = () => {
                           <span style={{ display: 'block', fontSize: 11, color: 'var(--text-3)' }}>{p.createdBy?.email}</span>
                         </td>
                         <td className={styles.mutedCell}>
-                          {p.examId?.date ? new Date(p.examId.date).toLocaleDateString() : '—'}
+                          {p.examId?.date ? new Date(p.examId.date).toLocaleDateString() : '-'}
                         </td>
                         <td>
                           <button onClick={() => handlePreview(p._id)} disabled={previewLoading} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 13 }}>
@@ -172,7 +172,7 @@ const QuestionPapers = () => {
         </div>
       </div>
 
-      {/* ── Review Modal ── */}
+      {/* -- Review Modal -- */}
       <Modal
         isOpen={reviewModal.open}
         onClose={() => !submitting && setReviewModal({ open: false, id: null, title: '' })}
@@ -190,8 +190,8 @@ const QuestionPapers = () => {
           <div className={styles.formRow}>
             <label>Decision</label>
             <select className={styles.formInput || styles.modalInput} value={reviewStatus} onChange={e => setReviewStatus(e.target.value)}>
-              <option value="Approved">Approve — Paper is ready</option>
-              <option value="Rejected">Reject — Needs revision</option>
+              <option value="Approved">Approve - Paper is ready</option>
+              <option value="Rejected">Reject - Needs revision</option>
             </select>
           </div>
           {reviewStatus === 'Rejected' && (
@@ -203,7 +203,7 @@ const QuestionPapers = () => {
         </div>
       </Modal>
 
-      {/* ── Paper Preview Modal ── */}
+      {/* -- Paper Preview Modal -- */}
       <Modal
         isOpen={previewModal.open}
         onClose={() => setPreviewModal({ open: false, paper: null })}

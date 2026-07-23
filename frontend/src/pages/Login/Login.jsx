@@ -28,7 +28,7 @@ const Login = () => {
 
   const refs = Array.from({ length: 6 }, () => useRef(null));
 
-  /* ── Step 1: enter credentials ── */
+  /* -- Step 1: enter credentials -- */
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -49,7 +49,7 @@ const Login = () => {
     }
   };
 
-  /* ── Step 2: verify OTP ── */
+  /* -- Step 2: verify OTP -- */
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     const code = otp.join('');
@@ -90,7 +90,7 @@ const Login = () => {
     }
   };
 
-  /* ── OTP box helpers ── */
+  /* -- OTP box helpers -- */
   const handleOtpChange = (i, val) => {
     if (!/^\d*$/.test(val)) return;
     const next = [...otp];
@@ -150,7 +150,7 @@ const Login = () => {
           </div>
         )}
 
-        {/* ── Form 1: Credentials ── */}
+        {/* -- Form 1: Credentials -- */}
         {step === 1 && (
           <form className={styles.form} onSubmit={handleLoginSubmit} noValidate>
             <div className={styles.field}>
@@ -203,7 +203,7 @@ const Login = () => {
           </form>
         )}
 
-        {/* ── Form 2: OTP ── */}
+        {/* -- Form 2: OTP -- */}
         {step === 2 && (
           <form className={styles.form} onSubmit={handleVerifyOtp} noValidate>
             <div className={styles.otpRow} onPaste={handleOtpPaste}>

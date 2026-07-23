@@ -11,7 +11,7 @@ import ExamGrading from './ExamGrading';
 import StudentGradingDetail from './StudentGradingDetail';
 import styles from './FacultyDashboard.module.css';
 
-/* ── Stat Card ── */
+/* -- Stat Card -- */
 const StatCard = ({ icon: Icon, label, value, color }) => (
   <div className={`${styles.statCard} ${styles[color]}`}>
     <div className={styles.statIconWrap}>
@@ -24,18 +24,18 @@ const StatCard = ({ icon: Icon, label, value, color }) => (
   </div>
 );
 
-/* ── Profile Row ── */
+/* -- Profile Row -- */
 const ProfileRow = ({ icon: Icon, label, value }) => (
   <div className={styles.profRow}>
     <div className={styles.profIcon}><Icon size={16} /></div>
     <div>
       <p className={styles.profLabel}>{label}</p>
-      <p className={styles.profValue}>{value || '—'}</p>
+      <p className={styles.profValue}>{value || '-'}</p>
     </div>
   </div>
 );
 
-/* ── Faculty Home ── */
+/* -- Faculty Home -- */
 const FacultyHome = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -107,7 +107,7 @@ const FacultyHome = () => {
   );
 };
 
-/* ── Dashboard shell ── */
+/* -- Dashboard shell -- */
 const FacultyDashboard = () => {
   const navItems = [
     { path: '/faculty',          label: 'My Overview',    icon: <Home      size={18} /> },

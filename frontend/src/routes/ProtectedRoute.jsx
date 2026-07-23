@@ -19,8 +19,8 @@ const LoadingScreen = () => (
 );
 
 /**
- * ProtectedRoute — guards routes requiring authentication.
- * @param {string[]} allowedRoles — roles permitted to access this route
+ * ProtectedRoute - guards routes requiring authentication.
+ * @param {string[]} allowedRoles - roles permitted to access this route
  */
 export const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { user, loading, isAuthenticated } = useAuth();
@@ -41,7 +41,7 @@ export const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 };
 
 /**
- * PublicOnlyRoute — redirects authenticated users to their dashboard.
+ * PublicOnlyRoute - redirects authenticated users to their dashboard.
  */
 export const PublicOnlyRoute = ({ children }) => {
   const { user, loading, isAuthenticated } = useAuth();

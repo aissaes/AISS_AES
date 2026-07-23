@@ -11,7 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 import Modal from '../../components/Modal/Modal';
 import styles from './OverallAdminDashboard.module.css';
 
-/* ══════════════ PLATFORM OVERVIEW & PENDING COLLEGES ══════════════ */
+/* ============== PLATFORM OVERVIEW & PENDING COLLEGES ============== */
 const AdminHome = () => {
   const { toast } = useToast();
   const [pendingColleges, setPendingColleges] = useState([]);
@@ -289,7 +289,7 @@ const AdminHome = () => {
       <Modal
         isOpen={rejectModal.open}
         onClose={() => setRejectModal({ open: false, collegeId: null, collegeName: '', reason: '' })}
-        title={`Reject Request — ${rejectModal.collegeName}`}
+        title={`Reject Request - ${rejectModal.collegeName}`}
         footer={
           <>
             <button className={styles.cancelBtn} onClick={() => setRejectModal({ open: false, collegeId: null, collegeName: '', reason: '' })}>Cancel</button>
@@ -318,7 +318,7 @@ const AdminHome = () => {
   );
 };
 
-/* ══════════════ ADMIN SETTINGS ══════════════ */
+/* ============== ADMIN SETTINGS ============== */
 const AdminSettings = () => {
   const { toast } = useToast();
   const { logout } = useAuth();
@@ -401,7 +401,7 @@ const AdminSettings = () => {
   );
 };
 
-/* ══════════════ DASHBOARD SHELL ══════════════ */
+/* ============== DASHBOARD SHELL ============== */
 const OverallAdminDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();

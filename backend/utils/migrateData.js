@@ -12,7 +12,7 @@ import TeacherMaterial from "../models/teacherMaterial.js";
 async function runMigration() {
   try {
     await connectDB();
-    console.log("🚀 Database connected. Starting migration...");
+    console.log(" Database connected. Starting migration...");
 
     const colleges = await mongoose.connection.db.collection("colleges").find({}).toArray();
 

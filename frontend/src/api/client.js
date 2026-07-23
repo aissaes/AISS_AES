@@ -71,10 +71,10 @@ client.interceptors.response.use(
   }
 );
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    Faculty Auth API
    Routes: /faculty/auth/*
-══════════════════════════════════════════════════════ */
+====================================================== */
 export const authAPI = {
   register: (data) => client.post('/faculty/auth/register', data),
   login: (data) => client.post('/faculty/auth/login', data),
@@ -82,20 +82,20 @@ export const authAPI = {
   logout: () => client.post('/faculty/auth/logout'),
 };
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    Overall Admin Auth API
    Routes: /overallAdmin/auth/*
-══════════════════════════════════════════════════════ */
+====================================================== */
 export const overallAdminAuthAPI = {
   login: (data) => client.post('/overallAdmin/auth/login', data),
   verifyOTP: (data) => client.post('/overallAdmin/auth/verify-otp', data),
   logout: () => client.post('/overallAdmin/auth/logout'),
 };
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    Faculty API (all authenticated faculty)
    Routes: /faculty/*
-══════════════════════════════════════════════════════ */
+====================================================== */
 export const facultyAPI = {
   getMe: () => client.get('/faculty/me'),
   updateProfile: (data) => client.put('/faculty/profile', data),
@@ -106,10 +106,10 @@ export const facultyAPI = {
   getDeptFaculty: (department) => client.get('/faculty', { params: department ? { department } : {} }),
 };
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    HOD API
    Routes: /faculty/hod/*
-══════════════════════════════════════════════════════ */
+====================================================== */
 export const hodAPI = {
   transfer: (targetFacultyId) => client.post('/faculty/hod/transfer', { newHODId: targetFacultyId }),
   getStudents: (params) => client.get('/faculty/hod/students', { params }),
@@ -135,10 +135,10 @@ export const hodAPI = {
   generateQRCode: (examId) => client.post(`/faculty/hod/exams/${examId}/generate-qr`),
 };
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    College Admin API (was incorrectly named "superAdminAPI")
    Routes: /faculty/collegeadmin/*
-══════════════════════════════════════════════════════ */
+====================================================== */
 export const collegeAdminAPI = {
   getCollegeFaculty: () => client.get('/faculty/collegeadmin/college'),
   updateDepartments: (departments) => client.put('/faculty/collegeadmin/update-departments', { departments }),
@@ -163,10 +163,10 @@ export const collegeAdminAPI = {
 // Backward compat alias
 export const superAdminAPI = collegeAdminAPI;
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    Overall Admin API (Platform God Mode)
    Routes: /overallAdmin/*
-══════════════════════════════════════════════════════ */
+====================================================== */
 export const overallAdminAPI = {
   changePassword: (data) => client.put('/overallAdmin/change-password', data),
   getPendingColleges: () => client.get('/overallAdmin/pending-colleges'),
@@ -175,10 +175,10 @@ export const overallAdminAPI = {
   transfer: (data) => client.post('/overallAdmin/transfer-overalladmin', data),
 };
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    Timetable API
    Routes: /faculty/timetable/*
-══════════════════════════════════════════════════════ */
+====================================================== */
 export const timetableAPI = {
   getAll: () => client.get('/faculty/timetable'),
   getById: (id) => client.get(`/faculty/timetable/${id}`),
@@ -190,15 +190,15 @@ export const timetableAPI = {
   generateExamQR: (examId) => client.post(`/faculty/timetable/exam/${examId}/generate-qr`),
 };
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    Question Paper API
    Routes: /faculty/question-paper/*
-══════════════════════════════════════════════════════ */
+====================================================== */
 export const questionPaperAPI = {
   getAssignments: () => client.get('/faculty/question-paper/assignments'),
   // upload payload: { examId, instructions: [String], sections: [[{text, marks, imageUrl}]], sectionChoices }
   upload: (data) => client.post('/faculty/question-paper/upload', data),
-  // update payload: { instructions, sections, sectionChoices } — resets status to Pending
+  // update payload: { instructions, sections, sectionChoices } - resets status to Pending
   update: (paperId, data) => client.put(`/faculty/question-paper/update/${paperId}`, data),
   getPending: () => client.get('/faculty/question-paper/pending'),
   getApproved: () => client.get('/faculty/question-paper/approved'),
@@ -207,20 +207,20 @@ export const questionPaperAPI = {
   getById: (paperId) => client.get(`/faculty/question-paper/${paperId}`),
 };
 
-/* ══════════════════════════════════════════════════════
-   College API (Public — no auth)
+/* ======================================================
+   College API (Public - no auth)
    Routes: /college/*
-══════════════════════════════════════════════════════ */
+====================================================== */
 export const collegeAPI = {
   getList: () => client.get('/college/list'),
   getDepartments: (collegeId) => client.get(`/college/${collegeId}/departments`),
   registerRequest: (data) => client.post('/college/request', data),
 };
 
-/* ══════════════════════════════════════════════════════
+/* ======================================================
    Evaluation API
    Routes: /faculty/exam/*, /results/*
-══════════════════════════════════════════════════════ */
+====================================================== */
 export const evaluationAPI = {
   getAppearedStudents: (examId, params) => client.get(`/faculty/exam/${examId}/students`, { params }),
   getResultOverview: (examId, params) => client.get(`/results/faculty/exam/${examId}`, { params }),

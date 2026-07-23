@@ -40,7 +40,7 @@ const Timetables = () => {
   const [qrModal, setQrModal] = useState({ open: false, qrUrl: '', title: '', token: '' });
   const [deleteExamConfirm, setDeleteExamConfirm] = useState({ open: false, id: null, subjectName: '' });
 
-  /* ── Fetch data ── */
+  /* -- Fetch data -- */
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -77,7 +77,7 @@ const Timetables = () => {
     }
   }, [formData.semester]);
 
-  /* ── Create timetable ── */
+  /* -- Create timetable -- */
   const handleCreate = async () => {
     if (!formData.semester) {
       toast('Please select a semester.', 'warning');
@@ -124,7 +124,7 @@ const Timetables = () => {
     });
   };
 
-  /* ── Add exam to existing timetable ── */
+  /* -- Add exam to existing timetable -- */
   const handleAddExam = async () => {
     if (!newExam.courseId || !newExam.date || !newExam.startTime || !newExam.endTime || !newExam.assignedFaculty) {
       toast('All fields including course and assigned faculty are required.', 'warning');
@@ -152,7 +152,7 @@ const Timetables = () => {
     }
   };
 
-  /* ── Delete exam ── */
+  /* -- Delete exam -- */
   const handleDeleteExam = async (examId, subjectName) => {
     setDeleteExamConfirm({ open: true, id: examId, subjectName });
   };
@@ -169,7 +169,7 @@ const Timetables = () => {
     }
   };
 
-  /* ── Generate Token & QR Code ── */
+  /* -- Generate Token & QR Code -- */
   const handleGenerateQR = async (examId) => {
     try {
       toast('Generating secure exam token and QR code...', 'info');
@@ -188,7 +188,7 @@ const Timetables = () => {
     }
   };
 
-  /* ── Form helpers ── */
+  /* -- Form helpers -- */
   const addExamRow = () => {
     setFormData(d => ({
       ...d,
@@ -272,7 +272,7 @@ const Timetables = () => {
         </div>
       </div>
 
-      {/* ── Create Timetable Modal ── */}
+      {/* -- Create Timetable Modal -- */}
       <Modal
         isOpen={createModal}
         onClose={() => !creating && setCreateModal(false)}
@@ -315,7 +315,7 @@ const Timetables = () => {
         </div>
       </Modal>
 
-      {/* ── Add Exam to Existing Timetable Modal ── */}
+      {/* -- Add Exam to Existing Timetable Modal -- */}
       <Modal
         isOpen={addExamModal.open}
         onClose={() => !addingExam && setAddExamModal({ open: false, timetableId: null, timetableName: '' })}
@@ -343,7 +343,7 @@ const Timetables = () => {
         </div>
       </Modal>
 
-      {/* ── View QR Code Modal ── */}
+      {/* -- View QR Code Modal -- */}
       <Modal
         isOpen={qrModal.open}
         onClose={() => setQrModal({ open: false, qrUrl: '', title: '', token: '' })}
@@ -368,7 +368,7 @@ const Timetables = () => {
         </div>
       </Modal>
 
-      {/* ── Delete Exam Confirmation Modal ── */}
+      {/* -- Delete Exam Confirmation Modal -- */}
       <Modal
         isOpen={deleteExamConfirm.open}
         onClose={() => setDeleteExamConfirm({ open: false, id: null, subjectName: '' })}

@@ -112,7 +112,7 @@ const AdminLogin = () => {
         </h1>
         <p className={styles.subtitle}>
           {step === 1
-            ? 'Overall Admin access — restricted login'
+            ? 'Overall Admin access - restricted login'
             : `A 6-digit code was sent to ${email}`}
         </p>
 

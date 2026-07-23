@@ -14,9 +14,9 @@ import Modal from '../../components/Modal/Modal';
 import { useTheme } from '../../context/ThemeContext';
 import styles from './Landing.module.css';
 
-/* ─────────────────────────────────────────────────
+/* -------------------------------------------------
    Typing effect hook
-   ───────────────────────────────────────────────── */
+   ------------------------------------------------- */
 const useTypingEffect = (words, typingSpeed = 110, deletingSpeed = 70, pauseMs = 2000) => {
   const [text, setText] = useState('');
   const [wordIdx, setWordIdx] = useState(0);
@@ -48,9 +48,9 @@ const useTypingEffect = (words, typingSpeed = 110, deletingSpeed = 70, pauseMs =
   return text;
 };
 
-/* ─────────────────────────────────────────────────
+/* -------------------------------------------------
    Scroll-triggered fade-up hook
-   ───────────────────────────────────────────────── */
+   ------------------------------------------------- */
 const useFadeUp = () => {
   const ref = useRef(null);
   useEffect(() => {
@@ -75,9 +75,9 @@ const FadeUp = ({ children, className = '' }) => {
   return <div ref={ref} className={`${styles.fadeUp} ${className}`}>{children}</div>;
 };
 
-/* ─────────────────────────────────────────────────
+/* -------------------------------------------------
    Dynamic Count Up Hook
-   ───────────────────────────────────────────────── */
+   ------------------------------------------------- */
 const useCountUp = (endVal, duration = 2000, trigger = false) => {
   const [count, setCount] = useState(0);
   useEffect(() => {
@@ -105,9 +105,9 @@ const useCountUp = (endVal, duration = 2000, trigger = false) => {
   return count;
 };
 
-/* ─────────────────────────────────────────────────
+/* -------------------------------------------------
    ERP Workflows Data & Definitions
-   ───────────────────────────────────────────────── */
+   ------------------------------------------------- */
 const WORKFLOWS = [
   {
     title: 'College Onboarding',
@@ -391,7 +391,7 @@ const Landing = () => {
       <div className={`${styles.orb} ${styles.orb2}`} />
       <div className={`${styles.orb} ${styles.orb3}`} />
 
-      {/* ════ NAVBAR ════ */}
+      {/* ==== NAVBAR ==== */}
       <nav className={styles.navbar} id="landing-navbar">
         <div className={styles.navBrand} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
           <div className={styles.navLogoBox}>
@@ -455,7 +455,7 @@ const Landing = () => {
         )}
       </nav>
 
-      {/* ════ HERO ════ */}
+      {/* ==== HERO ==== */}
       <section className={styles.hero} id="hero" onMouseMove={handleHeroMouseMove} onMouseLeave={handleHeroMouseLeave}>
         <div className={styles.heroInner} style={heroTilt}>
           <FadeUp>
@@ -480,7 +480,7 @@ const Landing = () => {
           <FadeUp>
             <p className={styles.heroSub}>
               AISS_AES combines artificial intelligence with robust role-based access
-              to deliver fast, fair, and secure evaluation — from answer sheet to analytics — in one seamless platform.
+              to deliver fast, fair, and secure evaluation - from answer sheet to analytics - in one seamless platform.
             </p>
           </FadeUp>
 
@@ -509,7 +509,7 @@ const Landing = () => {
       {/* Section Transition flow bridge */}
       <div className={styles.flowBridge} />
 
-      {/* ════ ROLE COMMAND CENTER ════ */}
+      {/* ==== ROLE COMMAND CENTER ==== */}
       <section className={styles.roleCommandSection}>
         <FadeUp>
           <div className={styles.sectionTag}>
@@ -722,7 +722,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ════ WORKFLOW SHOWCASE SECTION ════ */}
+      {/* ==== WORKFLOW SHOWCASE SECTION ==== */}
       <section className={styles.workflowsSection} id="workflows">
         <FadeUp>
           <div className={styles.sectionTag}>
@@ -786,7 +786,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ════ STATS ════ */}
+      {/* ==== STATS ==== */}
       <section className={styles.stats} ref={statsRef}>
         <FadeUp>
           <div className={styles.statsInner}>
@@ -830,7 +830,7 @@ const Landing = () => {
         </FadeUp>
       </section>
 
-      {/* ════ CENTERED FEATURE 1 (ADMIN) ════ */}
+      {/* ==== CENTERED FEATURE 1 (ADMIN) ==== */}
       <section className={styles.centeredFeatureSection}>
         <FadeUp>
           <div className={styles.centeredFeatureContent}>
@@ -952,7 +952,7 @@ const Landing = () => {
         </FadeUp>
       </section>
 
-      {/* ════ CENTERED FEATURE 2 (STUDENT) ════ */}
+      {/* ==== CENTERED FEATURE 2 (STUDENT) ==== */}
       <section className={styles.centeredFeatureSection}>
         <FadeUp>
           <div className={styles.centeredFeatureContent}>
@@ -1051,7 +1051,7 @@ const Landing = () => {
         </FadeUp>
       </section>
 
-      {/* ════ PLATFORM WORKFLOW ARCHITECTURE ════ */}
+      {/* ==== PLATFORM WORKFLOW ARCHITECTURE ==== */}
       <section className={styles.ecosystemGraphSection} id="roles">
         <FadeUp>
           <div className={styles.sectionTag}>
@@ -1164,7 +1164,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ════ AI EVALUATION SHOWCASE ════ */}
+      {/* ==== AI EVALUATION SHOWCASE ==== */}
       <section className={styles.aiEvalSection} id="ai-eval">
         <FadeUp>
           <div className={styles.sectionTag}>
@@ -1263,7 +1263,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ════ DASHBOARD PREVIEW CAROUSEL ════ */}
+      {/* ==== DASHBOARD PREVIEW CAROUSEL ==== */}
       <section className={styles.carouselSection}>
         <FadeUp>
           <div className={styles.sectionTag}>
@@ -1393,7 +1393,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ════ ACADEMIC LIFECYCLE SECTION ════ */}
+      {/* ==== ACADEMIC LIFECYCLE SECTION ==== */}
       <section className={styles.lifecycleSection} id="academic-lifecycle">
         <FadeUp>
           <div className={styles.sectionTag}>
@@ -1469,7 +1469,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ════ CTA ════ */}
+      {/* ==== CTA ==== */}
       <section className={styles.cta}>
         <FadeUp>
           <div className={styles.ctaBox}>
@@ -1492,7 +1492,7 @@ const Landing = () => {
         </FadeUp>
       </section>
 
-      {/* ════ FOOTER ════ */}
+      {/* ==== FOOTER ==== */}
       <footer className={styles.footer}>
         <div className={styles.footerBrand}>
           <BrainCircuit size={16} />

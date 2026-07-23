@@ -12,9 +12,9 @@ import { facultyAPI } from '../../api/client';
 import { useToast } from '../Toast/Toast';
 import styles from './DashboardLayout.module.css';
 
-/* ──────────────────────────────────────────────────────────
-   Role view switching — HOD only
-────────────────────────────────────────────────────────── */
+/* ----------------------------------------------------------
+   Role view switching - HOD only
+---------------------------------------------------------- */
 const ROLE_VIEWS = {
   collegeAdmin: [],
   hod: [
@@ -36,9 +36,9 @@ const detectViewMode = (pathname) => {
   return 'faculty';
 };
 
-/* ──────────────────────────────────────────────────────────
+/* ----------------------------------------------------------
    Helper to check if a navigation item's path is active
-────────────────────────────────────────────────────────── */
+---------------------------------------------------------- */
 const isPathActive = (itemPath, currentPath) => {
   if (currentPath === itemPath) return true;
   const isBaseRoot = ['/collegeadmin', '/hod', '/faculty', '/admin'].includes(itemPath);
@@ -48,9 +48,9 @@ const isPathActive = (itemPath, currentPath) => {
   return currentPath.startsWith(itemPath + '/');
 };
 
-/* ──────────────────────────────────────────────────────────
+/* ----------------------------------------------------------
    COMPONENT
-────────────────────────────────────────────────────────── */
+---------------------------------------------------------- */
 const DashboardLayout = ({ navItems, children }) => {
   const navigate  = useNavigate();
   const location  = useLocation();
@@ -67,10 +67,10 @@ const DashboardLayout = ({ navItems, children }) => {
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const switcherRef = useRef(null);
 
-  /* ── Mobile sidebar drawer state ── */
+  /* -- Mobile sidebar drawer state -- */
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  /* ── Logout confirmation modal ── */
+  /* -- Logout confirmation modal -- */
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
   const actualRole  = profile?.role || 'faculty';
@@ -78,7 +78,7 @@ const DashboardLayout = ({ navItems, children }) => {
   const availViews  = ROLE_VIEWS[actualRole] || [];
   const canSwitch   = availViews.length > 1;
 
-  /* ── Close switcher on outside click ── */
+  /* -- Close switcher on outside click -- */
   useEffect(() => {
     const h = (e) => {
       if (switcherRef.current && !switcherRef.current.contains(e.target))
@@ -88,7 +88,7 @@ const DashboardLayout = ({ navItems, children }) => {
     return () => document.removeEventListener('mousedown', h);
   }, []);
 
-  /* ── Auto-close sidebar drawer on route change ── */
+  /* -- Auto-close sidebar drawer on route change -- */
   useEffect(() => {
     setIsSidebarOpen(false);
   }, [location.pathname]);
@@ -133,12 +133,12 @@ const DashboardLayout = ({ navItems, children }) => {
 
   return (
     <div className={styles.layout}>
-      {/* ════ Sidebar Backdrop (mobile) ════ */}
+      {/* ==== Sidebar Backdrop (mobile) ==== */}
       {isSidebarOpen && (
         <div className={styles.sidebarBackdrop} onClick={() => setIsSidebarOpen(false)} />
       )}
 
-      {/* ════ Sidebar ════ */}
+      {/* ==== Sidebar ==== */}
       <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarActive : ''}`}>
         {/* Brand */}
         <div className={styles.brand}>
@@ -234,7 +234,7 @@ const DashboardLayout = ({ navItems, children }) => {
         </div>
       </aside>
 
-      {/* ════ Main ════ */}
+      {/* ==== Main ==== */}
       <div className={styles.main}>
         {/* Topbar */}
         <header className={styles.topbar}>
@@ -333,7 +333,7 @@ const DashboardLayout = ({ navItems, children }) => {
         </main>
       </div>
 
-      {/* ════ Logout Confirmation Modal ════ */}
+      {/* ==== Logout Confirmation Modal ==== */}
       <Modal
         isOpen={logoutConfirmOpen}
         onClose={() => setLogoutConfirmOpen(false)}
