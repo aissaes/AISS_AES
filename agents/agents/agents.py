@@ -18,7 +18,9 @@ from io import BytesIO
 from tools.readers import OCR_image_to_text, load_pdf_text
 from tools.text_preprocessing import text_cleaning, split_text
 from tools.VectorDB_operations import retrieve_relevant_chunks,store_teacher_chunks
-from tools.get_models import get_gemini,get_hf_model,get_groq,get_gemini_embedding_model
+from tools.get_models import get_gradelm, get_gradelm_embedding_model
+
+
 from tools.prompt import eval_prompt,recheck_prompt
 
 from PyPDF2 import PdfReader
@@ -176,7 +178,7 @@ def evaluation_agent(state: AgentState):
 
     context_str = "\n".join(context_notes)
 
-    llm = get_groq()
+    llm = get_gradelm()
     chain = eval_prompt | llm
 
     prompt_inputs = {
@@ -200,7 +202,8 @@ def evaluation_agent(state: AgentState):
 def recheck_agent(state: AgentState):
     print("--- RECHECK AGENT ---")
     try:
-        llm = get_groq()   # different model
+        llm = get_gradelm()   # GradeLM model
+
 
         chain = recheck_prompt | llm
 

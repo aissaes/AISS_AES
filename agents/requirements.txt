@@ -27,3 +27,7 @@ pillow==11.0.0
 
 # FIX FOR THE GROQ/HTTPX PROXIES CRASH 
 httpx==0.27.2
+
+# GradeLM HF Space Client
+huggingface_hub>=0.24.0
+gradio_client>=1.3.0

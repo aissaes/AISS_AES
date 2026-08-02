@@ -3,12 +3,14 @@ from pydantic import BaseModel
 from typing import Optional
 
 from tools.readers import OCR_image_to_text
-from tools.get_models import get_groq, get_gemini
+from tools.get_models import get_gradelm
+
 
 router = APIRouter(
     prefix="/testing",
     tags=["Sandbox Operations"]
 )
+
 
 class SandboxTestRequest(BaseModel):
     action: str  # "ocr" or "evaluate-text"
@@ -63,27 +65,19 @@ You MUST respond with ONLY a valid JSON object.
   "feedback": "<corrective feedback and suggestions for improvement>"
 }}"""
 
-        # Try Groq first
         try:
-            llm = get_groq()
+            llm = get_gradelm()
             response = llm.invoke(prompt)
             return {
                 "success": True,
                 "evaluation": response.content
             }
-        except Exception as groq_err:
-            print("Groq evaluation failed, trying Gemini:", str(groq_err))
-            try:
-                llm = get_gemini()
-                response = llm.invoke(prompt)
-                return {
-                    "success": True,
-                    "evaluation": response.content
-                }
-            except Exception as gemini_err:
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"Both Groq and Gemini calls failed. last error: {str(gemini_err)}"
-                )
+        except Exception as gradelm_err:
+            raise HTTPException(
+                status_code=500,
+                detail=f"GradeLM evaluation failed: {str(gradelm_err)}"
+            )
+
+
     else:
         raise HTTPException(status_code=400, detail=f"Invalid action type: {request.action}")

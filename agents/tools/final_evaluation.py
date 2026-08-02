@@ -1,8 +1,6 @@
 from tools.VectorDB_operations import retrieve_relevant_notes_langchain,vector_store
 from tools.prompt import eval_prompt
-from tools.get_models import get_gemini
-
-
+from tools.get_models import get_gradelm
 
 def grade_student_submission(question, student_text, namespace):
     # 1. Retrieve notes (your existing function)
@@ -17,7 +15,8 @@ def grade_student_submission(question, student_text, namespace):
     answer_key_str = key_docs[0].page_content if key_docs else "No key provided."
 
     # 3. Run the LLM
-    llm=get_gemini() 
+    llm=get_gradelm() 
+
     chain = eval_prompt | llm
     
     response = chain.invoke({
