@@ -1,6 +1,9 @@
 import Faculty from "../../models/faculty.js";
+import College from "../../models/college.js";
+import Department from "../../models/department.js";
 import bcrypt from "bcryptjs";
 import sendEmail from "../../configurations/nodemailer.js";
+import mongoose from "mongoose";
 
 // Fetch the complete profile of the currently logged-in user
 export const getMyProfile = async (req, res) => {
@@ -8,7 +11,8 @@ export const getMyProfile = async (req, res) => {
     // req.user.id is securely extracted from the HTTP-Only cookie by the verifyToken middleware
     const faculty = await Faculty.findById(req.user.id)
                                  .select("-password -otp -otpExpires")
-                                 .populate("collegeId", "collegeName location"); 
+                                 .populate("collegeId", "collegeName location")
+                                 .populate("department", "name"); 
 
     if (!faculty) {
       return res.status(404).json({ message: "User not found" });
@@ -57,7 +61,9 @@ export const updateProfile = async (req, res) => {
       req.user.id, 
       updates, 
       { new: true }
-    ).select("-password -otp -otpExpires"); // Don't send sensitive data back
+    ).select("-password -otp -otpExpires")
+     .populate("collegeId", "collegeName location")
+     .populate("department", "name"); // Populate references for frontend visual parity
 
     res.status(200).json({ 
       message: "Profile updated successfully", 
@@ -120,8 +126,16 @@ export const getFacultyApprovedList = async (req, res) => {
     // Find the logged-in HOD/SuperAdmin and populate the references
     // We only select the fields we actually need to show on the frontend card/table
     const admin = await Faculty.findById(adminId)
-      .populate("pendingApprovals", "name email department phone collegeId")
-      .populate("acceptedApprovals", "name email department phone collegeId");
+      .populate({
+        path: "pendingApprovals",
+        select: "name email department phone collegeId",
+        populate: { path: "department", select: "name code" }
+      })
+      .populate({
+        path: "acceptedApprovals",
+        select: "name email department phone collegeId",
+        populate: { path: "department", select: "name code" }
+      });
 
     if (!admin) {
       return res.status(404).json({ message: "Admin user not found" });
@@ -147,6 +161,10 @@ export const approveFaculty = async (req, res) => {
   try {
 
     const { facultyId } = req.body;
+
+    if (!facultyId || !mongoose.Types.ObjectId.isValid(facultyId)) {
+      return res.status(400).json({ message: "Invalid Faculty ID format." });
+    }
 
     const faculty = await Faculty.findById(facultyId);
 
@@ -184,6 +202,10 @@ export const rejectFaculty = async (req, res) => {
   try {
     const { facultyId, rejectedReason } = req.body;
 
+    if (!facultyId || !mongoose.Types.ObjectId.isValid(facultyId)) {
+      return res.status(400).json({ message: "Invalid Faculty ID format." });
+    }
+
     const faculty = await Faculty.findById(facultyId);
 
     if (!faculty)
@@ -194,11 +216,15 @@ export const rejectFaculty = async (req, res) => {
     // 1. Remove from pending approvals
     approver.pendingApprovals.pull(facultyId);
 
-    // 2. Store the historical snapshot in rejectedApprovals
+    // 2. Resolve the department ObjectId to its name string for the historical snapshot
+    const deptDoc = await Department.findById(faculty.department);
+    const deptName = deptDoc ? deptDoc.name : "Unknown Department";
+
+    // 3. Store the historical snapshot in rejectedApprovals
     approver.rejectedApprovals.push({
       name: faculty.name,
       email: faculty.email,
-      department: faculty.department,
+      department: deptName,
       rejectedReason
     });
 
@@ -239,7 +265,12 @@ export const getDepartmentFaculty = async (req, res) => {
     let targetDepartment = currentUser.department; // Default to the logged-in user's department (Perfect for HODs)
     
     if (currentUser.role === "collegeAdmin" && req.query.department) {
-      targetDepartment = req.query.department;
+      if (mongoose.Types.ObjectId.isValid(req.query.department)) {
+        targetDepartment = req.query.department;
+      } else {
+        const deptDoc = await Department.findOne({ collegeId: currentUser.collegeId, name: req.query.department });
+        targetDepartment = deptDoc ? deptDoc._id : null;
+      }
     }
 
     // Fetch all approved faculty in that specific department
@@ -248,7 +279,7 @@ export const getDepartmentFaculty = async (req, res) => {
       department: targetDepartment,
       isApproved: true,
       role: { $in: ["faculty", "hod"] } // Exclude the super admin from this list
-    }).select("-password -otp -otpExpires"); 
+    }).select("-password -otp -otpExpires").populate("department", "name code"); 
 
     res.status(200).json({
       message: `Faculty list fetched for ${targetDepartment}`,

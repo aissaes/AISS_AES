@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 
 const studentSchema = new mongoose.Schema({
-
     name: {
         type: String,
         required: true
@@ -11,47 +10,46 @@ const studentSchema = new mongoose.Schema({
         ref: "College",
         required: true
     },
-    semester:{
-        type:Number,
-        required:true
+    semester: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Semester",
+        required: false
     },
-    rollNumber:{
-        type:String,
-        required:true,
-        unique:true
+    rollNumber: {
+        type: String,
+        required: true,
+        unique: true
     },
-    cgpa:{
-        type:Number,
-        required:true
+    cgpa: {
+        type: Number,
     },
-
-    questionPapersAttempted:[{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:"QuestionPaper"
+    questionPapersAttempted: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "QuestionPaper"
     }],
-
-    department:{
-        type:String,
-        required:true
+    department: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Department"
     },
-    email:{
-        type:String,
-        required:true,
-        unique:true
+    email: {
+        type: String,
+        required: true,
+        unique: true
     },
     password: {
-        type: String,
-        required: true
-    },
-    course: {
         type: String,
         required: true
     },
     role: {
         type: String,
         default: 'Student'
+    },
+    otp: {
+        type: String
+    },
+    otpExpires: {
+        type: Date
     }
-
 });
 
 const Student = mongoose.model("Student", studentSchema);

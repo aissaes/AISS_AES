@@ -20,7 +20,7 @@
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(99, 102, 241, 0.15);
+  border: 3px solid var(--primary-dim);
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.75s linear infinite;
@@ -84,7 +84,7 @@
   width: 33px;
   height: 33px;
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--accent), #7c3aed);
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -163,9 +163,9 @@
 }
 
 .navActive {
-  background: rgba(99, 102, 241, 0.1) !important;
-  border-color: rgba(99, 102, 241, 0.18) !important;
-  color: var(--accent-light) !important;
+  background: var(--primary-dim) !important;
+  border-color: var(--primary-glow) !important;
+  color: var(--primary-light) !important;
 }
 
 .navIcon  { flex-shrink: 0; display: flex; }
@@ -281,9 +281,9 @@
   color: var(--text-2);
 }
 .switchBtnActive {
-  background: rgba(99, 102, 241, 0.08) !important;
-  border-color: rgba(99, 102, 241, 0.18) !important;
-  color: var(--accent-light) !important;
+  background: var(--primary-dim) !important;
+  border-color: var(--primary-glow) !important;
+  color: var(--primary-light) !important;
 }
 
 /* ── User card + Logout ── */
@@ -310,7 +310,7 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), #7c3aed);
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -350,8 +350,8 @@
   width: fit-content;
 }
 
-.badgeCA      { background: rgba(167,139,250,0.12); border-color: rgba(167,139,250,0.3); color: #c4b5fd; }
-.badgeHOD     { background: rgba(99,102,241,0.12);  border-color: rgba(99,102,241,0.28); color: var(--accent-light); }
+.badgeCA      { background: var(--theme-violet-dim); border-color: rgba(139, 92, 246, 0.3); color: var(--theme-violet); }
+.badgeHOD     { background: var(--primary-dim);  border-color: var(--primary-glow); color: var(--accent-light); }
 .badgeFaculty { background: rgba(148,163,184,0.1);  border-color: rgba(148,163,184,0.2); color: var(--text-2); }
 
 /* Change Password btn */
@@ -416,7 +416,7 @@
   justify-content: space-between;
   padding: 0 30px;
   border-bottom: 1px solid var(--border-base);
-  background: rgba(8, 14, 28, 0.88);
+  background: var(--topbar-bg);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   position: sticky;
@@ -476,8 +476,8 @@
   align-items: center;
   gap: 7px;
   padding: 7px 13px;
-  background: rgba(99, 102, 241, 0.08);
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  background: var(--primary-dim);
+  border: 1px solid var(--primary-glow);
   border-radius: 8px;
   color: var(--accent-light);
   font-size: 0.8rem;
@@ -487,8 +487,8 @@
   white-space: nowrap;
 }
 .quickSwitchBtn:hover {
-  background: rgba(99, 102, 241, 0.14);
-  border-color: rgba(99, 102, 241, 0.35);
+  background: var(--primary-glow);
+  border-color: var(--primary-light);
 }
 
 .chevronOpen { transform: rotate(180deg); }
@@ -498,10 +498,10 @@
   top: calc(100% + 8px);
   right: 0;
   width: 185px;
-  background: #0c1428;
-  border: 1px solid rgba(99, 102, 241, 0.25);
+  background: var(--modal-bg);
+  border: 1px solid var(--border);
   border-radius: 11px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
   z-index: 500;
   animation: dropIn 0.16s ease forwards;
@@ -528,11 +528,11 @@
   text-align: left;
 }
 .quickSwitchItem:hover {
-  background: rgba(99, 102, 241, 0.08);
+  background: var(--primary-dim);
   color: var(--text-1);
 }
 .quickSwitchItemActive {
-  background: rgba(99, 102, 241, 0.1) !important;
+  background: var(--primary-glow) !important;
   color: var(--accent-light) !important;
 }
 
@@ -568,7 +568,7 @@
   width: 33px;
   height: 33px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), #7c3aed);
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -586,7 +586,163 @@
   animation: pageIn 0.3s ease forwards;
 }
 
+/* Theme toggle button styling */
+.themeToggleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--bg-surface-hover);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s var(--ease-out);
+}
+.themeToggleBtn:hover {
+  background: var(--border);
+  color: var(--text-primary);
+  border-color: var(--primary-light);
+  transform: scale(1.05);
+}
+.themeToggleBtn svg {
+  transition: transform 0.3s var(--ease-out);
+}
+.themeToggleBtn:active svg {
+  transform: rotate(30deg);
+}
+
 @keyframes pageIn {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0);   }
+}
+
+/* ══════════════════════════════════════════════════════
+   MOBILE SIDEBAR DRAWER & RESPONSIVE OVERRIDES
+══════════════════════════════════════════════════════ */
+
+/* Hamburger toggle — hidden on desktop, shown on mobile */
+.menuToggleBtn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--border-base);
+  color: var(--text-2);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.18s ease;
+}
+.menuToggleBtn:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-1);
+  border-color: var(--border-hover);
+}
+
+/* Close button inside sidebar — hidden on desktop */
+.sidebarCloseBtn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-3);
+  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  margin-left: auto;
+  transition: all 0.15s;
+}
+.sidebarCloseBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-1);
+}
+
+/* Backdrop overlay */
+.sidebarBackdrop {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  /* Sidebar: offscreen drawer */
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: none;
+  }
+  .sidebarActive {
+    transform: translateX(0);
+    box-shadow: 8px 0 40px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Show hamburger & close buttons */
+  .menuToggleBtn  { display: flex; }
+  .sidebarCloseBtn { display: flex; }
+
+  /* Show backdrop */
+  .sidebarBackdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 150;
+    animation: fadeIn 0.2s ease forwards;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* Remove sidebar margin from main area */
+  .main {
+    margin-left: 0;
+  }
+
+  /* Reduce topbar padding */
+  .topbar {
+    padding: 0 16px;
+  }
+
+  /* Hide user meta text, keep avatar only */
+  .topbarMeta {
+    display: none;
+  }
+
+  /* Reduce content padding */
+  .content {
+    padding: 20px 16px;
+  }
+}
+
+@media (max-width: 600px) {
+  .topbar {
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .content {
+    padding: 16px 12px;
+  }
+
+  .pageTitle {
+    font-size: 0.88rem;
+  }
+
+  /* Hide college name badge on very small screens */
+  .topbarLeft > div > span[style] {
+    display: none;
+  }
+
+  /* Stack quick-switch dropdown for narrower viewports */
+  .quickSwitchBtn span {
+    display: none;
+  }
 }

@@ -1,13 +1,15 @@
 import sendEmail from "../../configurations/nodemailer.js";
 import Faculty from "../../models/faculty.js";
 import College from "../../models/college.js";
+import Department from "../../models/department.js";
+import Course from "../../models/course.js";
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 
 export const registerFaculty = async (req, res) => {
   try {
-    const { name, email, password, collegeId, department, phone } = req.body;
+    const { name, email, password, collegeId, department, course, phone } = req.body;
 
     // 1. Check if email already exists for a cleaner error message
     const existingFaculty = await Faculty.findOne({ email });
@@ -22,19 +24,63 @@ export const registerFaculty = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Dynamically resolve department name string to an ObjectId and keep a readable name for emails
+    let deptId = department;
+    let deptName = department;
+    if (department) {
+      if (mongoose.Types.ObjectId.isValid(department)) {
+        const deptDoc = await Department.findById(department);
+        if (deptDoc) {
+          deptName = deptDoc.name;
+        }
+      } else {
+        let deptDoc = await Department.findOne({ collegeId, name: department });
+        if (!deptDoc) {
+          const deptCode = department.substring(0, 5).toUpperCase();
+          deptDoc = new Department({ collegeId, name: department, code: deptCode });
+          await deptDoc.save();
+        }
+        deptId = deptDoc._id;
+        deptName = deptDoc.name;
+      }
+    }
+
+    // Dynamically resolve course input to an ObjectId and keep a readable name for emails
+    let resolvedCourseId = null;
+    let courseName = course || "Not assigned";
+    if (course) {
+      if (mongoose.Types.ObjectId.isValid(course)) {
+        const courseDoc = await Course.findById(course);
+        if (courseDoc) {
+          resolvedCourseId = courseDoc._id;
+          courseName = `${courseDoc.courseCode} - ${courseDoc.courseName}`;
+        }
+      } else {
+        const courseDoc = await Course.findOne({
+          collegeId,
+          $or: [{ courseCode: course }, { courseName: course }]
+        });
+        if (courseDoc) {
+          resolvedCourseId = courseDoc._id;
+          courseName = `${courseDoc.courseCode} - ${courseDoc.courseName}`;
+        }
+      }
+    }
+
     const faculty = await Faculty.create({
       name,
       email,
       password: hashedPassword,
       collegeId: new mongoose.Types.ObjectId(collegeId),
-      department,
+      department: deptId,
+      course: resolvedCourseId,
       phone
     });
 
     // 2. Route the approval to the correct authority
     const hod = await Faculty.findOne({
       collegeId,
-      department,
+      department: deptId,
       role: "hod"
     });
 
@@ -48,7 +94,8 @@ export const registerFaculty = async (req, res) => {
         Faculty Details:
         - Name: ${faculty.name}
         - Email: ${faculty.email}
-        - Department: ${faculty.department}
+        - Department: ${deptName}
+        - Course: ${courseName}
         - College: ${collegeDoc.collegeName}
         - Phone: ${faculty.phone}
 
@@ -75,7 +122,8 @@ export const registerFaculty = async (req, res) => {
             Faculty Details:
             - Name: ${faculty.name}
             - Email: ${faculty.email}
-            - Department: ${faculty.department}
+            - Department: ${deptName}
+            - Course: ${courseName}
             - College: ${collegeDoc.collegeName}
             - Phone: ${faculty.phone}
 
@@ -98,7 +146,7 @@ export const registerFaculty = async (req, res) => {
       \n\nYour account is currently PENDING approval by your College Administration.
        You will receive another email once your account is activated.
        \n\nHere are the details you submitted:
-       \n- Name: ${faculty.name}\n- College: ${collegeDoc.collegeName}\n- Department: ${faculty.department}\n- Phone: ${faculty.phone}
+       \n- Name: ${faculty.name}\n- College: ${collegeDoc.collegeName}\n- Department: ${deptName}\n- Course: ${courseName}\n- Phone: ${faculty.phone}
        \n\nIf any of these details are incorrect, please contact your administration.\n\nBest Regards,\nThe AISS Team`
     );
 

@@ -3,9 +3,9 @@ from langchain_pinecone import PineconeVectorStore
 from pinecone import Pinecone
 import os
 from dotenv import load_dotenv
-from tools.get_models import get_hf_model
+from tools.get_models import get_gemini_embedding_model
 
-embedding = get_hf_model()
+embedding = get_gemini_embedding_model()
 
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "aiss-aes-index")
@@ -21,24 +21,28 @@ vector_store = PineconeVectorStore(
     embedding=embedding,
 )
 
-print("Pinecone vector store initialized successfully.")
 
 
 #storing teacher notes and answer keys in vectorDB
-def store_teacher_chunks(chunks, question_no, content_type, subject, exam_id, NAMESPACE):
+def store_teacher_chunks(chunks, question_id, content_type, subject, exam_id, NAMESPACE):
     docs = []
     
     for chunk in chunks:
         # We wrap the chunk in a Document object
+        metadata = {
+            "type": content_type,
+            "subject": subject.lower(),
+            "exam_id": exam_id,
+            "text": chunk
+        }
+
+        # Add question number only for answer keys
+        if question_id is not None:
+            metadata["question_id"] = str(question_id)
+
         doc = Document(
             page_content=chunk,
-            metadata={
-                "type": content_type,     # 'notes' or 'answer_key'
-                "subject": subject.lower(),
-                "question_no": int(question_no), # Ensure this is an int for strict filtering
-                "exam_id": exam_id,
-                "text": chunk             # Some LangChain versions require the text in metadata
-            }
+            metadata=metadata
         )
         docs.append(doc)
 
@@ -51,18 +55,18 @@ def store_teacher_chunks(chunks, question_no, content_type, subject, exam_id, NA
 
 
 #retrive relavant notes for a question from vectorDB
-def retrieve_relevant_notes_langchain(question_text, namespace, exam_id, question_no, content_type,top_k=3):
+def retrieve_relevant_chunks(question_text, namespace, exam_id, question_id, content_type,top_k=3):
     """
     Fetches ONLY the notes related to a specific question within a specific exam.
     """
     # Define strict filters to prevent 'data leakage' from other sheets
     strict_filter = {
-        "$and": [
-            {"exam_id": {"$eq": exam_id}},
-            {"question_no": {"$eq": question_no}},
-            {"type": {"$eq": content_type}} # Or "answer_key" depending on what you need
-        ]
+        "exam_id": {"$eq": exam_id},
+        "type": {"$eq": content_type}
     }
+    
+    if content_type == "answer_key" and question_id:
+        strict_filter["question_id"] = {"$eq": str(question_id)}
 
     retriever = vector_store.as_retriever(
         search_kwargs={

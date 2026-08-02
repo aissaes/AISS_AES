@@ -1,9 +1,9 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.72);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: var(--overlay-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   z-index: 8000;
   display: flex;
   align-items: center;
@@ -18,11 +18,13 @@
 }
 
 .modal {
-  background: #0d1526;
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-1);
   border-radius: 18px;
   width: 100%;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255,255,255,0.04);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
   animation: modalIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   max-height: 90vh;
   display: flex;
@@ -46,7 +48,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 22px 24px 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--border-1);
   flex-shrink: 0;
 }
 
@@ -61,8 +63,8 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--btn-close-bg);
+  border: 1px solid var(--btn-close-border);
   color: var(--text-2);
   display: flex;
   align-items: center;
@@ -72,7 +74,7 @@
   flex-shrink: 0;
 }
 .closeBtn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--btn-close-hover);
   color: var(--text-1);
 }
 
@@ -84,7 +86,7 @@
 
 .footer {
   padding: 16px 24px 22px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--border-1);
   display: flex;
   gap: 10px;
   justify-content: flex-end;

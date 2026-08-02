@@ -3,10 +3,15 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-
 import connectDB from "./configurations/database.js";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // --- ROUTES ---
+import uploadRouter from "./routes/uploadRoutes.js";
 import facultyAuthRouter from "./routes/facultyAuth.js";
 import overallAdminAuthRouter from "./routes/overallAdminAuth.js";
 import overallAdminRouter from "./routes/overallAdminRoutes.js";
@@ -19,23 +24,28 @@ import questionPaperRoutes from "./routes/questionPaperRoutes.js";
 import collegeRouter from "./routes/collegeRoutes.js";
 import studentRouter from "./routes/studentRoutes.js";
 import answerRoutes from "./routes/answerRoutes.js";
+import studentAuthRouter from "./routes/studentAuthRoutes.js";
+import evaluationRouter from "./routes/evaluationRoutes.js";
+import resultRoutes from "./routes/resultRoutes.js";
+import testRouter from "./routes/testRoutes.js";
 
-
-// You no longer need dotenv.config() down here.
 const app = express();
 
 // updated CORS array for local & Vercel
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "https://aiss-aes-8ju1.vercel.app",
-  "https://aiss-aes-frontend.vercel.app"
-];
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(",") 
+  : [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "https://aiss-aes-8ju1.vercel.app",
+      "https://aiss-aes-frontend.vercel.app"
+    ];
 
 app.use(cors({
   origin: allowedOrigins,
   credentials: true
 }));
+
 
 app.use(express.json());
 app.use(cookieParser());
@@ -47,6 +57,9 @@ app.use(async (req, res, next) => {
 });
 
 // --- ROUTE MAPPINGS ---
+
+app.use("/", uploadRouter);
+app.use("/", testRouter);
 
 // Public / Base Routes
 app.use("/college", collegeRouter);
@@ -68,10 +81,17 @@ app.use("/faculty/timetable", timetableRoutes);
 app.use("/faculty/question-paper", questionPaperRoutes);
 
 // Student Routes
+app.use("/student/auth", studentAuthRouter);
 app.use("/student", studentRouter);
 
 //answer Routes
 app.use('/answer',answerRoutes);
+
+//exam routes
+app.use("/faculty/exam", evaluationRouter);
+
+//results routes
+app.use("/results", resultRoutes);
 
 
 // Local dev server — Vercel uses the export below instead

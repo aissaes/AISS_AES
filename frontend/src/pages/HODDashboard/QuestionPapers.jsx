@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { FileText, CheckCircle2, XCircle, RefreshCw, Eye } from 'lucide-react';
+import { FileText, CheckCircle2, XCircle, RefreshCw, Eye, Clock } from 'lucide-react';
 import { questionPaperAPI } from '../../api/client';
 import { useToast } from '../../components/Toast/Toast';
 import Modal from '../../components/Modal/Modal';
@@ -96,7 +96,15 @@ const QuestionPapers = () => {
           <div className={styles.tabBar}>
             {['pending', 'approved'].map(t => (
               <button key={t} className={`${styles.tabBtn} ${tab === t ? styles.tabActive : ''}`} onClick={() => setTab(t)}>
-                {t === 'pending' ? '⏳ Pending' : '✅ Approved'}
+                {t === 'pending' ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <Clock size={13} /> Pending
+                  </span>
+                ) : (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <CheckCircle2 size={13} /> Approved
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -106,7 +114,7 @@ const QuestionPapers = () => {
           {loading ? <div className={styles.tableLoader}><div className={styles.spinner} /></div> :
             papers.length === 0 ? (
               <div className={styles.empty}>
-                <span className={styles.emptyIcon}>{tab === 'pending' ? '📋' : '📁'}</span>
+                <FileText size={36} style={{ color: 'var(--text-3)', display: 'block', margin: '0 auto 12px auto' }} />
                 <p className={styles.emptyText}>No {tab} question papers found.</p>
               </div>
             ) : (
@@ -182,8 +190,8 @@ const QuestionPapers = () => {
           <div className={styles.formRow}>
             <label>Decision</label>
             <select className={styles.formInput || styles.modalInput} value={reviewStatus} onChange={e => setReviewStatus(e.target.value)}>
-              <option value="Approved">✅ Approve — Paper is ready</option>
-              <option value="Rejected">❌ Reject — Needs revision</option>
+              <option value="Approved">Approve — Paper is ready</option>
+              <option value="Rejected">Reject — Needs revision</option>
             </select>
           </div>
           {reviewStatus === 'Rejected' && (

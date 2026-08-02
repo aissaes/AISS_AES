@@ -1,5 +1,6 @@
 import Faculty from "../models/faculty.js"; // Make sure to import your model!
 import OverallAdmin from "../models/overallAdmin.js";
+import Student from "../models/student.js";
 
 // 1. Dual Role Check
 export const isHODOrCollegeAdmin = async (req, res, next) => {
@@ -68,5 +69,22 @@ export const isOverallAdmin = async (req, res, next) => {
     next();
   } catch (error) {
     res.status(500).json({ message: "Internal server error verifying Overall Admin role.", error });
+  }
+};
+
+// 5. Student check
+export const isStudent = async (req, res, next) => {
+  try {
+    if (req.user && req.user.role === 'student') { // Ensure 'student' matches how you save it in the DB payload
+      const student = await Student.findById(req.user.id);
+      if (!student) {
+        return res.status(403).json({ message: "Access denied. Student account not found." });
+      }
+      next();
+    } else {
+      return res.status(403).json({ message: "Access denied. Student resources only." });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error verifying Student role.", error });
   }
 };

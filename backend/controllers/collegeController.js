@@ -4,18 +4,20 @@ import Faculty from "../models/faculty.js";
 import bcrypt from "bcryptjs";
 import OverallAdmin from "../models/overallAdmin.js";
 import sendEmail from "../configurations/nodemailer.js";
+import Department from "../models/department.js";
 
 export const getAllCollegesList = async (req, res) => {
-  try {
-    // Only fetch colleges where status is NOT 'Pending'
-    // We only send the _id and collegeName to keep the payload tiny and fast
-    const colleges = await College.find({ status: { $ne: 'Pending' } }).select('_id collegeName');
-    
-    res.status(200).json({ colleges });
-  } catch (error) {
-    console.error("Error fetching colleges:", error);
-    res.status(500).json({ message: "Internal server error", error: error.message });
-  }
+  try {
+    // Only fetch colleges where status is NOT 'Pending'
+    const colleges = await College.find({ status: { $ne: 'Pending' } })
+      .populate('collegeAdminId', 'name email phone')
+      .populate('departments', 'name code');
+    
+    res.status(200).json({ colleges });
+  } catch (error) {
+    console.error("Error fetching colleges:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message });
+  }
 };
 
 // 2. Fetch departments for a specific college (Triggered when user selects a college)
@@ -23,12 +25,12 @@ export const getCollegeDepartments = async (req, res) => {
   try {
     const { collegeId } = req.params;
 
-    const college = await College.findById(collegeId).select('departments');
+    const college = await College.findById(collegeId).populate('departments');
     if (!college) {
       return res.status(404).json({ message: "College not found" });
     }
 
-    res.status(200).json({ departments: college.departments });
+    res.status(200).json({ departments: college.departments || [] });
   } catch (error) {
     console.error("Error fetching departments:", error);
     res.status(500).json({ message: "Internal server error", error: error.message });
@@ -39,7 +41,7 @@ export const getCollegeDepartments = async (req, res) => {
 // POST: Public route for the landing page form
 export const collegeRegisterRequest = async (req, res) => {
   try {
-    const { collegeName, location, departments, adminName, adminEmail, adminPhone } = req.body;
+    const { collegeName, collegeCode, location, departments, adminName, adminEmail, adminPhone } = req.body;
 
     if (!collegeName || !adminName || !adminEmail) {
       return res.status(400).json({ message: "Required fields are missing." });
@@ -56,14 +58,31 @@ export const collegeRegisterRequest = async (req, res) => {
     const dummyPassword = crypto.randomBytes(16).toString('hex');
     const hashedDummy = await bcrypt.hash(dummyPassword, 10);
 
+    // Auto-generate code from name if missing/empty
+    const resolvedCode = collegeCode 
+      ? collegeCode.toUpperCase().replace(/[^A-Z0-9]/g, "") 
+      : collegeName.split(/\s+/).map(w => w[0]).join("").toUpperCase().replace(/[^A-Z0-9]/g, "").substring(0, 6) || "COL";
+
     // 3. Create the College (Pending)
     const newCollege = await College.create({
       collegeName,
+      collegeCode: resolvedCode,
       location,
-      departments,
+      departments: [],
       collegeAdminId: null,
       status: "Pending"
     });
+
+    // 4. Create the Administration department
+    const adminDept = await Department.create({
+      collegeId: newCollege._id,
+      name: "Administration",
+      code: "ADMIN"
+    });
+    
+    // Add the new admin department to the college
+    newCollege.departments = [adminDept._id];
+    await newCollege.save();
 
     // 4. Create the Admin (isApproved: false)
     const newAdmin = await Faculty.create({
@@ -71,7 +90,7 @@ export const collegeRegisterRequest = async (req, res) => {
       email: adminEmail,
       password: hashedDummy,
       collegeId: newCollege._id,
-      department: "Administration",
+      department: adminDept._id,
       phone: adminPhone,
       role: "collegeAdmin",
       isApproved: false 

@@ -7,6 +7,8 @@ import Landing   from '../pages/Landing/Landing';
 import Login     from '../pages/Login/Login';
 import Register  from '../pages/Register/Register';
 import AdminLogin from '../pages/AdminLogin/AdminLogin';
+import DownloadApp from '../pages/DownloadApp/DownloadApp';
+import SecretTest from '../pages/SecretTest/SecretTest';
 
 // Dashboard shells
 import FacultyDashboard    from '../pages/FacultyDashboard/FacultyDashboard';
@@ -18,6 +20,9 @@ const AppRoutes = () => (
   <Routes>
     {/* Public routes */}
     <Route path="/" element={<Landing />} />
+    <Route path="/download" element={<DownloadApp />} />
+    <Route path="/test-upload" element={<SecretTest />} />
+
     
     <Route path="/login" element={
       <PublicOnlyRoute><Login /></PublicOnlyRoute>

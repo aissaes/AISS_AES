@@ -12,11 +12,22 @@ const Settings = () => {
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState('');
 
+  // Password reset states
+  const [pwdForm, setPwdForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [changingPwd, setChangingPwd] = useState(false);
+  const [pwdError, setPwdError] = useState('');
+
   useEffect(() => {
     facultyAPI.getMe()
       .then(r => {
         const u = r.data.profile;
-        setForm({ name: u.name || '', phone: u.phone || '', department: u.department || '', college: u.college || '', password: '' });
+        setForm({ 
+          name: u.name || '', 
+          phone: u.phone || '', 
+          department: u.department?.name || u.department || '', 
+          college: u.collegeId?.collegeName || u.college || '', 
+          password: '' 
+        });
       })
       .catch(() => setError('Failed to load profile data.'))
       .finally(() => setLoading(false));
@@ -39,6 +50,38 @@ const Settings = () => {
       toast(msg, 'error');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    if (!pwdForm.currentPassword || !pwdForm.newPassword || !pwdForm.confirmPassword) {
+      setPwdError('All password fields are required.');
+      return;
+    }
+    if (pwdForm.newPassword !== pwdForm.confirmPassword) {
+      setPwdError('New passwords do not match.');
+      return;
+    }
+    if (pwdForm.newPassword.length < 6) {
+      setPwdError('Password must be at least 6 characters long.');
+      return;
+    }
+    setPwdError('');
+    setChangingPwd(true);
+    try {
+      await facultyAPI.changePassword({
+        currentPassword: pwdForm.currentPassword,
+        newPassword: pwdForm.newPassword
+      });
+      toast('Password changed successfully!', 'success');
+      setPwdForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Password change failed.';
+      setPwdError(msg);
+      toast(msg, 'error');
+    } finally {
+      setChangingPwd(false);
     }
   };
 
@@ -130,6 +173,94 @@ const Settings = () => {
             {saving
               ? <><span className={styles.btnSpinner} />Saving…</>
               : <><Save size={16} />Save Changes</>}
+          </button>
+        </div>
+      </form>
+
+      {/* ── Change Password Section ── */}
+      <div className={styles.divider} style={{ margin: '40px 0 24px 0' }} />
+
+      <div className={styles.header}>
+        <div className={styles.headerIcon}>
+          <Lock size={20} />
+        </div>
+        <div>
+          <h2 className={styles.headerTitle}>Change Password</h2>
+          <p className={styles.headerSub}>Update your account password securely.</p>
+        </div>
+      </div>
+
+      {pwdError && (
+        <div className={styles.alertError} role="alert">{pwdError}</div>
+      )}
+
+      <form className={styles.form} onSubmit={handlePasswordSubmit} noValidate>
+        <div className={styles.grid2}>
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor="p-curr">Current Password</label>
+            <div className={styles.inputWrap}>
+              <Lock size={15} className={styles.inputIcon} />
+              <input 
+                id="p-curr" 
+                name="currentPassword" 
+                type="password" 
+                className={styles.input}
+                value={pwdForm.currentPassword} 
+                onChange={e => setPwdForm(p => ({ ...p, currentPassword: e.target.value }))}
+                placeholder="Current Password" 
+                required 
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'none' }} />
+        </div>
+
+        <div className={styles.grid2}>
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor="p-new">New Password</label>
+            <div className={styles.inputWrap}>
+              <Lock size={15} className={styles.inputIcon} />
+              <input 
+                id="p-new" 
+                name="newPassword" 
+                type="password" 
+                className={styles.input}
+                value={pwdForm.newPassword} 
+                onChange={e => setPwdForm(p => ({ ...p, newPassword: e.target.value }))}
+                placeholder="At least 6 characters" 
+                required 
+              />
+            </div>
+          </div>
+
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor="p-conf">Confirm New Password</label>
+            <div className={styles.inputWrap}>
+              <Lock size={15} className={styles.inputIcon} />
+              <input 
+                id="p-conf" 
+                name="confirmPassword" 
+                type="password" 
+                className={styles.input}
+                value={pwdForm.confirmPassword} 
+                onChange={e => setPwdForm(p => ({ ...p, confirmPassword: e.target.value }))}
+                placeholder="Confirm New Password" 
+                required 
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.actions}>
+          <button
+            type="submit"
+            className={styles.saveBtn}
+            disabled={changingPwd || !pwdForm.currentPassword || !pwdForm.newPassword || !pwdForm.confirmPassword}
+          >
+            {changingPwd
+              ? <><span className={styles.btnSpinner} />Updating…</>
+              : <><Lock size={16} />Update Password</>}
           </button>
         </div>
       </form>

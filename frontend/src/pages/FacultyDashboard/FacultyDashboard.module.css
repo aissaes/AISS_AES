@@ -117,8 +117,8 @@
   align-items: center;
   gap: 14px;
   padding: 20px;
-  background: rgba(14, 22, 44, 0.7);
-  border: 1px solid var(--border-base);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
   border-radius: 14px;
   transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
 }
@@ -180,8 +180,8 @@
 
 /* Card */
 .card {
-  background: rgba(14, 22, 44, 0.7);
-  border: 1px solid var(--border-base);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
   border-radius: 14px;
   overflow: hidden;
 }
@@ -191,8 +191,8 @@
   align-items: center;
   gap: 10px;
   padding: 18px 22px;
-  border-bottom: 1px solid var(--border-base);
-  background: rgba(0, 0, 0, 0.15);
+  border-bottom: 1px solid var(--border-1);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .cardHeaderIcon {
@@ -311,7 +311,7 @@
   border-radius: 10px;
   background: var(--danger-bg);
   border: 1px solid var(--danger-border);
-  color: #fca5a5;
+  color: var(--danger);
   font-size: 0.88rem;
 }
 
@@ -380,6 +380,7 @@
 .primaryBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  filter: grayscale(0.5);
 }
 
 .ghostBtn {
@@ -406,6 +407,7 @@
 .ghostBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  filter: grayscale(0.5);
 }
 
 .dangerBtn {
@@ -429,20 +431,26 @@
 }
 
 .modalInput {
-  background: var(--bg-3);
-  border: 1px solid var(--border-base);
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
   color: var(--text-1);
   padding: 10px 14px;
   border-radius: 8px;
   font-family: inherit;
   font-size: 0.85rem;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
   width: 100%;
 }
 
+.modalInput option {
+  background-color: var(--surface-3);
+  color: var(--text-1);
+}
+
 .modalInput:focus {
-  border-color: var(--accent);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.25);
 }
 
 .modalInput::placeholder {
@@ -465,9 +473,9 @@
   border-radius: 9px;
   font-size: 0.84rem;
   line-height: 1.5;
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.22);
-  color: #fca5a5;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
 }
 
 /* ══ Paper Builder Specific Styles (NEW) ══ */
@@ -655,8 +663,8 @@
 
 .modalTextarea {
   width: 100%;
-  background: rgba(0,0,0,0.28);
-  border: 1px solid var(--border-base);
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
   border-radius: 8px;
   padding: 12px 14px;
   font-size: 0.9rem;
@@ -664,13 +672,13 @@
   font-family: inherit;
   outline: none;
   resize: vertical;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
   min-height: 80px;
 }
 
 .modalTextarea:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(99,102,241,0.15);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.25);
 }
 
 .wideModal {

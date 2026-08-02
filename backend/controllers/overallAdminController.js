@@ -5,12 +5,12 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import sendEmail from "../configurations/nodemailer.js";
 
-// 1. View all pending colleges
 export const getPendingColleges = async (req, res) => {
   try {
     // We populate the admin details so the Overall Admin can see who requested it
     const pendingColleges = await College.find({ status: "Pending" })
-                                         .populate("collegeAdminId", "name email phone");
+                                         .populate("collegeAdminId", "name email phone")
+                                         .populate("departments", "name code");
     
     res.status(200).json({ colleges: pendingColleges });
   } catch (error) {
@@ -178,6 +178,51 @@ export const transferOverallAdmin = async (req, res) => {
 
   } catch (error) {
     console.error("Error transferring overall admin:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message });
+  }
+};
+
+// 3. Reject the college registration request
+export const rejectCollege = async (req, res) => {
+  try {
+    const { collegeId } = req.params;
+    const { reason } = req.body;
+
+    const college = await College.findById(collegeId);
+    if (!college || college.status !== "Pending") {
+      return res.status(404).json({ message: "Pending college not found." });
+    }
+
+    const admin = await Faculty.findById(college.collegeAdminId);
+
+    // 1. Send the Decline Email
+    if (admin) {
+      await sendEmail(
+        admin.email,
+        "College Registration Request Declined - AISS Platform",
+        `Dear ${admin.name},
+
+        We regret to inform you that your request to register the college "${college.collegeName}" on the AISS Platform has been declined.
+        
+        ${reason ? `Reason for rejection: ${reason}` : "Your request did not meet our platform requirements or details could not be verified."}
+
+        If you believe this was a mistake, you may submit a new request with correct details.
+
+        Regards,
+        The AISS Team`
+      ).catch(err => console.error("Failed to send college rejection email:", err));
+
+      // 2. Hard delete the pending admin faculty record
+      await Faculty.findByIdAndDelete(college.collegeAdminId);
+    }
+
+    // 3. Hard delete the pending college record
+    await College.findByIdAndDelete(collegeId);
+
+    res.status(200).json({ message: "College request successfully rejected and removed from system." });
+
+  } catch (error) {
+    console.error("Error rejecting college:", error);
     res.status(500).json({ message: "Internal server error", error: error.message });
   }
 };

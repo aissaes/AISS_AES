@@ -6,11 +6,16 @@ const collegeSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  collegeCode: {
+    type: String,
+    required: false
+  },
   location: {
     type: String
   },
   departments: [{
-    type: String // e.g., ["Computer Science", "Mechanical", "Civil"]
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Department"
   }],
   collegeAdminId: {
     type: mongoose.Schema.Types.ObjectId,

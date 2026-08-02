@@ -14,8 +14,14 @@ const facultySchema = new mongoose.Schema({
     index: true
   },
   department:{
-    type:String,
-    required:true
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Department",
+    required: true
+  },
+
+  course: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Course"
   },
 
   email:{

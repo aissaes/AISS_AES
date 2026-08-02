@@ -8,13 +8,18 @@ const uploadSchema=new mongoose.Schema({
         ref:'Exam'
     },
     token:{type:String},
-    expiresId:{type:Date},
+    expiresAt:{type:Date},
 });
 
-uploadSchema.index({expiresId:1},{expireAfterSeconds:0}) //for automatically deleting the data after the expiresAt time is reached
+// Ensure a student only has one active upload session per exam
+uploadSchema.index({ student: 1, exam: 1 }, { unique: true });
+// Optimize token-based lookups
+uploadSchema.index({ token: 1, student: 1 });
+
+uploadSchema.index({expiresAt:1},{expireAfterSeconds:0}) //for automatically deleting the data after the expiresAt time is reached
 
 
 const Upload=mongoose.model("Upload",uploadSchema);
 
 
-export default Upload;
+export default Upload;  

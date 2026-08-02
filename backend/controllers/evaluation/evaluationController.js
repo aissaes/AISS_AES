@@ -1,0 +1,395 @@
+import Answers from "../../models/answer.js";
+import Exam from "../../models/exam.js"
+import axios from "axios";
+import QuestionPaper from "../../models/questionPapers.js"; 
+import Result from "../../models/result.js";
+import Student from "../../models/student.js";
+import Upload from "../../models/uploadSession.js";
+
+// Define the Base URL (Defaults to local if the .env variable is missing)
+const AI_BASE_URL = process.env.PYTHON_AGENT_URL || "http://127.0.0.1:10000";
+
+// ==========================================
+// 1. GET ALL STUDENTS APPEARED
+// ==========================================
+export const getAllStudentsAppearedForExam = async (req, res) => {
+  try {
+    const { examId } = req.params;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    // 1. Check exam exists
+    const exam = await Exam.findById(examId);
+    if (!exam) {
+      return res.status(404).json({ success: false, message: "Exam not found" });
+    }
+
+    // 2. Authorization check
+    const normalizedRole = (userRole || "").toLowerCase();
+    const isHOD = normalizedRole === "hod";
+    const isSuperAdmin = normalizedRole === "collegeadmin" || normalizedRole === "superadmin";
+    const isAssignedFaculty = normalizedRole === "faculty" && exam.assignedFaculty && exam.assignedFaculty.toString() === userId;
+
+    if (!isHOD && !isSuperAdmin && !isAssignedFaculty) {
+      return res.status(403).json({ success: false, message: "Unauthorized access" });
+    }
+
+    // 3. Get students who appeared
+    const students = await Answers.find({ for_exam: examId })
+      .populate("uploaded_student", "name email rollNumber")
+      .select("uploaded_student");
+
+    const result = students.map((entry) => entry.uploaded_student);
+
+    return res.status(200).json({
+      success: true,
+      count: result.length,
+      students: result,
+    });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+
+// ==========================================
+// 2. TRIGGER AI EVALUATION (SYNCHRONOUS EXECUTION)
+// ==========================================
+async function limitConcurrency(tasks, limit) {
+  const results = [];
+  const executing = new Set();
+  for (const task of tasks) {
+    const p = Promise.resolve().then(() => task());
+    results.push(p);
+    executing.add(p);
+    const clean = () => executing.delete(p);
+    p.then(clean, clean);
+    if (executing.size >= limit) {
+      await Promise.race(executing);
+    }
+  }
+  return Promise.all(results);
+}
+
+export const triggerAIEvaluation = async (req, res) => {
+  let examId;
+  let studentId;
+  try {
+    examId = req.params.examId;
+    studentId = req.body.studentId; 
+    const facultyId = req.user.id; 
+
+    // 1. Validate Exam & Permissions
+    const exam = await Exam.findById(examId);
+    if (!exam) return res.status(404).json({ success: false, message: "Exam not found." });
+    if (exam.assignedFaculty.toString() !== facultyId) return res.status(403).json({ success: false, message: "Unauthorized." });
+    if (!exam.isPaperQuestionUploaded) return res.status(400).json({ success: false, message: "Question paper not uploaded." });
+
+    // 2. Fetch the Question Paper 
+    const paper = await QuestionPaper.findById(exam.questionPaper);
+    if (!paper) return res.status(404).json({ success: false, message: "Question paper data is missing." });
+
+    // 3. Fetch ONLY this specific student's submission
+    const submission = await Answers.findOne({ for_exam: examId, uploaded_student: studentId });
+    if (!submission) return res.status(400).json({ success: false, message: "No submission found for this student." });
+
+    // 4. Assert that the student has no active upload session
+    const activeSession = await Upload.findOne({ student: studentId, exam: examId });
+    if (activeSession) {
+      return res.status(400).json({
+        success: false,
+        message: "Student's upload session is still active. Please wait for the student to finalize submission or for the upload window to close."
+      });
+    }
+
+    // 5. Initialize or fetch the Result document
+    let resultDoc = await Result.findOne({ student: studentId, exam: examId });
+    if (resultDoc && resultDoc.status === "Evaluating") {
+      return res.status(400).json({ success: false, message: "AI evaluation is already in progress for this student." });
+    }
+
+    if (!resultDoc) {
+      resultDoc = await Result.create({
+        student: studentId,
+        exam: examId,
+        questionPaper: exam.questionPaper,
+        evaluations: [],
+        status: "Evaluating"
+      });
+    } else {
+      resultDoc.status = "Evaluating";
+      await resultDoc.save();
+    }
+
+    // 6. Evaluate all questions synchronously with concurrency limit
+    const tasks = Array.from(submission.answers.entries()).map(([questionNoStr, answerData]) => async () => {
+      try {
+        let questionText = "Question text missing"; 
+        let maxMarks = 10;
+        
+        for (const section of paper.sections) {
+          for (const q of section) {
+            if (q.questionId === questionNoStr) {
+              questionText = q.text;
+              maxMarks = q.marks;
+              break;
+            }
+            if (q.children && q.children.length > 0) {
+              const foundSub = q.children.find(sub => sub.questionId === questionNoStr);
+              if (foundSub) {
+                questionText = foundSub.text;
+                maxMarks = foundSub.marks;
+                break;
+              }
+            }
+          }
+          if (questionText !== "Question text missing") break;
+        }
+
+        const fileUrl = (answerData && typeof answerData === "object") ? answerData.fileUrl : answerData;
+
+        const aiResponse = await axios.post(`${AI_BASE_URL}/student/evaluate`, {
+          raw_input: fileUrl,
+          question: questionText,
+          exam_id: examId,
+          namespace: exam.collegeId.toString(), 
+          question_id: questionNoStr,
+          max_marks: maxMarks
+        });
+
+        let score = 0, reasoning = "Pending", strengths = "", weakness = "", feedback = "";
+        let aiOutput = aiResponse.data.evaluation;
+
+        if (typeof aiOutput === 'string') {
+          try {
+            const cleanedText = aiOutput.replace(/```json/gi, '').replace(/```/g, '').trim();
+            aiOutput = JSON.parse(cleanedText); 
+          } catch (e) {}
+        }
+
+        if (typeof aiOutput === 'object' && aiOutput !== null && aiOutput.score !== undefined) {
+          score = Number(aiOutput.score) || 0;
+          reasoning = aiOutput.reasoning || "";
+          strengths = aiOutput.strengths || "";
+          weakness = aiOutput.weaknesses || "";
+          feedback = aiOutput.feedback || "";
+        } else {
+          reasoning = typeof aiOutput === 'string' ? aiOutput : "Evaluation failed format.";
+        }
+
+        return { questionNoStr, score, reasoning, strengths, weakness, feedback };
+
+      } catch (aiError) {
+        const exactReason = aiError.response?.data?.detail || aiError.response?.data?.message || aiError.message || "Unknown AI error";
+        console.error(`❌ AI failed for question ${questionNoStr}:`, exactReason);
+        return { questionNoStr, score: 0, reasoning: `AI Error: ${exactReason}`, strengths: "", weakness: "", feedback: "" };
+      }
+    });
+
+    const aiResults = await limitConcurrency(tasks, 2);
+
+    // Reload Result document to prevent version conflict
+    resultDoc = await Result.findOne({ student: studentId, exam: examId });
+    if (!resultDoc) {
+      return res.status(404).json({ success: false, message: "Result document not found after evaluation." });
+    }
+
+    let finalTotal = 0;
+    for (const resData of aiResults) {
+      const existingEvalIndex = resultDoc.evaluations.findIndex(e => e.questionId === resData.questionNoStr);
+
+      if (existingEvalIndex >= 0) {
+        resultDoc.evaluations[existingEvalIndex].aiMarks = resData.score;
+        resultDoc.evaluations[existingEvalIndex].aiReasoning = resData.reasoning;
+        resultDoc.evaluations[existingEvalIndex].strengths = resData.strengths; 
+        resultDoc.evaluations[existingEvalIndex].weakness = resData.weakness;
+        resultDoc.evaluations[existingEvalIndex].aiFeedback = resData.feedback;
+      } else {
+        resultDoc.evaluations.push({
+          questionId: resData.questionNoStr,
+          aiMarks: resData.score,
+          aiReasoning: resData.reasoning,
+          strengths: resData.strengths, 
+          weakness: resData.weakness,
+          aiFeedback: resData.feedback
+        });
+      }
+    }
+
+    for (const ev of resultDoc.evaluations) {
+      finalTotal += (ev.overrideMarks !== null && ev.overrideMarks !== undefined) ? ev.overrideMarks : ev.aiMarks;
+    }
+    
+    resultDoc.totalMarksObtained = finalTotal;
+
+    const hasFailedQuestion = aiResults.some(r => r.reasoning && r.reasoning.startsWith("AI Error:"));
+    resultDoc.status = hasFailedQuestion ? "Failed" : "Completed"; 
+
+    await resultDoc.save();
+    console.log(`✅ Student ${studentId} grading finalized with status ${resultDoc.status}! Total Marks: ${finalTotal}`);
+
+    return res.status(200).json({ 
+      success: true, 
+      message: hasFailedQuestion ? `Student evaluation finished with some failures.` : `Student evaluated successfully.`,
+      status: resultDoc.status,
+      totalMarks: finalTotal
+    });
+
+  } catch (error) {
+    const exactReason = error.message || "Unknown server error";
+    console.error("Trigger Evaluation Error:", exactReason);
+    
+    // Set result document status to Failed on uncaught exceptions
+    try {
+      if (studentId && examId) {
+        const resultDoc = await Result.findOne({ student: studentId, exam: examId });
+        if (resultDoc) {
+          resultDoc.status = "Failed";
+          await resultDoc.save();
+        }
+      }
+    } catch (saveErr) {
+      console.error("Failed to save error status to Result doc:", saveErr);
+    }
+
+    return res.status(500).json({ success: false, message: `Server Error: ${exactReason}` });
+  }
+};
+
+
+// ==========================================
+// 3. UPLOAD TEACHER MATERIALS (RUBRIC/NOTES)
+// ==========================================
+export const uploadTeacherMaterials = async (req, res) => {
+  try {
+    const { examId } = req.params;
+    const { fileUrl, contentType, questionId } = req.body; 
+    const facultyId = req.user.id; 
+
+    if (!fileUrl || !contentType) {
+      return res.status(400).json({ success: false, message: "File URL and Content Type are required." });
+    }
+
+    const exam = await Exam.findById(examId);
+    if (!exam) return res.status(404).json({ success: false, message: "Exam not found." });
+
+    if (exam.assignedFaculty.toString() !== facultyId) {
+      return res.status(403).json({ success: false, message: "Unauthorized: Only assigned faculty can upload materials." });
+    }
+
+    const namespace = exam.collegeId.toString();
+    console.log(`\n📤 Sending ${contentType} to AI for vectorization...`);
+
+    const payload = {
+      raw_input: fileUrl,
+      content_type: contentType,
+      subject: exam.subjectName,
+      exam_id: examId,
+      namespace: namespace
+    };
+
+    if (contentType === "answer_key") {
+      payload.question_id = questionId;
+    }
+
+    const aiResponse = await axios.post(`${AI_BASE_URL}/teacher/upload`, payload);
+    console.log(`✅ AI Vectorization Complete:`, aiResponse.data);
+
+    res.status(200).json({
+      success: true,
+      message: "Materials successfully uploaded and vectorized by the AI.",
+      ai_status: aiResponse.data
+    });
+
+  } catch (error) {
+    console.error("Teacher Upload Error:", error);
+    res.status(500).json({ success: false, message: "Server error during AI vectorization.", error: error.message });
+  }
+};
+
+
+// ==========================================
+// 4. FACULTY: OVERRIDE AI MARKS
+// ==========================================
+export const overrideAIGrade = async (req, res) => {
+  try {
+    const { examId, studentId } = req.params;
+    const { questionId, overrideMarks, overrideReason } = req.body;
+    const facultyId = req.user.id;
+
+    const exam = await Exam.findById(examId);
+    if (!exam) return res.status(404).json({ success: false, message: "Exam not found." });
+    if (exam.assignedFaculty.toString() !== facultyId) {
+      return res.status(403).json({ success: false, message: "Unauthorized." });
+    }
+
+    const resultDoc = await Result.findOne({ exam: examId, student: studentId });
+    if (!resultDoc) return res.status(404).json({ success: false, message: "Result not found." });
+
+    const evalIndex = resultDoc.evaluations.findIndex(e => e.questionId === questionId);
+    if (evalIndex === -1) {
+      return res.status(404).json({ success: false, message: "Question evaluation not found." });
+    }
+
+    resultDoc.evaluations[evalIndex].overrideMarks = overrideMarks;
+    resultDoc.evaluations[evalIndex].overrideReason = overrideReason || "Teacher manually adjusted the score.";
+
+    let newTotal = 0;
+    for (const ev of resultDoc.evaluations) {
+      if (ev.overrideMarks !== null && ev.overrideMarks !== undefined) {
+        newTotal += ev.overrideMarks;
+      } else {
+        newTotal += ev.aiMarks;
+      }
+    }
+    
+    resultDoc.totalMarksObtained = newTotal;
+    await resultDoc.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Grade successfully overridden.",
+      updatedTotal: newTotal,
+      updatedEvaluation: resultDoc.evaluations[evalIndex]
+    });
+
+  } catch (error) {
+    console.error("Override Error:", error);
+    res.status(500).json({ success: false, message: "Server error during grade override." });
+  }
+};
+
+
+// ==========================================
+// 5. FACULTY: PUBLISH / UNPUBLISH EXAM RESULTS
+// ==========================================
+export const publishExamResults = async (req, res) => {
+  try {
+    const { examId } = req.params;
+    const { publish } = req.body; // boolean
+    const facultyId = req.user.id;
+
+    const exam = await Exam.findById(examId);
+    if (!exam) {
+      return res.status(404).json({ success: false, message: "Exam not found." });
+    }
+
+    if (exam.assignedFaculty.toString() !== facultyId) {
+      return res.status(403).json({ success: false, message: "Unauthorized to publish results for this exam." });
+    }
+
+    exam.resultsPublished = publish === true;
+    await exam.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Results ${exam.resultsPublished ? 'published successfully' : 'unpublished successfully'}.`,
+      resultsPublished: exam.resultsPublished
+    });
+  } catch (error) {
+    console.error("Error publishing results:", error);
+    res.status(500).json({ success: false, message: "Server error during results publication." });
+  }
+};

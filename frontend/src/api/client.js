@@ -93,6 +93,27 @@ export const facultyAPI = {
 ══════════════════════════════════════════════════════ */
 export const hodAPI = {
   transfer: (targetFacultyId) => client.post('/faculty/hod/transfer', { newHODId: targetFacultyId }),
+  getStudents: (params) => client.get('/faculty/hod/students', { params }),
+  assignStudents: (data) => client.post('/faculty/hod/students/assign', data),
+  unassignStudents: (studentIds, courseIds) => client.post('/faculty/hod/students/unassign', { studentIds, courseIds }),
+  updateStudentAcademics: (data) => client.put('/faculty/hod/students/edit', data),
+
+  // Semester Management
+  getSemesters: () => client.get('/faculty/hod/semesters'),
+  createSemester: (data) => client.post('/faculty/hod/semesters', data),
+  updateSemester: (semesterId, data) => client.put(`/faculty/hod/semesters/${semesterId}`, data),
+  toggleSemester: (semesterId, status) => client.put(`/faculty/hod/semesters/${semesterId}/toggle`, { status }),
+
+  // Course Management
+  getCourses: (params) => client.get('/faculty/hod/courses', { params }),
+  createCourse: (data) => client.post('/faculty/hod/courses', data),
+  updateCourse: (courseId, data) => client.put(`/faculty/hod/courses/${courseId}`, data),
+  deleteCourse: (courseId) => client.delete(`/faculty/hod/courses/${courseId}`),
+  assignFacultyToCourse: (data) => client.post('/faculty/hod/courses/assign-faculty', data),
+
+  // Token and QR Code Management
+  generateToken: (examId) => client.post(`/faculty/hod/exams/${examId}/generate-token`),
+  generateQRCode: (examId) => client.post(`/faculty/hod/exams/${examId}/generate-qr`),
 };
 
 /* ══════════════════════════════════════════════════════
@@ -104,6 +125,20 @@ export const collegeAdminAPI = {
   updateDepartments: (departments) => client.put('/faculty/collegeadmin/update-departments', { departments }),
   makeHOD: (facultyId) => client.post('/faculty/collegeadmin/make-hod', { facultyId }),
   transfer: (facultyId, newDepartment) => client.post('/faculty/collegeadmin/transfer', { facultyId, newDepartment }),
+  updateFaculty: (facultyId, data) => client.put(`/faculty/collegeadmin/faculty/${facultyId}`, data),
+  
+  // Department CRUD
+  createDepartment: (data) => client.post('/faculty/collegeadmin/departments', data),
+  updateDepartment: (departmentId, data) => client.put(`/faculty/collegeadmin/departments/${departmentId}`, data),
+  deleteDepartment: (departmentId) => client.delete(`/faculty/collegeadmin/departments/${departmentId}`),
+
+  // Student CRUD (College Admin only)
+  getStudents: () => client.get('/faculty/collegeadmin/students'),
+  addStudent: (data) => client.post('/faculty/collegeadmin/students', data),
+  bulkUpload: (students) => client.post('/faculty/collegeadmin/students/bulk-upload', { students }),
+  updateStudent: (studentId, data) => client.put(`/faculty/collegeadmin/students/${studentId}`, data),
+  deleteStudent: (studentId) => client.delete(`/faculty/collegeadmin/students/${studentId}`),
+  bulkDelete: (studentIds) => client.delete('/faculty/collegeadmin/students/bulk-delete', { data: { studentIds } }),
 };
 
 // Backward compat alias
@@ -117,6 +152,7 @@ export const overallAdminAPI = {
   changePassword: (data) => client.put('/overallAdmin/change-password', data),
   getPendingColleges: () => client.get('/overallAdmin/pending-colleges'),
   approveCollege: (collegeId) => client.put(`/overallAdmin/approve-college/${collegeId}`),
+  rejectCollege: (collegeId, reason) => client.delete(`/overallAdmin/reject-college/${collegeId}`, { data: { reason } }),
   transfer: (data) => client.post('/overallAdmin/transfer-overalladmin', data),
 };
 
@@ -132,6 +168,7 @@ export const timetableAPI = {
   getExamById: (examId) => client.get(`/faculty/timetable/exam/${examId}`),
   updateExam: (examId, data) => client.put(`/faculty/timetable/exam/${examId}`, data),
   deleteExam: (examId) => client.delete(`/faculty/timetable/exam/${examId}`),
+  generateExamQR: (examId) => client.post(`/faculty/timetable/exam/${examId}/generate-qr`),
 };
 
 /* ══════════════════════════════════════════════════════
@@ -159,6 +196,20 @@ export const collegeAPI = {
   getList: () => client.get('/college/list'),
   getDepartments: (collegeId) => client.get(`/college/${collegeId}/departments`),
   registerRequest: (data) => client.post('/college/request', data),
+};
+
+/* ══════════════════════════════════════════════════════
+   Evaluation API
+   Routes: /faculty/exam/*, /results/*
+══════════════════════════════════════════════════════ */
+export const evaluationAPI = {
+  getAppearedStudents: (examId) => client.get(`/faculty/exam/${examId}/students`),
+  getResultOverview: (examId) => client.get(`/results/faculty/exam/${examId}`),
+  getDetailedResult: (examId, studentId) => client.get(`/results/faculty/exam/${examId}/student/${studentId}`),
+  triggerAIEvaluation: (examId, studentId) => client.post(`/faculty/exam/${examId}/evaluate`, { studentId }),
+  overrideGrade: (examId, studentId, data) => client.put(`/faculty/exam/${examId}/student/${studentId}/override`, data),
+  uploadMaterials: (examId, data) => client.post(`/faculty/exam/${examId}/upload-materials`, data),
+  publishResults: (examId, publish) => client.put(`/faculty/exam/${examId}/publish-results`, { publish }),
 };
 
 export default client;

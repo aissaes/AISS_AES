@@ -1,68 +1,129 @@
 import QuestionPaper from "../models/questionPapers.js";
 import Exam from "../models/exam.js";
 import Faculty from "../models/faculty.js";
-import College from "../models/college.js";
 import sendEmail from "../configurations/nodemailer.js";
+
+
+// Helper to calculate maximum possible marks of a question paper considering choice rules
+export const calculateQuestionPaperMaxMarks = (sections, sectionChoices) => {
+  let totalMaxMarks = 0;
+
+  for (let i = 0; i < sections.length; i++) {
+    const sectionQuestions = sections[i] || [];
+    
+    // Calculate the max marks for each question in the section
+    const questionMarksList = sectionQuestions.map(q => {
+      // If the question has children (sub-questions)
+      if (q.children && q.children.length > 0) {
+        // Calculate max marks for the sub-questions
+        const childMarks = q.children.map(c => c.marks || 0);
+        
+        // If there's a choice rule at the question level
+        if (q.choice && q.choice.attempt && q.choice.attempt < childMarks.length) {
+          // Sort children marks descending and take top 'attempt'
+          childMarks.sort((a, b) => b - a);
+          return childMarks.slice(0, q.choice.attempt).reduce((sum, m) => sum + m, 0);
+        } else {
+          // No choice or all subquestions are compulsory: sum all children marks
+          return childMarks.reduce((sum, m) => sum + m, 0);
+        }
+      }
+      // If no subquestions, use the question's marks directly
+      return q.marks || 0;
+    });
+
+    // Check if there is a section-level choice rule
+    const choiceRule = sectionChoices && sectionChoices[i];
+    if (choiceRule && choiceRule.attempt && choiceRule.attempt < questionMarksList.length) {
+      // Sort question max marks descending and take top 'attempt'
+      questionMarksList.sort((a, b) => b - a);
+      const sectionTotal = questionMarksList.slice(0, choiceRule.attempt).reduce((sum, m) => sum + m, 0);
+      totalMaxMarks += sectionTotal;
+    } else {
+      // No section choice rule: sum all questions in this section
+      const sectionTotal = questionMarksList.reduce((sum, m) => sum + m, 0);
+      totalMaxMarks += sectionTotal;
+    }
+  }
+
+  return totalMaxMarks;
+};
 
 // 1. TEACHER: Upload the Question Paper
 export const uploadQuestionPaper = async (req, res) => {
   try {
-    const { examId, instructions, sections, sectionChoices } = req.body;
+    console.log("📥 Incoming Frontend Data:", JSON.stringify(req.body, null, 2));
 
-    // 1. Find the Exam
-    const exam = await Exam.findById(examId);
-    if (!exam) return res.status(404).json({ message: "Exam not found" });
+    const { subjectCode, examId, sections, ...otherData } = req.body;
 
-    // 2. Security Check: Is this the officially assigned teacher?
-    if (exam.assignedFaculty.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Unauthorized: You are not assigned to this exam" });
+    // 1. Protect against missing sections
+    if (!sections || !Array.isArray(sections)) {
+      return res.status(400).json({ success: false, message: "Sections data is missing or invalid." });
     }
 
-    if (exam.isPaperQuestionUploaded) {
-      return res.status(400).json({ message: "A question paper is already uploaded for this exam" });
-    }
+    // 2. Auto-fill the missing questionIds (Upgraded for Sub-questions!)
+    const formattedSections = sections.map((section, sectionIndex) => {
+      return section.map((question, questionIndex) => {
+        // Generate the main ID (e.g., "S1-Q1")
+        const mainQuestionId = question.questionId || `S${sectionIndex + 1}-Q${questionIndex + 1}`;
 
-    // 3. Create the Question Paper (Inheriting multi-tenant IDs from the Exam)
-    const questionPaper = await QuestionPaper.create({
-      examId: exam._id,
-      createdBy: req.user.id,
-      collegeId: exam.collegeId, 
-      instructions,
-      sections,
-      sectionChoices,
-      status: "Pending" // Explicitly start as pending
+        // Loop through children to generate sub-IDs (e.g., "S1-Q1a", "S1-Q1b")
+        const formattedChildren = (question.children || []).map((subQ, subIndex) => {
+          const subLetter = String.fromCharCode(97 + subIndex); // 97 is 'a' in ASCII
+          return {
+            ...subQ,
+            questionId: subQ.questionId || `${mainQuestionId}${subLetter}`
+          };
+        });
+
+        return {
+          ...question,
+          questionId: mainQuestionId,
+          children: formattedChildren
+        };
+      });
     });
 
-    // 4. Link the paper to the Exam
-    exam.questionPaper = questionPaper._id;
-    exam.isPaperQuestionUploaded = true;
-    await exam.save();
-
-    // 5. Add to the Faculty's record
+    // 3. SECURITY & SMART DATA: Fetch the logged-in faculty member to get their college
     const faculty = await Faculty.findById(req.user.id);
-    faculty.questionPapersPrepared.push(questionPaper._id);
-    await faculty.save();
-
-    // 6. Notify the HOD
-    const hod = await Faculty.findOne({ 
-      collegeId: faculty.collegeId,
-      department: faculty.department, 
-      role: "hod" 
-    });
-
-    if (hod) {
-      await sendEmail(
-         hod.email,
-        "New Question Paper Awaiting Approval",
-        `${faculty.name} has uploaded the question paper for ${exam.subjectName} (${exam.subjectCode}).
-        Please log in to review and approve it.`
-      );
+    if (!faculty) {
+      return res.status(404).json({ success: false, message: "Faculty profile not found." });
     }
 
-    res.status(201).json({ message: "Question paper successfully uploaded and sent for review", questionPaper });
+    // Validate the Question Paper Max Marks match the Exam Max Marks
+    const exam = await Exam.findById(examId);
+    if (!exam) {
+      return res.status(404).json({ success: false, message: "Associated exam not found." });
+    }
+
+    const calculatedMaxMarks = calculateQuestionPaperMaxMarks(formattedSections, otherData.sectionChoices);
+    if (calculatedMaxMarks !== exam.maxMarks) {
+      return res.status(400).json({
+        success: false,
+        message: `The question paper's total possible marks (${calculatedMaxMarks}) must be exactly equal to the exam's maximum marks (${exam.maxMarks}). Please adjust your question marks or choices.`
+      });
+    }
+
+    // 4. Save to database using the correct schema keys
+    const newPaper = await QuestionPaper.create({
+      examId,
+      subjectCode,
+      collegeId: faculty.collegeId, 
+      createdBy: req.user.id,       
+      sections: formattedSections, // Use the newly formatted sections!
+      ...otherData 
+    });
+
+    // Update the Exam Document
+    await Exam.findByIdAndUpdate(examId, {
+      questionPaper: newPaper._id,
+      isPaperQuestionUploaded: true
+    });
+    
+    res.status(201).json({ success: true, message: "Question paper uploaded!", newPaper });
   } catch (error) {
-    console.error("Error uploading question paper:", error);
-    res.status(500).json({ message: "Internal server error", error });
+    console.error("❌ Error uploading question paper:", error);
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 };
 
@@ -245,7 +306,7 @@ export const getQuestionPaperById = async (req, res) => {
   }
 };
 
-// 7.TEACHER: Fix a rejected paper and resubmit
+// 7. TEACHER: Fix a rejected paper and resubmit
 export const updateQuestionPaper = async (req, res) => {
   try {
     const { paperId } = req.params;
@@ -264,9 +325,43 @@ export const updateQuestionPaper = async (req, res) => {
       return res.status(400).json({ message: "Cannot edit an approved paper." });
     }
 
-    // 3. Apply the updates and reset the status
+    // 3. Auto-fill IDs for any BRAND NEW questions added during revision
+    const formattedSections = sections.map((section, sectionIndex) => {
+      return section.map((question, questionIndex) => {
+        const mainQuestionId = question.questionId || `S${sectionIndex + 1}-Q${questionIndex + 1}`;
+
+        const formattedChildren = (question.children || []).map((subQ, subIndex) => {
+          const subLetter = String.fromCharCode(97 + subIndex); 
+          return {
+            ...subQ,
+            questionId: subQ.questionId || `${mainQuestionId}${subLetter}`
+          };
+        });
+
+        return {
+          ...question,
+          questionId: mainQuestionId,
+          children: formattedChildren
+        };
+      });
+    });
+
+    // 4. Apply the updates and reset the status
+    const exam = paper.examId;
+    if (!exam) {
+      return res.status(404).json({ success: false, message: "Associated exam not found." });
+    }
+
+    const calculatedMaxMarks = calculateQuestionPaperMaxMarks(formattedSections, sectionChoices);
+    if (calculatedMaxMarks !== exam.maxMarks) {
+      return res.status(400).json({
+        success: false,
+        message: `The question paper's total possible marks (${calculatedMaxMarks}) must be exactly equal to the exam's maximum marks (${exam.maxMarks}). Please adjust your question marks or choices.`
+      });
+    }
+
     paper.instructions = instructions;
-    paper.sections = sections;
+    paper.sections = formattedSections; // Save the formatted sections here!
     paper.sectionChoices = sectionChoices;
     paper.status = "Pending"; // Send it back to the HOD's queue
     paper.feedback = ""; // Clear the old feedback

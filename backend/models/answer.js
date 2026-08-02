@@ -1,5 +1,14 @@
 import mongoose from "mongoose";
 
+const answerFileSchema = new mongoose.Schema({
+  fileUrl: { type: String, required: true },
+  fileType: { type: String, required: true, enum: ["image", "pdf", "unknown"] },
+  mimeType: { type: String, required: true },
+  originalFileName: { type: String, required: true },
+  size: { type: Number, required: true },
+  uploadedAt: { type: Date, required: true, default: Date.now }
+}, { _id: false });
+
 const answersSchema = new mongoose.Schema({
   uploaded_student: {
     type: mongoose.Schema.Types.ObjectId,
@@ -13,7 +22,7 @@ const answersSchema = new mongoose.Schema({
   },
   answers: {
     type: Map,
-    of: String, // correct
+    of: answerFileSchema,
   },
 });
 

@@ -2,12 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LogOut, BrainCircuit, LayoutDashboard,
-  ChevronDown, Repeat2, Shield, GraduationCap, Bell, KeyRound
+  ChevronDown, Repeat2, Shield, GraduationCap, Bell, KeyRound,
+  Sun, Moon, Laptop, Menu, X
 } from 'lucide-react';
+import Modal from '../Modal/Modal';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { facultyAPI } from '../../api/client';
 import { useToast } from '../Toast/Toast';
-import ChangePasswordModal from '../ChangePassword/ChangePassword';
 import styles from './DashboardLayout.module.css';
 
 /* ──────────────────────────────────────────────────────────
@@ -35,6 +37,18 @@ const detectViewMode = (pathname) => {
 };
 
 /* ──────────────────────────────────────────────────────────
+   Helper to check if a navigation item's path is active
+────────────────────────────────────────────────────────── */
+const isPathActive = (itemPath, currentPath) => {
+  if (currentPath === itemPath) return true;
+  const isBaseRoot = ['/collegeadmin', '/hod', '/faculty', '/admin'].includes(itemPath);
+  if (isBaseRoot) {
+    return currentPath === itemPath || currentPath === `${itemPath}/`;
+  }
+  return currentPath.startsWith(itemPath + '/');
+};
+
+/* ──────────────────────────────────────────────────────────
    COMPONENT
 ────────────────────────────────────────────────────────── */
 const DashboardLayout = ({ navItems, children }) => {
@@ -42,10 +56,22 @@ const DashboardLayout = ({ navItems, children }) => {
   const location  = useLocation();
   const { user: profile, logout, loading } = useAuth();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
+
+  const toggleTheme = () => {
+    if (theme === 'system') setTheme('light');
+    else if (theme === 'light') setTheme('dark');
+    else setTheme('system');
+  };
 
   const [switcherOpen, setSwitcherOpen] = useState(false);
-  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const switcherRef = useRef(null);
+
+  /* ── Mobile sidebar drawer state ── */
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  /* ── Logout confirmation modal ── */
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
   const actualRole  = profile?.role || 'faculty';
   const currentView = detectViewMode(location.pathname);
@@ -62,24 +88,27 @@ const DashboardLayout = ({ navItems, children }) => {
     return () => document.removeEventListener('mousedown', h);
   }, []);
 
-  const handleLogout = async () => {
+  /* ── Auto-close sidebar drawer on route change ── */
+  useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [location.pathname]);
+
+  const handleLogout = () => {
+    setLogoutConfirmOpen(true);
+  };
+
+  const confirmLogout = async () => {
+    setLogoutConfirmOpen(false);
     await logout();
   };
 
-  const handleChangePassword = async (data) => {
-    await facultyAPI.changePassword(data);
-    toast('Password changed successfully!', 'success');
-  };
 
   const handleSwitchView = (view) => {
     setSwitcherOpen(false);
     navigate(view.base);
   };
 
-  const activeNavItem = navItems.find(n =>
-    location.pathname === n.path ||
-    (n.path.length > 8 && location.pathname.startsWith(n.path))
-  );
+  const activeNavItem = navItems.find(n => isPathActive(n.path, location.pathname));
   const activeLabel = activeNavItem?.label || navItems[0]?.label || 'Dashboard';
 
   const roleLabel = {
@@ -104,8 +133,13 @@ const DashboardLayout = ({ navItems, children }) => {
 
   return (
     <div className={styles.layout}>
+      {/* ════ Sidebar Backdrop (mobile) ════ */}
+      {isSidebarOpen && (
+        <div className={styles.sidebarBackdrop} onClick={() => setIsSidebarOpen(false)} />
+      )}
+
       {/* ════ Sidebar ════ */}
-      <aside className={styles.sidebar}>
+      <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarActive : ''}`}>
         {/* Brand */}
         <div className={styles.brand}>
           <div className={styles.brandIcon}>
@@ -115,6 +149,9 @@ const DashboardLayout = ({ navItems, children }) => {
             <p className={styles.brandName}>AISS_AES</p>
             <p className={styles.brandSub}>Evaluation System</p>
           </div>
+          <button className={styles.sidebarCloseBtn} onClick={() => setIsSidebarOpen(false)} aria-label="Close sidebar">
+            <X size={18} />
+          </button>
         </div>
 
         {/* Viewing-other-role banner */}
@@ -129,9 +166,7 @@ const DashboardLayout = ({ navItems, children }) => {
         <nav className={styles.nav}>
           <ul className={styles.navList}>
             {navItems.map((item, i) => {
-              const isActive =
-                location.pathname === item.path ||
-                (item.path.length > 8 && location.pathname.startsWith(item.path));
+              const isActive = isPathActive(item.path, location.pathname);
               return (
                 <li key={i}>
                   <button
@@ -191,10 +226,7 @@ const DashboardLayout = ({ navItems, children }) => {
               </span>
             </div>
           </div>
-          <button className={styles.changePassBtn} onClick={() => setPasswordModalOpen(true)}>
-            <KeyRound size={14} strokeWidth={2} />
-            <span>Change Password</span>
-          </button>
+
           <button className={styles.logoutBtn} onClick={handleLogout}>
             <LogOut size={15} strokeWidth={2} />
             <span>Sign Out</span>
@@ -207,6 +239,9 @@ const DashboardLayout = ({ navItems, children }) => {
         {/* Topbar */}
         <header className={styles.topbar}>
           <div className={styles.topbarLeft}>
+            <button className={styles.menuToggleBtn} onClick={() => setIsSidebarOpen(v => !v)} aria-label="Toggle sidebar">
+              <Menu size={20} />
+            </button>
             <LayoutDashboard size={17} className={styles.topbarIcon} />
             <div>
               <span className={styles.pageTitle}>{activeLabel}</span>
@@ -272,6 +307,16 @@ const DashboardLayout = ({ navItems, children }) => {
               </div>
             )}
 
+            {/* Theme toggle button */}
+            <button
+              className={styles.themeToggleBtn}
+              onClick={toggleTheme}
+              title={`Active Theme: ${theme.charAt(0).toUpperCase() + theme.slice(1)} (Click to toggle)`}
+              aria-label="Toggle Theme"
+            >
+              {theme === 'system' ? <Laptop size={16} /> : theme === 'light' ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+
             <div className={styles.topbarMeta}>
               <span className={styles.topbarName}>{profile?.name}</span>
               <span className={styles.topbarRole}>{roleLabel}</span>
@@ -288,12 +333,33 @@ const DashboardLayout = ({ navItems, children }) => {
         </main>
       </div>
 
-      {/* Change Password Modal */}
-      <ChangePasswordModal
-        isOpen={passwordModalOpen}
-        onClose={() => setPasswordModalOpen(false)}
-        onSubmit={handleChangePassword}
-      />
+      {/* ════ Logout Confirmation Modal ════ */}
+      <Modal
+        isOpen={logoutConfirmOpen}
+        onClose={() => setLogoutConfirmOpen(false)}
+        title="Sign Out"
+        size="sm"
+        footer={
+          <>
+            <button
+              style={{ padding: '9px 20px', borderRadius: 8, background: 'none', border: '1px solid var(--border-2)', color: 'var(--text-2)', fontWeight: 600, cursor: 'pointer', fontSize: '0.88rem' }}
+              onClick={() => setLogoutConfirmOpen(false)}
+            >
+              Cancel
+            </button>
+            <button
+              style={{ padding: '9px 20px', borderRadius: 8, background: 'var(--danger)', border: 'none', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '0.88rem', boxShadow: '0 4px 14px rgba(239,68,68,0.3)' }}
+              onClick={confirmLogout}
+            >
+              Sign Out
+            </button>
+          </>
+        }
+      >
+        <p style={{ color: 'var(--text-2)', fontSize: '0.92rem', lineHeight: 1.5 }}>
+          Are you sure you want to sign out? You will need to log in again to access your dashboard.
+        </p>
+      </Modal>
     </div>
   );
 };

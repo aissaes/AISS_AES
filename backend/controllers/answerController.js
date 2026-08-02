@@ -1,15 +1,53 @@
-import mongoose from "mongoose";
-import express from 'express';
+
 
 import Upload from "../models/uploadSession.js";
 import Answers from "../models/answer.js";
+import Student from "../models/student.js";
+import Exam from "../models/exam.js";
 
 //upload answer sheet
 import imagekit from "../configurations/imageKit.js";
-import generateSessionToken from "../utils/generateToken.js";
-import Exam from "../models/exam.js";
 
+const getFolderStructure = async (studentId, examId) => {
+  let collegeFolder = "unknown_college";
+  let examFolder = examId;
+  let studentFolder = studentId;
 
+  try {
+    const student = await Student.findById(studentId).populate("collegeId");
+    if (student) {
+      if (student.collegeId) {
+        collegeFolder = student.collegeId.collegeCode
+          ? student.collegeId.collegeCode.toUpperCase().replace(/[^a-zA-Z0-9-_]/g, "_")
+          : student.collegeId.collegeName.replace(/[^a-zA-Z0-9-_]/g, "_");
+      }
+      if (student.rollNumber) {
+        studentFolder = student.rollNumber.replace(/[^a-zA-Z0-9-_]/g, "_");
+      }
+    }
+  } catch (err) {
+    console.error("Error fetching student/college info for folder naming:", err);
+  }
+
+  try {
+    const exam = await Exam.findById(examId);
+    if (exam) {
+      const examTypeShortMap = {
+        "Mid Semester Examination": "MIDSEM",
+        "End Semester Examination": "ENDSEM",
+        "Special Mid Semester Examination": "SPL-MIDSEM",
+        "Special End Semester Examination": "SPL-ENDSEM"
+      };
+      const shortType = examTypeShortMap[exam.examType] || "EXAM";
+      const year = exam.date ? new Date(exam.date).getFullYear() : new Date().getFullYear();
+      examFolder = `${exam.subjectCode}-${shortType}-${year}`.toUpperCase().replace(/[^a-zA-Z0-9-_]/g, "_");
+    }
+  } catch (err) {
+    console.error("Error fetching exam info for folder naming:", err);
+  }
+
+  return `/AISSAES/${collegeFolder}/${examFolder}/${studentFolder}`;
+};
 
 export const UploadAnswer = async (req, res) => {
   try {
@@ -23,7 +61,7 @@ export const UploadAnswer = async (req, res) => {
     }
 
     // 1. Find session
-    const session = await Upload.findOne({ token });
+    const session = await Upload.findOne({ token, student: req.user.id });
 
     if (!session) {
       return res.status(404).json({ error: "Invalid session" });
@@ -35,32 +73,40 @@ export const UploadAnswer = async (req, res) => {
     }
 
     // 3. Upload to ImageKit
+    const mimeType = file.mimetype || "application/octet-stream";
+    const ext = mimeType === "application/pdf" ? "pdf" : (file.originalname ? file.originalname.split('.').pop() : "jpg");
+    const fileNameWithExt = `${session.student}_${session.exam}_q${questionNo}.${ext}`;
+
+    const folderPath = await getFolderStructure(session.student, session.exam);
+
     const uploadResponse = await imagekit.upload({
       file: file.buffer, // important (memoryStorage)
-      fileName: `${session.student}_${session.exam}_q${questionNo}`,
-      folder: `/answers/${session.exam}/${session.student}`,
+      fileName: fileNameWithExt,
+      folder: folderPath,
     });
 
     const fileUrl = uploadResponse.url;
+    const fileType = mimeType === "application/pdf" ? "pdf" : (mimeType.startsWith("image/") ? "image" : "unknown");
+    const originalFileName = file.originalname || "submission";
+    const size = file.size || 0;
+    const uploadedAt = new Date();
 
-    // 4. Find/Create doc
-    let doc = await Answers.findOne({
-      uploaded_student: session.student,
-      for_exam: session.exam,
-    });
+    const answerMetadata = {
+      fileUrl,
+      fileType,
+      mimeType,
+      originalFileName,
+      size,
+      uploadedAt
+    };
 
-    if (!doc) {
-      doc = await Answers.create({
-        uploaded_student: session.student,
-        for_exam: session.exam,
-        answers: {},
-      });
-    }
-
-    // 5. Save URL
-    doc.answers.set(String(questionNo), fileUrl);
-
-    await doc.save();
+    // 4. Atomic Find/Upsert to avoid race conditions
+    const updatePath = `answers.${questionNo}`;
+    await Answers.findOneAndUpdate(
+      { uploaded_student: session.student, for_exam: session.exam },
+      { $set: { [updatePath]: answerMetadata } },
+      { upsert: true, new: true }
+    );
 
     res.json({ success: true, fileUrl });
 
@@ -84,7 +130,7 @@ export const reuploadAnswer = async (req, res) => {
       });
     }
 
-    const session = await Upload.findOne({ token });
+    const session = await Upload.findOne({ token, student: req.user.id });
 
     if (!session) {
       return res.status(404).json({
@@ -102,7 +148,7 @@ export const reuploadAnswer = async (req, res) => {
       for_exam: session.exam,
     });
 
-    if (!doc || !doc.answers.has(String(questionNo))) {
+    if (!doc || !doc.answers || !doc.answers.has(String(questionNo))) {
       return res.status(400).json({
         success: false,
         message: "No existing answer to replace",
@@ -110,18 +156,39 @@ export const reuploadAnswer = async (req, res) => {
     }
 
     // Upload new file
+    const mimeType = file.mimetype || "application/octet-stream";
+    const ext = mimeType === "application/pdf" ? "pdf" : (file.originalname ? file.originalname.split('.').pop() : "jpg");
+    const fileNameWithExt = `${session.student}_${session.exam}_q${questionNo}.${ext}`;
+
+    const folderPath = await getFolderStructure(session.student, session.exam);
+
     const uploadResponse = await imagekit.upload({
       file: file.buffer,
-      fileName: `${session.student}_${session.exam}_q${questionNo}`,
-      folder: `/answers/${session.exam}/${session.student}`,
+      fileName: fileNameWithExt,
+      folder: folderPath,
     });
 
     const fileUrl = uploadResponse.url;
+    const fileType = mimeType === "application/pdf" ? "pdf" : (mimeType.startsWith("image/") ? "image" : "unknown");
+    const originalFileName = file.originalname || "submission";
+    const size = file.size || 0;
+    const uploadedAt = new Date();
 
-    // overwrite
-    doc.answers.set(String(questionNo), fileUrl);
+    const answerMetadata = {
+      fileUrl,
+      fileType,
+      mimeType,
+      originalFileName,
+      size,
+      uploadedAt
+    };
 
-    await doc.save();
+    // overwrite atomically
+    const updatePath = `answers.${questionNo}`;
+    await Answers.findOneAndUpdate(
+      { uploaded_student: session.student, for_exam: session.exam },
+      { $set: { [updatePath]: answerMetadata } }
+    );
 
     return res.status(200).json({
       success: true,
@@ -137,101 +204,24 @@ export const reuploadAnswer = async (req, res) => {
   }
 };
 
-
-//For HOD only
-export const generateToken = async (req, res) => {
+export const finalizeSubmission = async (req, res) => {
   try {
-    const { examId } = req.params;
+    const { token } = req.body;
+    const studentId = req.user.id; 
 
-    if (!examId) {
-      return res.status(400).json({
-        success: false,
-        message: "Exam ID is required",
-      });
-    }
-
-    // 1. Find exam
-    const exam = await Exam.findById(examId);
-
-    if (!exam) {
-      return res.status(404).json({
-        success: false,
-        message: "No such exam found",
-      });
-    }
-
-    // 2. Generate token
-    const token = generateSessionToken();
-
-    // 3. Save token in exam
-    exam.token = token;
-
-    await exam.save();
-
-    // 4. Send response
-    return res.status(200).json({
-      success: true,
-      message: "Token generated successfully"
+    // Find and delete the active session
+    const deletedSession = await Upload.findOneAndDelete({ 
+      token: token, 
+      student: studentId 
     });
 
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
+    if (!deletedSession) {
+      return res.status(400).json({ success: false, message: "No active upload session found. It may have already expired or been submitted." });
+    }
+
+    res.status(200).json({ success: true, message: "Exam submitted successfully! Upload window is now closed." });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Internal server error." });
   }
 };
-
-
-export const generateQRCode=async(req,res)=>{
-
-
-    try{
-
-    
-    const {examId}=req.params;
-
-  
-    if (!examId) {
-      return res.status(400).json({
-        success: false,
-        message: "Exam ID is required",
-      });
-    }
-
-      // 1. Find exam
-    const exam = await Exam.findById(examId);
-
-    if (!exam) {
-      return res.status(404).json({
-        success: false,
-        message: "No such exam found",
-      });
-    }
-
-    // 2. Generate QR
-    const qrUrl = generateQRCode(token);
-
-    // 3. Save url in exam
-    exam.qrCode = qrUrl;
-
-    await exam.save();
-
-    // 4. Send response
-    return res.status(200).json({
-      success: true,
-      message: "QR generated successfully"
-    });
-}
-catch(err) {
-     console.error(err);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
-}
-
-}
-
-

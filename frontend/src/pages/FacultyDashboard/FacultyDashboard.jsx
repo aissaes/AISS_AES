@@ -6,6 +6,9 @@ import { facultyAPI } from '../../api/client';
 import Settings from '../Settings/Settings';
 import Assignments from './Assignments';
 import FacultyTimetables from './Timetables';
+import Evaluations from './Evaluations';
+import ExamGrading from './ExamGrading';
+import StudentGradingDetail from './StudentGradingDetail';
 import styles from './FacultyDashboard.module.css';
 
 /* ── Stat Card ── */
@@ -70,7 +73,7 @@ const FacultyHome = () => {
           <div>
             <p className={styles.bannerGreeting}>Good day,</p>
             <h2 className={styles.bannerName}>{profile.name}</h2>
-            <p className={styles.bannerRole}>{roleLabel} · {profile.department}</p>
+            <p className={styles.bannerRole}>{roleLabel} · {profile.department?.name || profile.department || ''}</p>
           </div>
         </div>
         <div className={`${styles.bannerBadge} ${profile.isApproved ? styles.badgeApproved : styles.badgePending}`}>
@@ -82,7 +85,7 @@ const FacultyHome = () => {
       <div className={styles.statsGrid}>
         <StatCard icon={FileText}   label="Papers"           value={paperCount}         color="blue"  />
         <StatCard icon={CheckCircle2} label="Status"         value={profile.isApproved ? 'Approved' : 'Pending'} color="green" />
-        <StatCard icon={BookOpen}   label="Department"       value={profile.department} color="violet"/>
+        <StatCard icon={BookOpen}   label="Department"       value={profile.department?.name || profile.department || ''} color="violet"/>
         <StatCard icon={Building2}  label="Account Level"    value={roleLabel}          color="amber" />
       </div>
 
@@ -97,7 +100,7 @@ const FacultyHome = () => {
           <ProfileRow icon={FileText}  label="Email"       value={profile.email} />
           <ProfileRow icon={FileText}  label="Role"        value={roleLabel} />
           <ProfileRow icon={FileText}  label="Phone"       value={profile.phone} />
-          <ProfileRow icon={BookOpen}  label="Department"  value={profile.department} />
+          <ProfileRow icon={BookOpen}  label="Department"  value={profile.department?.name || profile.department || ''} />
         </div>
       </div>
     </div>
@@ -109,6 +112,7 @@ const FacultyDashboard = () => {
   const navItems = [
     { path: '/faculty',          label: 'My Overview',    icon: <Home      size={18} /> },
     { path: '/faculty/assignments',  label: 'Assignments', icon: <FileText  size={18} /> },
+    { path: '/faculty/evaluations',  label: 'Evaluations', icon: <CheckCircle2 size={18} /> },
     { path: '/faculty/timetables',  label: 'Timetables',        icon: <BookOpen size={18} /> },
     { path: '/faculty/settings', label: 'Settings',       icon: <SettingsIcon size={18} /> },
   ];
@@ -120,6 +124,9 @@ const FacultyDashboard = () => {
         <Route path="/settings" element={<Settings />} />
         <Route path="/assignments"  element={<Assignments />} />
         <Route path="/timetables"  element={<FacultyTimetables />} />
+        <Route path="/evaluations" element={<Evaluations />} />
+        <Route path="/evaluations/:examId" element={<ExamGrading />} />
+        <Route path="/evaluations/:examId/student/:studentId" element={<StudentGradingDetail />} />
       </Routes>
     </DashboardLayout>
   );
