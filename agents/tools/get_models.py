@@ -11,7 +11,7 @@ def get_hf_model():
     
     # use "mistralai/Mistral-7B-Instruct-v0.3" 
     # or "meta-llama/Llama-3.1-8B-Instruct"
-    repo_id = "mistralai/Mistral-7B-Instruct-v0.3"
+    repo_id = "meta-llama/Llama-3.1-8B-Instruct"
 
     llm = HuggingFaceEndpoint(
         repo_id=repo_id,
@@ -30,6 +30,7 @@ def get_hf_model():
 #     )
 
 #     return embedding_model
+
 
 
 def get_gemini():   

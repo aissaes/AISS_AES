@@ -176,7 +176,7 @@ def evaluation_agent(state: AgentState):
 
     context_str = "\n".join(context_notes)
 
-    llm = get_groq()
+    llm = get_hf_model()
     chain = eval_prompt | llm
 
     prompt_inputs = {
@@ -200,7 +200,7 @@ def evaluation_agent(state: AgentState):
 def recheck_agent(state: AgentState):
     print("--- RECHECK AGENT ---")
     try:
-        llm = get_groq()   # different model
+        llm = get_hf_model()   # different model
 
         chain = recheck_prompt | llm
 
