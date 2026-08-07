@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 from tools.readers import OCR_image_to_text
-from tools.get_models import get_groq, get_gemini
+from tools.get_models import get_groq
 
 router = APIRouter(
     prefix="/testing",
@@ -30,7 +30,9 @@ async def sandbox_test(request: SandboxTestRequest):
                 "extractedText": extracted_text
             }
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            traceback.print_exc()      # <-- ADD THIS
+            print(e)                   # <-- ADD THIS
+            raise
             
     elif request.action == "evaluate-text":
         if not request.studentAnswer or not request.answerKey:

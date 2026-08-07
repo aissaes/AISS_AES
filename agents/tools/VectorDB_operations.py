@@ -3,19 +3,26 @@ from langchain_pinecone import PineconeVectorStore
 from pinecone import Pinecone
 import os
 from dotenv import load_dotenv
-from tools.get_models import get_gemini_embedding_model
+from tools.get_models import get_hf_embedding_model
 
-embedding = get_gemini_embedding_model()
+# Load .env
+load_dotenv(override=True)
+
+embedding = get_hf_embedding_model()
 
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "aiss-aes-index")
+INDEX_NAME = os.getenv("PINECONE_INDEX_NAME")
 
+print("Index Name:", repr(INDEX_NAME))
+print("API Key Loaded:", PINECONE_API_KEY is not None)
 
-# PINECONE INITIALIZATION
 pc = Pinecone(api_key=PINECONE_API_KEY)
 
+print("Available Indexes:")
+print(pc.list_indexes())
 
 index = pc.Index(INDEX_NAME)
+
 vector_store = PineconeVectorStore(
     index=index,
     embedding=embedding,

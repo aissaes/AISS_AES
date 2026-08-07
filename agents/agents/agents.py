@@ -18,7 +18,7 @@ from io import BytesIO
 from tools.readers import OCR_image_to_text, load_pdf_text
 from tools.text_preprocessing import text_cleaning, split_text
 from tools.VectorDB_operations import retrieve_relevant_chunks,store_teacher_chunks
-from tools.get_models import get_gemini,get_hf_model,get_groq,get_gemini_embedding_model
+from tools.get_models import get_hf_model,get_groq
 from tools.prompt import eval_prompt,recheck_prompt
 
 from PyPDF2 import PdfReader
