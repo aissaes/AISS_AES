@@ -11,7 +11,7 @@ def get_hf_model():
     
     # use "mistralai/Mistral-7B-Instruct-v0.3" 
     # or "meta-llama/Llama-3.1-8B-Instruct"
-    repo_id = "meta-llama/Llama-3.1-8B-Instruct"
+    repo_id = "Qwen/Qwen2.5-7B-Instruct"
 
     llm = HuggingFaceEndpoint(
         repo_id=repo_id,
