@@ -1,8 +1,9 @@
 from langchain_huggingface import (
     HuggingFaceEndpoint,
     ChatHuggingFace,
-    HuggingFaceEndpointEmbeddings,
 )
+from langchain_core.embeddings import Embeddings
+from huggingface_hub import InferenceClient
 
 # from langchain_google_genai import (
 #     ChatGoogleGenerativeAI,
@@ -20,11 +21,6 @@ load_dotenv()
 # ==========================================================
 # Hugging Face Chat Model
 # ==========================================================
-
-# Alternative models:
-# "mistralai/Mistral-7B-Instruct-v0.3"
-# "meta-llama/Llama-3.1-8B-Instruct"
-
 
 def get_hf_model():
 
@@ -44,14 +40,49 @@ def get_hf_model():
 # Hugging Face Embedding Model
 # ==========================================================
 
+class HFEmbeddingModel(Embeddings):
+
+    def __init__(self):
+
+        self.client = InferenceClient(
+            provider="hf-inference",
+            api_key=os.getenv("HUGGINGFACE_API_KEY"),
+        )
+
+        self.model = "sentence-transformers/all-MiniLM-L6-v2"
+
+    def embed_documents(self, texts):
+
+        embeddings = []
+
+        for text in texts:
+
+            result = self.client.feature_extraction(
+                text,
+                model=self.model,
+                normalize=True,
+            )
+
+            embeddings.append(result.tolist())
+
+        return embeddings
+
+    def embed_query(self, text):
+
+        result = self.client.feature_extraction(
+            text,
+            model=self.model,
+            normalize=True,
+        )
+
+        return result.tolist()
+
+
 def get_hf_embedding_model():
 
     print("Loading HuggingFace Embedding API...")
 
-    return HuggingFaceEndpointEmbeddings(
-        model="sentence-transformers/all-MiniLM-L6-v2",
-        huggingfacehub_api_token=os.getenv("HUGGINGFACE_API_KEY"),
-    )
+    return HFEmbeddingModel()
 
 
 # ==========================================================
