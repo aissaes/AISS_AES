@@ -46,7 +46,8 @@ def get_hf_model():
 def get_hf_embedding_model():
 
     embedding_model = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2"
+        model_name="sentence-transformers/all-MiniLM-L6-v2",
+        token=os.getenv("HUGGINGFACE_API_KEY")
     )
 
     return embedding_model
