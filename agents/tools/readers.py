@@ -9,7 +9,7 @@ load_dotenv()
 
 OCR_API_KEY = os.getenv("OCR_SPACE_API_KEY")
 
-POPPLER_PATH = r"C:\Users\Vinay Reddy\Downloads\poppler-26.02.0\Library\bin"
+# POPPLER_PATH = r"C:\Users\Vinay Reddy\Downloads\poppler-26.02.0\Library\bin"
 
 
 def OCR_image_to_text(image_url):
@@ -39,12 +39,10 @@ def OCR_image_to_text(image_url):
             print(f"\nProcessing Page {page + 1}/{total_pages}")
 
             images = convert_from_bytes(
-                img_response.content,
-                dpi=150,
-                first_page=page + 1,
-                last_page=page + 1,
-                poppler_path=POPPLER_PATH
-            )
+            img_response.content,
+            dpi=150,
+            first_page=page + 1,
+            last_page=page + 1)
 
             image = images[0].convert("RGB")
 

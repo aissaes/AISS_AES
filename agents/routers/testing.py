@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
+import traceback
 
 from tools.readers import OCR_image_to_text
 from tools.get_models import get_groq
