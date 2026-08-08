@@ -1,7 +1,7 @@
 from langchain_huggingface import (
     HuggingFaceEndpoint,
     ChatHuggingFace,
-    HuggingFaceEmbeddings,
+    HuggingFaceEndpointEmbeddings,
 )
 
 # from langchain_google_genai import (
@@ -21,11 +21,12 @@ load_dotenv()
 # Hugging Face Chat Model
 # ==========================================================
 
-def get_hf_model():
+# Alternative models:
+# "mistralai/Mistral-7B-Instruct-v0.3"
+# "meta-llama/Llama-3.1-8B-Instruct"
 
-    # Alternative models:
-    # "mistralai/Mistral-7B-Instruct-v0.3"
-    # "meta-llama/Llama-3.1-8B-Instruct"
+
+def get_hf_model():
 
     repo_id = "Qwen/Qwen2.5-7B-Instruct"
 
@@ -45,12 +46,12 @@ def get_hf_model():
 
 def get_hf_embedding_model():
 
-    embedding_model = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2",
-        token=os.getenv("HUGGINGFACE_API_KEY")
-    )
+    print("Loading HuggingFace Embedding API...")
 
-    return embedding_model
+    return HuggingFaceEndpointEmbeddings(
+        model="sentence-transformers/all-MiniLM-L6-v2",
+        huggingfacehub_api_token=os.getenv("HUGGINGFACE_API_KEY"),
+    )
 
 
 # ==========================================================
