@@ -7,7 +7,7 @@ import {
   Building2, Users, Crown, Calendar, Upload, Play, FileText, Check,
   ChevronRight, ChevronLeft, Cpu, Activity, Server, Database, Share2,
   CheckCircle2, Laptop, Sun, Moon, Zap, Info, Award, BookOpen, Menu, X,
-  FileSpreadsheet, Target, BarChart2, TrendingUp, Scale, Brain, BarChart3
+  FileSpreadsheet, Target, BarChart2, TrendingUp, Scale, Brain, BarChart3, Smartphone, Download
 } from 'lucide-react';
 import { collegeAPI } from '../../api/client';
 import { useToast } from '../../components/Toast/Toast';
@@ -60,9 +60,9 @@ const useFadeUp = () => {
     const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(
-      ([e]) => { 
+      ([e]) => {
         if (e.isIntersecting) {
-          el.classList.add(styles.visible); 
+          el.classList.add(styles.visible);
         }
       },
       { threshold: 0.15 }
@@ -414,7 +414,7 @@ const EMPIRICAL_REPORTS = [
       { label: 'Equal Match Questions', val: '2 Questions', note: 'Q2b & Q5b identical mean', color: '#10b981' }
     ],
     highlights: [
-      'Evaluated on Questions 5, 1a, 1b, 2a, 2b, 3a, 3b, 4a, 4b, 5a, 5b, 6a, 6b.',
+      'Evaluated across Questions 1a, 1b, 2a, 2b, 3a, 3b, 4a, 4b, 5a, 5b, 6a, 6b.',
       'Exact equal average marks observed on Question 2b (1.65) and Question 5b (3.50).',
       'Demonstrates multi-domain adaptability for conceptual, mathematical, and descriptive answers.'
     ]
@@ -466,20 +466,20 @@ const EMPIRICAL_REPORTS = [
    • Active node: large + glowing | Inactive: small
    ───────────────────────────────────────────────── */
 const LifecycleOrbit = () => {
-  const N      = LIFECYCLE_PHASES.length;  // 6
-  const STEP   = 360 / N;                  // 60°
+  const N = LIFECYCLE_PHASES.length;  // 6
+  const STEP = 360 / N;                  // 60°
   const ORBIT_R = 155;
 
   // ── Refs hold the single source of truth ─────────
   // React state is derived from these on every update
-  const phaseRef   = useRef(0);
-  const degRef     = useRef(0);
+  const phaseRef = useRef(0);
+  const degRef = useRef(0);
   const intervalRef = useRef(null);
-  const resumeRef   = useRef(null);
+  const resumeRef = useRef(null);
 
   // ── React rendering state ─────────────────────────
-  const [activePh, setActivePh]     = useState(0);
-  const [wheelDeg, setWheelDeg]     = useState(0);
+  const [activePh, setActivePh] = useState(0);
+  const [wheelDeg, setWheelDeg] = useState(0);
   const [userPaused, setUserPaused] = useState(false);
 
   const phaseIcons = [Building2, BookOpen, Calendar, Shield, Brain, BarChart3];
@@ -487,9 +487,9 @@ const LifecycleOrbit = () => {
   // Advance to next phase — always clockwise +60°
   const advance = () => {
     const nextPhase = (phaseRef.current + 1) % N;
-    const nextDeg   = degRef.current + STEP;
+    const nextDeg = degRef.current + STEP;
     phaseRef.current = nextPhase;
-    degRef.current   = nextDeg;
+    degRef.current = nextDeg;
     setActivePh(nextPhase);
     setWheelDeg(nextDeg);
   };
@@ -505,7 +505,7 @@ const LifecycleOrbit = () => {
       clearInterval(intervalRef.current);
       clearTimeout(resumeRef.current);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── User click — go clockwise to selected node ────
@@ -519,7 +519,7 @@ const LifecycleOrbit = () => {
     const cwSteps = (idx - phaseRef.current + N) % N;
     const nextDeg = degRef.current + cwSteps * STEP;
     phaseRef.current = idx;
-    degRef.current   = nextDeg;
+    degRef.current = nextDeg;
     setActivePh(idx);
     setWheelDeg(nextDeg);
 
@@ -549,17 +549,17 @@ const LifecycleOrbit = () => {
         <div
           className={styles.orbitTrack}
           style={{
-            transform:  `rotate(${wheelDeg}deg)`,
+            transform: `rotate(${wheelDeg}deg)`,
             transition: `transform ${userPaused ? '0.85' : '0.7'}s cubic-bezier(0.4, 0, 0.2, 1)`,
           }}
         >
           {LIFECYCLE_PHASES.map((p, i) => {
             const isActive = activePh === i;
             // Active node pops outward (East = right), inactive stays on ring
-            const r   = isActive ? ORBIT_R + 16 : ORBIT_R;
+            const r = isActive ? ORBIT_R + 16 : ORBIT_R;
             const rad = (i * STEP * Math.PI) / 180;
-            const x   = Math.cos(rad) * r;
-            const y   = -Math.sin(rad) * r;
+            const x = Math.cos(rad) * r;
+            const y = -Math.sin(rad) * r;
             const Icon = phaseIcons[i];
 
             return (
@@ -568,7 +568,7 @@ const LifecycleOrbit = () => {
                 className={`${styles.orbitNode} ${isActive ? styles.orbitNodeActive : styles.orbitNodeInactive}`}
                 style={{
                   left: `calc(50% + ${x}px)`,
-                  top:  `calc(50% + ${y}px)`,
+                  top: `calc(50% + ${y}px)`,
                   transform: `translate(-50%, -50%) rotate(${-wheelDeg}deg)`,
                   transition: [
                     `transform 0.7s cubic-bezier(0.4, 0, 0.2, 1)`,
@@ -820,7 +820,7 @@ const Landing = () => {
 
   const handleRegisterCollege = async (e) => {
     e.preventDefault();
-    if(!collegeForm.collegeName || !collegeForm.collegeCode || !collegeForm.adminEmail || !collegeForm.adminName) {
+    if (!collegeForm.collegeName || !collegeForm.collegeCode || !collegeForm.adminEmail || !collegeForm.adminName) {
       toast('Please fill all required fields.', 'warning');
       return;
     }
@@ -859,7 +859,7 @@ const Landing = () => {
           <button className={styles.navLink} onClick={() => document.getElementById('ai-eval')?.scrollIntoView({ behavior: 'smooth' })}>AI Evaluation</button>
           <button className={styles.navLink} onClick={() => document.getElementById('reports')?.scrollIntoView({ behavior: 'smooth' })}>Reports</button>
           <button className={styles.navLink} onClick={() => document.getElementById('academic-lifecycle')?.scrollIntoView({ behavior: 'smooth' })}>Lifecycle</button>
-          
+
           {/* Minimal Subtle Division Line */}
           <div className={styles.navDivider} />
 
@@ -867,7 +867,7 @@ const Landing = () => {
           <div className={styles.navActionGroup}>
             <button className={styles.navLink} onClick={() => setCollegeModalOpen(true)}>Register Institution</button>
             <button className={styles.navLink} onClick={() => navigate('/login')}>Sign In</button>
-            
+
             <button
               className={styles.themeToggleBtn}
               onClick={toggleTheme}
@@ -921,12 +921,7 @@ const Landing = () => {
       {/* ════ HERO ════ */}
       <section className={styles.hero} id="hero">
         <div className={styles.heroInner}>
-          <FadeUp>
-            <div className={styles.heroBadge}>
-              <span className={styles.heroBadgeDot} />
-              AI-Powered Academic Platform
-            </div>
-          </FadeUp>
+
 
           <FadeUp>
             <h1 className={styles.heroTitle}>
@@ -975,10 +970,6 @@ const Landing = () => {
       {/* ════ ROLE COMMAND CENTER ════ */}
       <section className={styles.roleCommandSection} ref={rolesRef}>
         <FadeUp>
-          <div className={styles.sectionTag}>
-            <Users size={14} />
-            Role-Based Experiences
-          </div>
           <h2 className={styles.sectionTitle}>AISS Role Experience Showcase</h2>
           <p className={styles.sectionSub}>
             Platform transformation tailored to responsibilities, powers, and workflows.
@@ -1031,31 +1022,31 @@ const Landing = () => {
                   data-role="admin"
                 >
                   <div className={styles.expHeader}>
-                     <h3>Institution Control Center</h3>
-                     <p>Manage and oversee the entire academic ecosystem.</p>
+                    <h3>Institution Control Center</h3>
+                    <p>Manage and oversee the entire academic ecosystem.</p>
                   </div>
-                  
+
                   <div className={styles.expBody}>
-                     <div className={styles.expStatsRow}>
-                       <div className={styles.expStatBox}><span>Total Students</span><strong>4,320</strong></div>
-                       <div className={styles.expStatBox}><span>Active Faculty</span><strong>184</strong></div>
-                       <div className={styles.expStatBox}><span>Departments</span><strong>12</strong></div>
-                       <div className={styles.expStatBox}><span>Pending</span><strong>7</strong></div>
-                     </div>
-                     
-                     <div className={styles.expVisualArea}>
-                        <div className={styles.adminMissionControl}>
-                           <div className={styles.missionMetrics}>
-                              <div className={styles.missionPulse} /> College Network Online
-                           </div>
-                           <div className={styles.missionFlowRows}>
-                              <div className={styles.missionFlowBox}>Create Department<ChevronRight size={14}/></div>
-                              <div className={styles.missionFlowBox}>Semester Setup<ChevronRight size={14}/></div>
-                              <div className={styles.missionFlowBox}>Faculty Approval<ChevronRight size={14}/></div>
-                              <div className={styles.missionFlowBox}>Institution Monitor</div>
-                           </div>
+                    <div className={styles.expStatsRow}>
+                      <div className={styles.expStatBox}><span>Total Students</span><strong>4,320</strong></div>
+                      <div className={styles.expStatBox}><span>Active Faculty</span><strong>184</strong></div>
+                      <div className={styles.expStatBox}><span>Departments</span><strong>12</strong></div>
+                      <div className={styles.expStatBox}><span>Pending</span><strong>7</strong></div>
+                    </div>
+
+                    <div className={styles.expVisualArea}>
+                      <div className={styles.adminMissionControl}>
+                        <div className={styles.missionMetrics}>
+                          <div className={styles.missionPulse} /> College Network Online
                         </div>
-                     </div>
+                        <div className={styles.missionFlowRows}>
+                          <div className={styles.missionFlowBox}>Create Department<ChevronRight size={14} /></div>
+                          <div className={styles.missionFlowBox}>Semester Setup<ChevronRight size={14} /></div>
+                          <div className={styles.missionFlowBox}>Faculty Approval<ChevronRight size={14} /></div>
+                          <div className={styles.missionFlowBox}>Institution Monitor</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -1070,33 +1061,33 @@ const Landing = () => {
                   data-role="hod"
                 >
                   <div className={styles.expHeader}>
-                     <h3>Academic Operations Manager</h3>
-                     <p>Run an entire department efficiently.</p>
+                    <h3>Academic Operations Manager</h3>
+                    <p>Run an entire department efficiently.</p>
                   </div>
                   <div className={styles.expBody}>
-                      <div className={styles.expStatsRow}>
-                       <div className={styles.expStatBox}><span>Students</span><strong>850</strong></div>
-                       <div className={styles.expStatBox}><span>Active Courses</span><strong>24</strong></div>
-                       <div className={styles.expStatBox}><span>Upcoming Exams</span><strong>5</strong></div>
-                     </div>
-                     
-                     <div className={styles.expVisualArea}>
-                        <div className={styles.hodOperationsCenter}>
-                           <div className={styles.hodTimeline}>
-                             <div className={styles.hodTimelineStep}>Create Semester</div>
-                             <div className={styles.hodTimelineLine} />
-                             <div className={styles.hodTimelineStep}>Create Courses</div>
-                             <div className={styles.hodTimelineLine} />
-                             <div className={styles.hodTimelineStep}>Assign Faculty</div>
-                             <div className={styles.hodTimelineLine} />
-                             <div className={styles.hodTimelineStep}>Enroll Students</div>
-                           </div>
-                           <div className={styles.hodBoard}>
-                              <div className={styles.hodCard}>CSE Dept Planning</div>
-                              <div className={styles.hodCard}>Course Pipeline</div>
-                           </div>
+                    <div className={styles.expStatsRow}>
+                      <div className={styles.expStatBox}><span>Students</span><strong>850</strong></div>
+                      <div className={styles.expStatBox}><span>Active Courses</span><strong>24</strong></div>
+                      <div className={styles.expStatBox}><span>Upcoming Exams</span><strong>5</strong></div>
+                    </div>
+
+                    <div className={styles.expVisualArea}>
+                      <div className={styles.hodOperationsCenter}>
+                        <div className={styles.hodTimeline}>
+                          <div className={styles.hodTimelineStep}>Create Semester</div>
+                          <div className={styles.hodTimelineLine} />
+                          <div className={styles.hodTimelineStep}>Create Courses</div>
+                          <div className={styles.hodTimelineLine} />
+                          <div className={styles.hodTimelineStep}>Assign Faculty</div>
+                          <div className={styles.hodTimelineLine} />
+                          <div className={styles.hodTimelineStep}>Enroll Students</div>
                         </div>
-                     </div>
+                        <div className={styles.hodBoard}>
+                          <div className={styles.hodCard}>CSE Dept Planning</div>
+                          <div className={styles.hodCard}>Course Pipeline</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -1111,30 +1102,30 @@ const Landing = () => {
                   data-role="faculty"
                 >
                   <div className={styles.expHeader}>
-                     <h3>AI-Assisted Evaluation Workspace</h3>
-                     <p>Teach, evaluate, and publish results efficiently.</p>
+                    <h3>AI-Assisted Evaluation Workspace</h3>
+                    <p>Teach, evaluate, and publish results efficiently.</p>
                   </div>
-                  
+
                   <div className={styles.expBody}>
-                     <div className={styles.facultyAIWorkspace}>
-                        <div className={styles.facultyAIPanel}>
-                           <div className={styles.beamScanner}>
-                              <div className={styles.beamLine} />
-                           </div>
-                           <div className={styles.codeBlock}>
-                              <div className={styles.codeLine} style={{width: '80%'}} />
-                              <div className={styles.codeLine} style={{width: '60%'}} />
-                              <div className={styles.codeLine} style={{width: '90%'}} />
-                              <div className={styles.codeLine} style={{width: '40%'}} />
-                           </div>
+                    <div className={styles.facultyAIWorkspace}>
+                      <div className={styles.facultyAIPanel}>
+                        <div className={styles.beamScanner}>
+                          <div className={styles.beamLine} />
                         </div>
-                        
-                        <div className={styles.facultySideStats}>
-                           <div className={styles.facultyStatBtn}>AI Scoring <CheckCircle2 size={14} className={styles.greenIcon}/></div>
-                           <div className={styles.facultyStatBtn}>Semantic Match <CheckCircle2 size={14} className={styles.greenIcon}/></div>
-                           <div className={styles.facultyStatBtn}>Faculty Review <ArrowRight size={14} className={styles.orangeIcon}/></div>
+                        <div className={styles.codeBlock}>
+                          <div className={styles.codeLine} style={{ width: '80%' }} />
+                          <div className={styles.codeLine} style={{ width: '60%' }} />
+                          <div className={styles.codeLine} style={{ width: '90%' }} />
+                          <div className={styles.codeLine} style={{ width: '40%' }} />
                         </div>
-                     </div>
+                      </div>
+
+                      <div className={styles.facultySideStats}>
+                        <div className={styles.facultyStatBtn}>AI Scoring <CheckCircle2 size={14} className={styles.greenIcon} /></div>
+                        <div className={styles.facultyStatBtn}>Semantic Match <CheckCircle2 size={14} className={styles.greenIcon} /></div>
+                        <div className={styles.facultyStatBtn}>Faculty Review <ArrowRight size={14} className={styles.orangeIcon} /></div>
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -1149,34 +1140,34 @@ const Landing = () => {
                   data-role="student"
                 >
                   <div className={styles.expHeader}>
-                     <h3>Smart Academic Companion</h3>
-                     <p>Track academic progress from enrollment to graduation.</p>
+                    <h3>Smart Academic Companion</h3>
+                    <p>Track academic progress from enrollment to graduation.</p>
                   </div>
-                  
+
                   <div className={styles.expBody}>
-                     <div className={styles.studentMobileApp}>
-                        <div className={styles.phoneFrame}>
-                           <div className={styles.phoneNotch} />
-                           <div className={styles.phoneScreen}>
-                              <div className={styles.phoneHeader}>
-                                 <div>Good morning, Alan</div>
-                                 <div className={styles.phoneAvatar} />
-                              </div>
-                              
-                              <div className={styles.phoneGrid}>
-                                 <div className={styles.phoneCard} style={{gridColumn: 'span 2', background: 'var(--accent)', color: 'white'}}>
-                                    <div className={styles.phoneCardSub}>Today's Exam</div>
-                                    <div className={styles.phoneCardTitle}>CS301 Data Structures</div>
-                                 </div>
-                                 <div className={styles.phoneCard}>CGPA<br/><strong>8.5</strong></div>
-                                 <div className={styles.phoneCard}>Credits<br/><strong>120</strong></div>
-                                 <div className={styles.phoneCardLine}>
-                                    AI Feedback Analysis <ArrowRight size={12}/>
-                                 </div>
-                              </div>
-                           </div>
+                    <div className={styles.studentMobileApp}>
+                      <div className={styles.phoneFrame}>
+                        <div className={styles.phoneNotch} />
+                        <div className={styles.phoneScreen}>
+                          <div className={styles.phoneHeader}>
+                            <div>Good morning, Alan</div>
+                            <div className={styles.phoneAvatar} />
+                          </div>
+
+                          <div className={styles.phoneGrid}>
+                            <div className={styles.phoneCard} style={{ gridColumn: 'span 2', background: 'var(--accent)', color: 'white' }}>
+                              <div className={styles.phoneCardSub}>Today's Exam</div>
+                              <div className={styles.phoneCardTitle}>CS301 Data Structures</div>
+                            </div>
+                            <div className={styles.phoneCard}>CGPA<br /><strong>8.5</strong></div>
+                            <div className={styles.phoneCard}>Credits<br /><strong>120</strong></div>
+                            <div className={styles.phoneCardLine}>
+                              AI Feedback Analysis <ArrowRight size={12} />
+                            </div>
+                          </div>
                         </div>
-                     </div>
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -1188,10 +1179,6 @@ const Landing = () => {
       {/* ════ WORKFLOW SHOWCASE SECTION ════ */}
       <section className={styles.workflowsSection} id="workflows" ref={workflowsRef}>
         <FadeUp>
-          <div className={styles.sectionTag}>
-            <Cpu size={14} />
-            Platform Workflows
-          </div>
           <h2 className={styles.sectionTitle}>The Academic Workflow Engine</h2>
           <p className={styles.sectionSub}>
             Trace operations sequentially from the initial registration of an institution to final grading.
@@ -1232,7 +1219,7 @@ const Landing = () => {
             <div className={styles.workflowDetailRight}>
               <div className={styles.technicalPanel}>
                 <h4>Developer Blueprint</h4>
-                
+
                 <div className={styles.codeSnippet}>
                   <span className={styles.codeLabel}>API ROUTE</span>
                   <code>{WORKFLOWS[activeWorkflow].api}</code>
@@ -1312,10 +1299,6 @@ const Landing = () => {
         <FadeUp>
           <div className={styles.splitFeatureContainer}>
             <div className={styles.splitFeatureText}>
-              <div className={styles.heroBadge}>
-                <span className={styles.heroBadgeDot} />
-                Administrative Ecosystem
-              </div>
               <h2 className={styles.splitFeatureTitle}>
                 Effortless College <br />
                 <span className={styles.heroTitleGrad}>Management</span>
@@ -1360,60 +1343,60 @@ const Landing = () => {
                         </div>
                         <div className={styles.mockDashAvatar} />
                       </div>
-                      
+
                       <div className={styles.mockDashStatsRow}>
                         <div className={styles.mockDashStatCard}>
-                           <span className={styles.statIconOrange} />
-                           <div className={styles.statTextGroup}>
-                             <h6>12,450</h6>
-                             <span>Total Students</span>
-                           </div>
+                          <span className={styles.statIconOrange} />
+                          <div className={styles.statTextGroup}>
+                            <h6>12,450</h6>
+                            <span>Total Students</span>
+                          </div>
                         </div>
                         <div className={styles.mockDashStatCard}>
-                           <span className={styles.statIconPurple} />
-                           <div className={styles.statTextGroup}>
-                             <h6>340</h6>
-                             <span>Active Courses</span>
-                           </div>
+                          <span className={styles.statIconPurple} />
+                          <div className={styles.statTextGroup}>
+                            <h6>340</h6>
+                            <span>Active Courses</span>
+                          </div>
                         </div>
                         <div className={styles.mockDashStatCard}>
-                           <span className={styles.statIconGreen} />
-                           <div className={styles.statTextGroup}>
-                             <h6>99.9%</h6>
-                             <span>System Health</span>
-                           </div>
+                          <span className={styles.statIconGreen} />
+                          <div className={styles.statTextGroup}>
+                            <h6>99.9%</h6>
+                            <span>System Health</span>
+                          </div>
                         </div>
                       </div>
 
                       <div className={styles.mockDashActivityArea}>
                         <div className={styles.mockDashChartBox}>
-                           <h6>Evaluation Activity</h6>
-                           <div className={styles.mockChartBars}>
-                             <div style={{ height: '40%' }} />
-                             <div style={{ height: '70%' }} />
-                             <div style={{ height: '55%' }} />
-                             <div style={{ height: '90%' }} />
-                             <div style={{ height: '60%' }} />
-                             <div style={{ height: '80%', background: 'var(--accent)' }} />
-                             <div style={{ height: '30%' }} />
-                           </div>
+                          <h6>Evaluation Activity</h6>
+                          <div className={styles.mockChartBars}>
+                            <div style={{ height: '40%' }} />
+                            <div style={{ height: '70%' }} />
+                            <div style={{ height: '55%' }} />
+                            <div style={{ height: '90%' }} />
+                            <div style={{ height: '60%' }} />
+                            <div style={{ height: '80%', background: 'var(--accent)' }} />
+                            <div style={{ height: '30%' }} />
+                          </div>
                         </div>
                         <div className={styles.mockDashList}>
-                           <h6>Pending Approvals</h6>
-                           <div className={styles.mockListItem}>
-                             <div className={styles.mockAvatarList} />
-                             <div className={styles.mockListText}>
-                               <strong>Dr. Alan Turing</strong><span>HOD - Comp Sci</span>
-                             </div>
-                             <button className={styles.mockListBtn}>Approve</button>
-                           </div>
-                           <div className={styles.mockListItem}>
-                             <div className={styles.mockAvatarList} />
-                             <div className={styles.mockListText}>
-                               <strong>Dr. Ada Lovelace</strong><span>HOD - Math</span>
-                             </div>
-                             <button className={styles.mockListBtn}>Approve</button>
-                           </div>
+                          <h6>Pending Approvals</h6>
+                          <div className={styles.mockListItem}>
+                            <div className={styles.mockAvatarList} />
+                            <div className={styles.mockListText}>
+                              <strong>Dr. Alan Turing</strong><span>HOD - Comp Sci</span>
+                            </div>
+                            <button className={styles.mockListBtn}>Approve</button>
+                          </div>
+                          <div className={styles.mockListItem}>
+                            <div className={styles.mockAvatarList} />
+                            <div className={styles.mockListText}>
+                              <strong>Dr. Ada Lovelace</strong><span>HOD - Math</span>
+                            </div>
+                            <button className={styles.mockListBtn}>Approve</button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1434,78 +1417,72 @@ const Landing = () => {
         <FadeUp>
           <div className={styles.splitFeatureContainerReversed}>
             <div className={styles.splitFeatureVisual}>
-               <div className={styles.mockBrowserWrapper}>
-                 <div className={styles.mockBrowserCardLarge}>
-                   <div className={styles.mockBrowserHeader}>
-                     <span className={`${styles.browserDot} ${styles.redDot}`} />
-                     <span className={`${styles.browserDot} ${styles.yellowDot}`} />
-                     <span className={`${styles.browserDot} ${styles.greenDot}`} />
-                     <div className={styles.browserAddressMini}>aiss-aes.edu/student/results</div>
-                   </div>
-                   
-                   <div className={styles.mockEvalSplit}>
-                     {/* Mock Document Area */}
-                     <div className={styles.mockDocArea}>
-                       <div className={styles.mockDocHeader}>
-                          <div><strong>CS301 Midterm</strong><span>Submit ID: 8A4F9</span></div>
-                          <span className={styles.mockDocScorePulse}>8.5 / 10</span>
-                       </div>
-                       <div className={styles.mockDocBody}>
-                          <div className={styles.mockDocLineText} style={{ width: '90%' }} />
-                          <div className={styles.mockDocLineText} style={{ width: '85%' }} />
-                          <div className={styles.mockDocHighlightRow}>
-                            <div className={styles.mockDocLineText} style={{ width: '60%' }} />
-                            <div className={styles.mockDocTooltip}>Excellent logic</div>
-                          </div>
-                          <div className={styles.mockDocLineText} style={{ width: '95%' }} />
-                          <div className={styles.mockDocLineText} style={{ width: '70%' }} />
-                          <div className={styles.mockDocHighlightRowYellow}>
-                            <div className={styles.mockDocLineText} style={{ width: '40%' }} />
-                            <div className={styles.mockDocTooltipYellow}>Missing base case</div>
-                          </div>
-                       </div>
-                     </div>
-                     
-                     {/* Mock AI Panel */}
-                     <div className={styles.mockAIPanelSidebar}>
-                        <h6>AI Evaluation Breakdown</h6>
-                        <div className={styles.mockAIPanelMetric}>
-                           <div className={styles.mockAIMetricHeader}>
-                             <span>Algorithm Efficiency</span>
-                             <strong>9/10</strong>
-                           </div>
-                           <div className={styles.mockAIPBarOuter}>
-                             <div className={styles.mockAIPBarInner} style={{ width: '90%', background: '#10b981' }} />
-                           </div>
-                        </div>
-                        <div className={styles.mockAIPanelMetric}>
-                           <div className={styles.mockAIMetricHeader}>
-                             <span>Code Quality</span>
-                             <strong>8/10</strong>
-                           </div>
-                           <div className={styles.mockAIPBarOuter}>
-                             <div className={styles.mockAIPBarInner} style={{ width: '80%', background: '#0ea5e9' }} />
-                           </div>
-                        </div>
-                        <div className={styles.mockAIPanelComment}>
-                           <strong>Feedback:</strong> 
-                           <p>Great approach using dynamic programming. Small penalty for missing the boundary condition check on line 12.</p>
-                        </div>
-                     </div>
-                   </div>
-                 </div>
-                 <div className={`${styles.floatingMetric} ${styles.metricStudents} ${styles.liftOnHover}`}>
-                   <ArrowRight size={14} />
-                   <span>View Feedback Line-by-Line</span>
-                 </div>
-               </div>
-            </div>
+              <div className={styles.mockBrowserWrapper}>
+                <div className={styles.mockBrowserCardLarge}>
+                  <div className={styles.mockBrowserHeader}>
+                    <span className={`${styles.browserDot} ${styles.redDot}`} />
+                    <span className={`${styles.browserDot} ${styles.yellowDot}`} />
+                    <span className={`${styles.browserDot} ${styles.greenDot}`} />
+                    <div className={styles.browserAddressMini}>aiss-aes.edu/student/results</div>
+                  </div>
 
-            <div className={styles.splitFeatureText}>
-              <div className={styles.heroBadge}>
-                <span className={styles.heroBadgeDot} />
-                Student-Centric
+                  <div className={styles.mockEvalSplit}>
+                    {/* Mock Document Area */}
+                    <div className={styles.mockDocArea}>
+                      <div className={styles.mockDocHeader}>
+                        <div><strong>CS301 Midterm</strong><span>Submit ID: 8A4F9</span></div>
+                        <span className={styles.mockDocScorePulse}>8.5 / 10</span>
+                      </div>
+                      <div className={styles.mockDocBody}>
+                        <div className={styles.mockDocLineText} style={{ width: '90%' }} />
+                        <div className={styles.mockDocLineText} style={{ width: '85%' }} />
+                        <div className={styles.mockDocHighlightRow}>
+                          <div className={styles.mockDocLineText} style={{ width: '60%' }} />
+                          <div className={styles.mockDocTooltip}>Excellent logic</div>
+                        </div>
+                        <div className={styles.mockDocLineText} style={{ width: '95%' }} />
+                        <div className={styles.mockDocLineText} style={{ width: '70%' }} />
+                        <div className={styles.mockDocHighlightRowYellow}>
+                          <div className={styles.mockDocLineText} style={{ width: '40%' }} />
+                          <div className={styles.mockDocTooltipYellow}>Missing base case</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Mock AI Panel */}
+                    <div className={styles.mockAIPanelSidebar}>
+                      <h6>AI Evaluation Breakdown</h6>
+                      <div className={styles.mockAIPanelMetric}>
+                        <div className={styles.mockAIMetricHeader}>
+                          <span>Algorithm Efficiency</span>
+                          <strong>9/10</strong>
+                        </div>
+                        <div className={styles.mockAIPBarOuter}>
+                          <div className={styles.mockAIPBarInner} style={{ width: '90%', background: '#10b981' }} />
+                        </div>
+                      </div>
+                      <div className={styles.mockAIPanelMetric}>
+                        <div className={styles.mockAIMetricHeader}>
+                          <span>Code Quality</span>
+                          <strong>8/10</strong>
+                        </div>
+                        <div className={styles.mockAIPBarOuter}>
+                          <div className={styles.mockAIPBarInner} style={{ width: '80%', background: '#0ea5e9' }} />
+                        </div>
+                      </div>
+                      <div className={styles.mockAIPanelComment}>
+                        <strong>Feedback:</strong>
+                        <p>Great approach using dynamic programming. Small penalty for missing the boundary condition check on line 12.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className={`${styles.floatingMetric} ${styles.metricStudents} ${styles.liftOnHover}`}>
+                  <ArrowRight size={14} />
+                  <span>View Feedback Line-by-Line</span>
+                </div>
               </div>
+            </div>            <div className={styles.splitFeatureText}>
               <h2 className={styles.splitFeatureTitle}>
                 Transparent & Fair <br />
                 <span className={styles.heroTitleGrad}>Examinations</span>
@@ -1531,10 +1508,6 @@ const Landing = () => {
       {/* ════ PLATFORM WORKFLOW ARCHITECTURE ════ */}
       <section className={styles.ecosystemGraphSection} id="roles">
         <FadeUp>
-          <div className={styles.sectionTag}>
-            <Activity size={14} />
-            Ecosystem Network
-          </div>
           <h2 className={styles.sectionTitle}>Platform Workflow Architecture</h2>
           <p className={styles.sectionSub}>
             A unified flow connecting administrative operations, faculty grading, and student experiences.
@@ -1551,10 +1524,10 @@ const Landing = () => {
                 <span>Institution Core</span>
               </div>
             </div>
-            
+
             <div className={styles.graphConnection}>
-               <span className={styles.connLabel}>Creates Departments</span>
-               <div className={styles.connLine}><div className={styles.connParticle} /></div>
+              <span className={styles.connLabel}>Creates Departments</span>
+              <div className={styles.connLine}><div className={styles.connParticle} /></div>
             </div>
 
             <div className={styles.graphNode} data-role="hod">
@@ -1568,8 +1541,8 @@ const Landing = () => {
 
           {/* Middle Layer Vertical Connectors */}
           <div className={styles.graphVerticalConnectors}>
-             <div className={styles.vertLine}><div className={styles.connParticleVert} /></div>
-             <div className={styles.vertLine}><div className={styles.connParticleVert} /></div>
+            <div className={styles.vertLine}><div className={styles.connParticleVert} /></div>
+            <div className={styles.vertLine}><div className={styles.connParticleVert} /></div>
           </div>
 
           {/* Middle Layer: Courses & Faculty */}
@@ -1583,8 +1556,8 @@ const Landing = () => {
             </div>
 
             <div className={styles.graphConnection}>
-               <span className={styles.connLabel}>Assigns</span>
-               <div className={styles.connLine}><div className={styles.connParticleReverse} /></div>
+              <span className={styles.connLabel}>Assigns</span>
+              <div className={styles.connLine}><div className={styles.connParticleReverse} /></div>
             </div>
 
             <div className={styles.graphNode} data-role="faculty">
@@ -1598,7 +1571,7 @@ const Landing = () => {
 
           {/* Core layer Vertical Connectors */}
           <div className={styles.graphVerticalConnectorsCentered}>
-             <div className={styles.vertLine}><div className={styles.connParticleVert} /></div>
+            <div className={styles.vertLine}><div className={styles.connParticleVert} /></div>
           </div>
 
           {/* Core Layer: Student -> AES Intelligence -> Results */}
@@ -1612,7 +1585,7 @@ const Landing = () => {
             </div>
 
             <div className={styles.graphConnectionPulse}>
-               <div className={styles.connLine}><div className={styles.connParticle} style={{animationDuration: '1s'}} /></div>
+              <div className={styles.connLine}><div className={styles.connParticle} style={{ animationDuration: '1s' }} /></div>
             </div>
 
             <div className={styles.graphNodeLarge} data-role="ai">
@@ -1625,7 +1598,7 @@ const Landing = () => {
             </div>
 
             <div className={styles.graphConnectionPulse}>
-               <div className={styles.connLine}><div className={styles.connParticle} style={{animationDuration: '1s'}} /></div>
+              <div className={styles.connLine}><div className={styles.connParticle} style={{ animationDuration: '1s' }} /></div>
             </div>
 
             <div className={styles.graphNode} data-role="result">
@@ -1642,10 +1615,6 @@ const Landing = () => {
       {/* ════ AI EVALUATION SHOWCASE (3D RENDER ENGINE) ════ */}
       <section className={styles.aiEvalSection} id="ai-eval" ref={aiEvalRef}>
         <FadeUp>
-          <div className={styles.sectionTag}>
-            <Zap size={14} />
-            AI Processing Loop
-          </div>
           <h2 className={styles.sectionTitle}>Automated AI Assessment Engine</h2>
           <p className={styles.sectionSub}>
             Witness the multi-step evaluation sequence running behind the scenes.
@@ -1723,7 +1692,7 @@ const Landing = () => {
               <div className={styles.pureCssChipStage}>
                 <div className={styles.chipGlowAura} />
                 <div className={styles.laserScanBeam} />
-                
+
                 <div className={styles.circuitBoardBase}>
                   <div className={styles.circuitTrack1} />
                   <div className={styles.circuitTrack2} />
@@ -1793,10 +1762,6 @@ const Landing = () => {
       {/* ════ EMPIRICAL BENCHMARK REPORTS ════ */}
       <section className={styles.empiricalReportsSection} id="reports" ref={reportsRef}>
         <FadeUp>
-          <div className={styles.sectionTag}>
-            <FileSpreadsheet size={14} />
-            Empirical Validation & Benchmark Reports
-          </div>
           <h2 className={styles.sectionTitle}>AISS Evaluation Accuracy & Performance Reports</h2>
           <p className={styles.sectionSub}>
             Real empirical benchmark results comparing AISS AI grading against senior human faculty evaluations across 500+ answer scripts.
@@ -1880,10 +1845,6 @@ const Landing = () => {
       {/* ════ DASHBOARD PREVIEW CAROUSEL ════ */}
       <section className={styles.carouselSection} ref={carouselRef}>
         <FadeUp>
-          <div className={styles.sectionTag}>
-            <Calendar size={14} />
-            Interface Previews
-          </div>
           <h2 className={styles.sectionTitle} style={{ textAlign: 'center' }}>Experience AISS Dashboard Workflows</h2>
           <p className={styles.sectionSub} style={{ textAlign: 'center', maxWidth: '600px', margin: '0 auto 40px' }}>
             Browse actual layout frames of the platform, built strictly for scale and speed.
@@ -1896,7 +1857,7 @@ const Landing = () => {
               <span className={styles.slideSubtitle}>{CAROUSEL_MOCKUPS[carouselIndex].subtitle}</span>
               <h3>{CAROUSEL_MOCKUPS[carouselIndex].title}</h3>
               <p>{CAROUSEL_MOCKUPS[carouselIndex].desc}</p>
-              
+
               <div className={styles.carouselControls}>
                 <div className={styles.carouselArrowsBox}>
                   <button className={styles.carouselArrowBtn} onClick={() => handleManualSelect('carousel', setCarouselIndex, (carouselIndex - 1 + CAROUSEL_MOCKUPS.length) % CAROUSEL_MOCKUPS.length)}>
@@ -1928,77 +1889,77 @@ const Landing = () => {
                   transition={{ duration: 0.3, ease: 'easeOut' }}
                   className={styles.slideMockFrame}
                 >
-                {CAROUSEL_MOCKUPS[carouselIndex].ui === 'hod-semester' && (
-                  <div className={styles.frameContent}>
-                    <div className={styles.frameTopbar}>Semester Configuration Wizard</div>
-                    <div className={styles.frameBody}>
-                      <div className={styles.wizardHeader}>
-                        <span>Step 1: Setup Details</span> <ChevronRight size={12} style={{ display: 'inline-block', verticalAlign: 'middle', margin: '0 4px' }} /> <strong style={{ color: 'var(--accent)' }}>Step 2: Assign Course</strong>
-                      </div>
-                      <div className={styles.mockInputGroup}>
-                        <label>Semester Number</label>
-                        <input type="text" readOnly value="Semester 4" />
-                      </div>
-                      <div className={styles.mockInputGroup}>
-                        <label>Academic Year</label>
-                        <input type="text" readOnly value="2026-2027" />
+                  {CAROUSEL_MOCKUPS[carouselIndex].ui === 'hod-semester' && (
+                    <div className={styles.frameContent}>
+                      <div className={styles.frameTopbar}>Semester Configuration Wizard</div>
+                      <div className={styles.frameBody}>
+                        <div className={styles.wizardHeader}>
+                          <span>Step 1: Setup Details</span> <ChevronRight size={12} style={{ display: 'inline-block', verticalAlign: 'middle', margin: '0 4px' }} /> <strong style={{ color: 'var(--accent)' }}>Step 2: Assign Course</strong>
+                        </div>
+                        <div className={styles.mockInputGroup}>
+                          <label>Semester Number</label>
+                          <input type="text" readOnly value="Semester 4" />
+                        </div>
+                        <div className={styles.mockInputGroup}>
+                          <label>Academic Year</label>
+                          <input type="text" readOnly value="2026-2027" />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {CAROUSEL_MOCKUPS[carouselIndex].ui === 'admin-upload' && (
-                  <div className={styles.frameContent}>
-                    <div className={styles.frameTopbar}>CSV Student Registry Import</div>
-                    <div className={styles.frameBody}>
-                      <div className={styles.mockUploadArea}>
-                        <FileText size={20} className={styles.iconFile} />
-                        <span>cs_students_roster_2026.csv</span>
-                      </div>
-                      <div className={styles.parsedTableMock}>
-                        <div className={styles.tableRowHeader}>
-                          <span>Roll Number</span><span>Name</span><span>Status</span>
+                  {CAROUSEL_MOCKUPS[carouselIndex].ui === 'admin-upload' && (
+                    <div className={styles.frameContent}>
+                      <div className={styles.frameTopbar}>CSV Student Registry Import</div>
+                      <div className={styles.frameBody}>
+                        <div className={styles.mockUploadArea}>
+                          <FileText size={20} className={styles.iconFile} />
+                          <span>cs_students_roster_2026.csv</span>
                         </div>
-                        <div className={styles.tableRowMock}>
-                          <span>CS-2026-01</span><span>Sarah Connor</span><span className={styles.badgeSuccess}><span className={styles.pulseDotLight} /> Validated</span>
+                        <div className={styles.parsedTableMock}>
+                          <div className={styles.tableRowHeader}>
+                            <span>Roll Number</span><span>Name</span><span>Status</span>
+                          </div>
+                          <div className={styles.tableRowMock}>
+                            <span>CS-2026-01</span><span>Sarah Connor</span><span className={styles.badgeSuccess}><span className={styles.pulseDotLight} /> Validated</span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {CAROUSEL_MOCKUPS[carouselIndex].ui === 'faculty-eval' && (
-                  <div className={styles.frameContent}>
-                    <div className={styles.frameTopbar}>AI Script Override Panel</div>
-                    <div className={styles.frameBody}>
-                      <div className={styles.mockQuestionRow}>
-                        <div><strong>Q1: Outline thermodynamics laws.</strong></div>
-                        <div className={styles.scoreRow}>
-                          <span>AI Score: <strong>7/10</strong></span>
-                          <span>Override: <strong>8/10</strong></span>
+                  {CAROUSEL_MOCKUPS[carouselIndex].ui === 'faculty-eval' && (
+                    <div className={styles.frameContent}>
+                      <div className={styles.frameTopbar}>AI Script Override Panel</div>
+                      <div className={styles.frameBody}>
+                        <div className={styles.mockQuestionRow}>
+                          <div><strong>Q1: Outline thermodynamics laws.</strong></div>
+                          <div className={styles.scoreRow}>
+                            <span>AI Score: <strong>7/10</strong></span>
+                            <span>Override: <strong>8/10</strong></span>
+                          </div>
+                        </div>
+                        <div className={styles.commentRow}>
+                          <span>AI Feedback: "Correct laws stated. Mathematical derivation missed details."</span>
                         </div>
                       </div>
-                      <div className={styles.commentRow}>
-                        <span>AI Feedback: "Correct laws stated. Mathematical derivation missed details."</span>
-                       </div>
-                     </div>
-                   </div>
-                 )}
-                {CAROUSEL_MOCKUPS[carouselIndex].ui === 'student-portal' && (
-                  <div className={styles.frameContent}>
-                    <div className={styles.frameTopbar}>Student Active Examinations</div>
-                    <div className={styles.frameBody}>
-                      <div className={styles.timetableMockRow}>
-                        <div><strong>PHYS-101: Physics-I Exam</strong><br/><span>June 15, 2026 - 10:00 AM</span></div>
-                        <button className={styles.btnActionMock}>Start Window</button>
-                      </div>
-                      <div className={styles.timetableMockRow}>
-                        <div><strong>CS-102: Object Oriented Prog</strong><br/><span>June 18, 2026 - 10:00 AM</span></div>
-                        <span className={styles.badgeLocked}>Locked</span>
+                    </div>
+                  )}
+                  {CAROUSEL_MOCKUPS[carouselIndex].ui === 'student-portal' && (
+                    <div className={styles.frameContent}>
+                      <div className={styles.frameTopbar}>Student Active Examinations</div>
+                      <div className={styles.frameBody}>
+                        <div className={styles.timetableMockRow}>
+                          <div><strong>PHYS-101: Physics-I Exam</strong><br /><span>June 15, 2026 - 10:00 AM</span></div>
+                          <button className={styles.btnActionMock}>Start Window</button>
+                        </div>
+                        <div className={styles.timetableMockRow}>
+                          <div><strong>CS-102: Object Oriented Prog</strong><br /><span>June 18, 2026 - 10:00 AM</span></div>
+                          <span className={styles.badgeLocked}>Locked</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -2009,10 +1970,6 @@ const Landing = () => {
       {/* ACADEMIC LIFECYCLE SECTION */}
       <section className={styles.lifecycleSection} id="academic-lifecycle">
         <FadeUp>
-          <div className={styles.sectionTag}>
-            <GraduationCap size={14} />
-            Academic Journey
-          </div>
           <h2 className={styles.sectionTitle}>The Full Academic Lifecycle</h2>
           <p className={styles.sectionSub}>
             Six automated checkpoints that carry every student from institution onboarding to published results.
@@ -2024,39 +1981,35 @@ const Landing = () => {
 
       {/* ════ CTA ════ */}
       <section className={styles.cta}>
-        <FadeUp>
-          <div className={styles.ctaBox}>
-            <div className={styles.ctaBadge}>
-              <AISSLogo size={14} />
-              <span>Enterprise Academic Engine</span>
-            </div>
-            <h2 className={styles.ctaTitle}>Accelerate Evaluation. <br />Eliminate Bias.</h2>
-            <p className={styles.ctaSub}>
-              Power your institution with AI-driven grading precision, auditable faculty controls, and instant evaluation pipelines.
-            </p>
-            <div className={styles.ctaBtns}>
-              <button className={styles.btnPrimary} onClick={() => setCollegeModalOpen(true)} id="cta-get-started">
-                <Building2 size={18} />
-                <span>Register Institution</span>
-              </button>
-              <button className={styles.btnSecondary} onClick={() => navigate('/register')} id="cta-sign-in">
-                <Users size={16} />
-                <span>Faculty Portal</span>
-              </button>
-            </div>
-            <div className={styles.ctaTrustBadges}>
-              <span className={styles.trustItem}><Zap size={14} /> 10x Evaluation Speed</span>
-              <span className={styles.trustDot}>•</span>
-              <span className={styles.trustItem}><Shield size={14} /> Zero-Trust Audit Logs</span>
-              <span className={styles.trustDot}>•</span>
-              <span className={styles.trustItem}><Target size={14} /> 84.5% Precision Rate</span>
-            </div>
-          </div>
-        </FadeUp>
-      </section>
+    <FadeUp>
+      <div className={styles.ctaBox}>
+        <h2 className={styles.ctaTitle}>Accelerate Evaluation. <br />Eliminate Bias.</h2>
+        <p className={styles.ctaSub}>
+          Power your institution with AI-driven grading precision, auditable faculty controls, and instant evaluation pipelines.
+        </p>
+        <div className={styles.ctaBtns}>
+          <button className={styles.btnPrimary} onClick={() => setCollegeModalOpen(true)} id="cta-get-started">
+            <Building2 size={18} />
+            <span>Register Institution</span>
+          </button>
+          <button className={styles.btnSecondary} onClick={() => navigate('/register')} id="cta-sign-in">
+            <Users size={16} />
+            <span>Faculty Portal</span>
+          </button>
+        </div>
+        <div className={styles.ctaTrustBadges}>
+          <span className={styles.trustItem}><Zap size={14} /> 10x Evaluation Speed</span>
+          <span className={styles.trustDot}>•</span>
+          <span className={styles.trustItem}><Shield size={14} /> Zero-Trust Audit Logs</span>
+          <span className={styles.trustDot}>•</span>
+          <span className={styles.trustItem}><Target size={14} /> 84.5% Precision Rate</span>
+        </div>
+      </div>
+    </FadeUp>
+      </section >
 
-      {/* ════ FOOTER ════ */}
-      <footer className={styles.footer}>
+  {/* ════ FOOTER ════ */ }
+  < footer className = { styles.footer } >
         <div className={styles.footerBrand}>
           <div className={styles.navLogoBox} style={{ width: 28, height: 28, borderRadius: 7 }}>
             <AISSLogo size={16} />
@@ -2071,62 +2024,62 @@ const Landing = () => {
           <button className={styles.footerLinkBtn} onClick={() => document.getElementById('reports')?.scrollIntoView({ behavior: 'smooth' })}>Reports</button>
           <button className={styles.footerLinkBtn} onClick={() => document.getElementById('academic-lifecycle')?.scrollIntoView({ behavior: 'smooth' })}>Lifecycle</button>
         </div>
-      </footer>
+      </footer >
 
-      <Modal
-        isOpen={collegeModalOpen}
-        onClose={() => !registering && setCollegeModalOpen(false)}
-        title="Register Your Institution"
-        size="lg"
-      >
-        <form onSubmit={handleRegisterCollege} className={styles.registerForm}>
-           <p className={styles.registerFormDesc}>
-             Register your college to get access to the platform. Only the requesting person will get the College Admin account initially.
-           </p>
-           <div className={styles.formField} style={{ marginBottom: 14 }}>
-             <label>College Name *</label>
-             <input className={styles.modalInput} required value={collegeForm.collegeName} onChange={e => setCollegeForm({...collegeForm, collegeName: e.target.value})} placeholder="e.g. AISS Institute" />
-           </div>
-           <div className={styles.formGrid}>
-             <div className={styles.formField}>
-               <label>College Code *</label>
-               <input className={styles.modalInput} required value={collegeForm.collegeCode} onChange={e => setCollegeForm({...collegeForm, collegeCode: e.target.value.toUpperCase().slice(0, 8)})} placeholder="e.g. AISS" />
-             </div>
-             <div className={styles.formField}>
-               <label>Location / City</label>
-               <input className={styles.modalInput} value={collegeForm.location} onChange={e => setCollegeForm({...collegeForm, location: e.target.value})} placeholder="e.g. Bangalore" />
-             </div>
-           </div>
+  <Modal
+    isOpen={collegeModalOpen}
+    onClose={() => !registering && setCollegeModalOpen(false)}
+    title="Register Your Institution"
+    size="lg"
+  >
+    <form onSubmit={handleRegisterCollege} className={styles.registerForm}>
+      <p className={styles.registerFormDesc}>
+        Register your college to get access to the platform. Only the requesting person will get the College Admin account initially.
+      </p>
+      <div className={styles.formField} style={{ marginBottom: 14 }}>
+        <label>College Name *</label>
+        <input className={styles.modalInput} required value={collegeForm.collegeName} onChange={e => setCollegeForm({ ...collegeForm, collegeName: e.target.value })} placeholder="e.g. AISS Institute" />
+      </div>
+      <div className={styles.formGrid}>
+        <div className={styles.formField}>
+          <label>College Code *</label>
+          <input className={styles.modalInput} required value={collegeForm.collegeCode} onChange={e => setCollegeForm({ ...collegeForm, collegeCode: e.target.value.toUpperCase().slice(0, 8) })} placeholder="e.g. AISS" />
+        </div>
+        <div className={styles.formField}>
+          <label>Location / City</label>
+          <input className={styles.modalInput} value={collegeForm.location} onChange={e => setCollegeForm({ ...collegeForm, location: e.target.value })} placeholder="e.g. Bangalore" />
+        </div>
+      </div>
 
-           <h4 className={styles.formSectionTitle}>College Admin Details</h4>
-           <div className={styles.registerForm}>
-             <div className={styles.formField}>
-               <label>Admin Name *</label>
-               <input className={styles.modalInput} required value={collegeForm.adminName} onChange={e => setCollegeForm({...collegeForm, adminName: e.target.value})} placeholder="e.g. Dr. John Doe" />
-             </div>
-             <div className={styles.formGrid}>
-               <div className={styles.formField}>
-                 <label>Admin Email *</label>
-                 <input className={styles.modalInput} type="email" required value={collegeForm.adminEmail} onChange={e => setCollegeForm({...collegeForm, adminEmail: e.target.value})} placeholder="admin@institute.edu" />
-               </div>
-               <div className={styles.formField}>
-                 <label>Admin Phone Number</label>
-                 <input className={styles.modalInput} type="tel" value={collegeForm.adminPhone} onChange={e => setCollegeForm({...collegeForm, adminPhone: e.target.value})} placeholder="+91 9876543210" />
-               </div>
-             </div>
-           </div>
-           
-           <div className={styles.formActions}>
-             <button type="button" onClick={() => setCollegeModalOpen(false)} className={styles.btnCancel} disabled={registering}>
-               Cancel
-             </button>
-             <button type="submit" className={styles.btnSubmit} disabled={registering}>
-               {registering ? 'Submitting...' : <><CheckCircle2 size={16} /> Submit Registration</>}
-             </button>
-           </div>
-        </form>
-      </Modal>
-    </div>
+      <h4 className={styles.formSectionTitle}>College Admin Details</h4>
+      <div className={styles.registerForm}>
+        <div className={styles.formField}>
+          <label>Admin Name *</label>
+          <input className={styles.modalInput} required value={collegeForm.adminName} onChange={e => setCollegeForm({ ...collegeForm, adminName: e.target.value })} placeholder="e.g. Dr. John Doe" />
+        </div>
+        <div className={styles.formGrid}>
+          <div className={styles.formField}>
+            <label>Admin Email *</label>
+            <input className={styles.modalInput} type="email" required value={collegeForm.adminEmail} onChange={e => setCollegeForm({ ...collegeForm, adminEmail: e.target.value })} placeholder="admin@institute.edu" />
+          </div>
+          <div className={styles.formField}>
+            <label>Admin Phone Number</label>
+            <input className={styles.modalInput} type="tel" value={collegeForm.adminPhone} onChange={e => setCollegeForm({ ...collegeForm, adminPhone: e.target.value })} placeholder="+91 9876543210" />
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.formActions}>
+        <button type="button" onClick={() => setCollegeModalOpen(false)} className={styles.btnCancel} disabled={registering}>
+          Cancel
+        </button>
+        <button type="submit" className={styles.btnSubmit} disabled={registering}>
+          {registering ? 'Submitting...' : <><CheckCircle2 size={16} /> Submit Registration</>}
+        </button>
+      </div>
+    </form>
+  </Modal>
+    </div >
   );
 };
 

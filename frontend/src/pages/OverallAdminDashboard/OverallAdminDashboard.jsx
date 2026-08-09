@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import AISSLogo from '../../components/AISSLogo/AISSLogo';
 import {
   Home, Settings as SettingsIcon, Building2, CheckCircle2, Clock,
   RefreshCw, Shield, ArrowRightLeft, AlertTriangle, MapPin,
-  Lock, Users, Mail, Phone, Library, Activity
+  Lock, Users, Mail, Phone, Library, Activity, PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
 import { overallAdminAPI, collegeAPI } from '../../api/client';
 import { useToast } from '../../components/Toast/Toast';
@@ -407,19 +408,42 @@ const OverallAdminDashboard = () => {
   const location = useLocation();
   const { logout } = useAuth();
 
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    return localStorage.getItem('aiss_sidebar_collapsed') === 'true';
+  });
+
+  const toggleCollapse = () => {
+    setIsCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem('aiss_sidebar_collapsed', String(next));
+      return next;
+    });
+  };
+
   const navItems = [
     { path: '/admin',          label: 'Platform Overview', icon: <Home size={18} /> },
     { path: '/admin/settings', label: 'Security & Auth',   icon: <SettingsIcon size={18} /> },
   ];
 
   return (
-    <div className={styles.layout}>
-      <aside className={styles.sidebar}>
+    <div className={`${styles.layout} ${isCollapsed ? styles.layoutCollapsed : ''}`}>
+      <aside className={`${styles.sidebar} ${isCollapsed ? styles.sidebarCollapsed : ''}`}>
         <div className={styles.brand}>
-          <div className={styles.brandIcon} style={{ background: 'linear-gradient(135deg, #ef4444, #f97316)' }}>
-            <Shield size={17} strokeWidth={2.3} />
+          <div className={styles.brandIcon} onClick={toggleCollapse} style={{ cursor: 'pointer' }} title={isCollapsed ? "Expand Sidebar" : "AISS_AES Logo"}>
+            <AISSLogo size={20} />
           </div>
-          <div><p className={styles.brandName}>AISS_AES</p><p className={styles.brandSub}>Platform Admin</p></div>
+          <div className={styles.brandText}>
+            <p className={styles.brandName}>AISS_AES</p>
+            <p className={styles.brandSub}>Platform Admin</p>
+          </div>
+          <button 
+            className={styles.sidebarCollapseBtn} 
+            onClick={toggleCollapse} 
+            aria-label="Toggle sidebar collapse" 
+            title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            {isCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+          </button>
         </div>
 
         <nav className={styles.nav}>
@@ -428,8 +452,9 @@ const OverallAdminDashboard = () => {
               const isActive = location.pathname === item.path || (item.path.length > 6 && location.pathname.startsWith(item.path));
               return (
                 <li key={i}>
-                  <button className={`${styles.navItem} ${isActive ? styles.navActive : ''}`} onClick={() => navigate(item.path)}>
-                    <span className={styles.navIcon}>{item.icon}</span><span className={styles.navLabel}>{item.label}</span>
+                  <button className={`${styles.navItem} ${isActive ? styles.navActive : ''}`} onClick={() => navigate(item.path)} title={isCollapsed ? item.label : undefined}>
+                    <span className={styles.navIcon}>{item.icon}</span>
+                    <span className={styles.navLabel}>{item.label}</span>
                   </button>
                 </li>
               );
@@ -438,11 +463,11 @@ const OverallAdminDashboard = () => {
         </nav>
 
         <div className={styles.sidebarBottom}>
-          <div className={styles.userCard}>
+          <div className={styles.userCard} title={isCollapsed ? "Overall Admin" : undefined}>
             <div className={styles.userAvatar} style={{ background: 'linear-gradient(135deg, #ef4444, #f97316)' }}>A</div>
             <div className={styles.userInfo}><span className={styles.userName}>Overall Admin</span><span className={styles.rolePill}>God Mode</span></div>
           </div>
-          <button className={styles.logoutBtn} onClick={logout}><Shield size={15} /> Sign Out</button>
+          <button className={styles.logoutBtn} onClick={logout} title={isCollapsed ? "Sign Out" : undefined}><Shield size={15} /> <span>Sign Out</span></button>
         </div>
       </aside>
 

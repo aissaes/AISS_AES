@@ -25,7 +25,7 @@ const AISSLogo = ({ size = 22, className = '' }) => {
       width={size}
       height={size}
       className={className}
-      style={{ display: 'block', objectFit: 'contain' }}
+      style={{ display: 'block', margin: '0 auto', objectFit: 'contain' }}
     />
   );
 };

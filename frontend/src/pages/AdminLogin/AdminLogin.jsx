@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import AISSLogo from '../../components/AISSLogo/AISSLogo';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, ShieldCheck, ArrowRight, Shield, Eye, EyeOff } from 'lucide-react';
 import { overallAdminAuthAPI } from '../../api/client';
@@ -88,8 +89,8 @@ const AdminLogin = () => {
       <div className={styles.grid} aria-hidden />
       <div className={styles.box}>
         <div className={styles.logoWrap}>
-          <div className={styles.logo} style={{ background: 'linear-gradient(135deg, #ef4444, #f97316)' }}>
-            <Shield size={28} strokeWidth={2} />
+          <div className={styles.logo}>
+            <AISSLogo size={28} />
           </div>
         </div>
 

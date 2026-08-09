@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LogOut, BrainCircuit, LayoutDashboard,
   ChevronDown, Repeat2, Shield, GraduationCap, Bell, KeyRound,
-  Sun, Moon, Laptop, Menu, X
+  Sun, Moon, Laptop, Menu, X, PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
 import Modal from '../Modal/Modal';
 import { useAuth } from '../../context/AuthContext';
@@ -23,6 +23,8 @@ const ROLE_VIEWS = {
   ],
   faculty: [],
 };
+
+import AISSLogo from '../AISSLogo/AISSLogo';
 
 const VIEW_BADGES = {
   collegeAdmin: { label: 'College Admin', cls: 'badgeCA'      },
@@ -69,6 +71,31 @@ const DashboardLayout = ({ navItems, children }) => {
 
   /* ── Mobile sidebar drawer state ── */
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  /* ── Desktop sidebar collapse state ── */
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    return localStorage.getItem('aiss_sidebar_collapsed') === 'true';
+  });
+
+  const toggleCollapse = () => {
+    setIsCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem('aiss_sidebar_collapsed', String(next));
+      return next;
+    });
+  };
+
+  /* Ctrl+B Keyboard Shortcut to toggle sidebar */
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        toggleCollapse();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   /* ── Logout confirmation modal ── */
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
@@ -132,23 +159,31 @@ const DashboardLayout = ({ navItems, children }) => {
   }
 
   return (
-    <div className={styles.layout}>
+    <div className={`${styles.layout} ${isCollapsed ? styles.layoutCollapsed : ''}`}>
       {/* ════ Sidebar Backdrop (mobile) ════ */}
       {isSidebarOpen && (
         <div className={styles.sidebarBackdrop} onClick={() => setIsSidebarOpen(false)} />
       )}
 
       {/* ════ Sidebar ════ */}
-      <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarActive : ''}`}>
+      <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarActive : ''} ${isCollapsed ? styles.sidebarCollapsed : ''}`}>
         {/* Brand */}
         <div className={styles.brand}>
-          <div className={styles.brandIcon}>
-            <BrainCircuit size={17} strokeWidth={2.3} />
+          <div className={styles.brandIcon} onClick={toggleCollapse} style={{ cursor: 'pointer' }} title={isCollapsed ? "Expand Sidebar (Ctrl+B)" : "AISS_AES Logo"}>
+            <AISSLogo size={20} />
           </div>
-          <div>
+          <div className={styles.brandText}>
             <p className={styles.brandName}>AISS_AES</p>
             <p className={styles.brandSub}>Evaluation System</p>
           </div>
+          <button 
+            className={styles.sidebarCollapseBtn} 
+            onClick={toggleCollapse} 
+            aria-label="Toggle sidebar collapse" 
+            title={isCollapsed ? "Expand Sidebar (Ctrl+B)" : "Collapse Sidebar (Ctrl+B)"}
+          >
+            {isCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+          </button>
           <button className={styles.sidebarCloseBtn} onClick={() => setIsSidebarOpen(false)} aria-label="Close sidebar">
             <X size={18} />
           </button>
@@ -172,6 +207,7 @@ const DashboardLayout = ({ navItems, children }) => {
                   <button
                     className={`${styles.navItem} ${isActive ? styles.navActive : ''}`}
                     onClick={() => navigate(item.path)}
+                    title={isCollapsed ? item.label : undefined}
                   >
                     <span className={styles.navIcon}>{item.icon}</span>
                     <span className={styles.navLabel}>{item.label}</span>
@@ -201,6 +237,7 @@ const DashboardLayout = ({ navItems, children }) => {
                     key={view.key}
                     className={`${styles.switchBtn} ${isCurr ? styles.switchBtnActive : ''}`}
                     onClick={() => handleSwitchView(view)}
+                    title={isCollapsed ? view.label : undefined}
                   >
                     <Icon size={13} />
                     <span>{view.label}</span>
@@ -213,7 +250,7 @@ const DashboardLayout = ({ navItems, children }) => {
 
         {/* User + Logout */}
         <div className={styles.sidebarBottom}>
-          <div className={styles.userCard}>
+          <div className={styles.userCard} title={isCollapsed ? profile?.name : undefined}>
             <div className={styles.userAvatar}>
               {(profile?.name || 'U')[0].toUpperCase()}
             </div>
@@ -227,7 +264,7 @@ const DashboardLayout = ({ navItems, children }) => {
             </div>
           </div>
 
-          <button className={styles.logoutBtn} onClick={handleLogout}>
+          <button className={styles.logoutBtn} onClick={handleLogout} title={isCollapsed ? "Sign Out" : undefined}>
             <LogOut size={15} strokeWidth={2} />
             <span>Sign Out</span>
           </button>

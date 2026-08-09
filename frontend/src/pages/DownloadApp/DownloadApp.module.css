@@ -987,3 +987,164 @@
   margin: 0;
 }
 
+/* ═══════════════════════════════════════════════════════
+   LIGHT THEME ADAPTATIONS FOR DOWNLOAD APP PAGE
+   ═══════════════════════════════════════════════════════ */
+
+:global([data-theme='light']) .brand {
+  color: #0f172a;
+}
+
+:global([data-theme='light']) .backBtn {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #334155;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+:global([data-theme='light']) .backBtn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+/* Phone device frame & mockup */
+:global([data-theme='light']) .phoneDevice {
+  background: #ffffff;
+  border-color: #0f172a;
+  box-shadow: 
+    0 25px 50px -12px rgba(15, 23, 42, 0.2),
+    0 0 0 2px rgba(15, 23, 42, 0.1),
+    0 0 35px var(--accent-glow);
+}
+
+:global([data-theme='light']) .phoneSpeaker {
+  background: #cbd5e1;
+}
+
+:global([data-theme='light']) .phoneScreen {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+:global([data-theme='light']) .statusBar {
+  color: #64748b;
+}
+
+:global([data-theme='light']) .appUser h4 {
+  color: #0f172a;
+}
+
+:global([data-theme='light']) .appUser span {
+  color: #64748b;
+}
+
+:global([data-theme='light']) .appBell {
+  color: #64748b;
+}
+
+:global([data-theme='light']) .appStatItem {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+:global([data-theme='light']) .statVal {
+  color: #0f172a;
+}
+
+:global([data-theme='light']) .statLbl {
+  color: #64748b;
+}
+
+:global([data-theme='light']) .activeExamCard {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.08) 0%, rgba(253, 186, 116, 0.15) 100%);
+  border-color: rgba(249, 115, 22, 0.3);
+  box-shadow: 0 4px 15px rgba(249, 115, 22, 0.08);
+}
+
+:global([data-theme='light']) .activeExamHeader {
+  color: #ea580c;
+}
+
+:global([data-theme='light']) .activeExamBody h5 {
+  color: #0f172a;
+}
+
+:global([data-theme='light']) .timerRow {
+  color: #475569;
+}
+
+:global([data-theme='light']) .timerText {
+  color: #ea580c;
+}
+
+:global([data-theme='light']) .recentExamCard {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+:global([data-theme='light']) .recentExamHeader {
+  color: #64748b;
+}
+
+:global([data-theme='light']) .recentExamBody h5 {
+  color: #0f172a;
+}
+
+:global([data-theme='light']) .feedbackText {
+  color: #475569;
+}
+
+:global([data-theme='light']) .homeIndicator {
+  background: #cbd5e1;
+}
+
+/* Download cards & details */
+:global([data-theme='light']) .downloadCard,
+:global([data-theme='light']) .guideCard,
+:global([data-theme='light']) .releaseNotesCard,
+:global([data-theme='light']) .historyCard {
+  background: #ffffff;
+  border-color: rgba(226, 232, 240, 0.9);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+}
+
+:global([data-theme='light']) .cardTitle,
+:global([data-theme='light']) .guideTitle,
+:global([data-theme='light']) .sectionTitle,
+:global([data-theme='light']) .releaseVersionHeader h4,
+:global([data-theme='light']) .releaseNotesList strong,
+:global([data-theme='light']) .historyMeta strong,
+:global([data-theme='light']) .stepText strong,
+:global([data-theme='light']) .fallbackCard h4 {
+  color: #0f172a;
+}
+
+:global([data-theme='light']) .releaseNotesList p,
+:global([data-theme='light']) .stepText p,
+:global([data-theme='light']) .historySummary,
+:global([data-theme='light']) .fallbackCard p {
+  color: #475569;
+}
+
+:global([data-theme='light']) .releaseNotesList li,
+:global([data-theme='light']) .historyItem,
+:global([data-theme='light']) .fallbackCard {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+:global([data-theme='light']) .releaseDateBadge,
+:global([data-theme='light']) .plannedLabel {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+:global([data-theme='light']) .historyActive {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.06) 0%, rgba(249, 115, 22, 0.01) 100%);
+  border-color: rgba(249, 115, 22, 0.3);
+}
+
+

@@ -81,16 +81,21 @@
 }
 
 .brandIcon {
-  width: 33px;
-  height: 33px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-base);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  box-shadow: 0 4px 16px var(--accent-glow);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   flex-shrink: 0;
+}
+
+:global([data-theme='light']) .brandIcon {
+  background: rgba(249, 115, 22, 0.08);
+  border-color: rgba(249, 115, 22, 0.2);
 }
 
 .brandName {
@@ -744,5 +749,133 @@
   /* Stack quick-switch dropdown for narrower viewports */
   .quickSwitchBtn span {
     display: none;
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   COLLAPSIBLE SIDEBAR STYLES & ANIMATIONS
+   ══════════════════════════════════════════════════════ */
+
+.sidebarCollapseBtn {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  margin-left: auto;
+}
+
+.sidebarCollapseBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-1);
+}
+
+:global([data-theme='light']) .sidebarCollapseBtn:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.desktopCollapseBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-2);
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.desktopCollapseBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-1);
+}
+
+@media (max-width: 1024px) {
+  .desktopCollapseBtn {
+    display: none;
+  }
+}
+
+/* Transitions for smooth sidebar expanding & collapsing */
+.sidebar {
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.main {
+  transition: margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Collapsed state styles (Desktop >= 1025px) */
+@media (min-width: 1025px) {
+  .sidebarCollapsed {
+    width: 72px;
+  }
+
+  .layoutCollapsed .main {
+    margin-left: 72px;
+  }
+
+  .sidebarCollapsed .brand {
+    padding: 14px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .sidebarCollapsed .brandIcon {
+    margin: 0 auto;
+  }
+
+  .sidebarCollapsed .sidebarCollapseBtn {
+    margin: 0 auto;
+  }
+
+  .sidebarCollapsed .brandText,
+  .sidebarCollapsed .brandSub,
+  .sidebarCollapsed .navLabel,
+  .sidebarCollapsed .navBadge,
+  .sidebarCollapsed .navPip,
+  .sidebarCollapsed .switcherHeading,
+  .sidebarCollapsed .switchBtn span,
+  .sidebarCollapsed .userInfo,
+  .sidebarCollapsed .rolePill,
+  .sidebarCollapsed .changePassBtn span,
+  .sidebarCollapsed .logoutBtn span {
+    display: none !important;
+  }
+
+  .sidebarCollapsed .navItem {
+    justify-content: center;
+    padding: 12px 0;
+  }
+
+  .sidebarCollapsed .navIcon {
+    margin: 0;
+  }
+
+  .sidebarCollapsed .userCard {
+    justify-content: center;
+    padding: 8px 0;
+  }
+
+  .sidebarCollapsed .switchBtn {
+    justify-content: center;
+    padding: 8px 0;
+  }
+
+  .sidebarCollapsed .changePassBtn,
+  .sidebarCollapsed .logoutBtn {
+    justify-content: center;
+    padding: 8px 0;
   }
 }
