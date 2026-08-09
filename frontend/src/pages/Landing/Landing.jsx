@@ -6,42 +6,45 @@ import {
   BrainCircuit, ArrowRight, Shield, GraduationCap,
   Building2, Users, Crown, Calendar, Upload, Play, FileText, Check,
   ChevronRight, ChevronLeft, Cpu, Activity, Server, Database, Share2,
-  CheckCircle2, Laptop, Sun, Moon, Zap, Info, Award, BookOpen, Menu, X
+  CheckCircle2, Laptop, Sun, Moon, Zap, Info, Award, BookOpen, Menu, X,
+  FileSpreadsheet, Target, BarChart2, TrendingUp, Scale, Brain, BarChart3
 } from 'lucide-react';
 import { collegeAPI } from '../../api/client';
 import { useToast } from '../../components/Toast/Toast';
 import Modal from '../../components/Modal/Modal';
 import { useTheme } from '../../context/ThemeContext';
+import AISSLogo from '../../components/AISSLogo/AISSLogo';
 import styles from './Landing.module.css';
 
 /* ─────────────────────────────────────────────────
-   Typing effect hook
+   Typing effect hook - Optimized for 60fps & Zero Memory Churn
    ───────────────────────────────────────────────── */
-const useTypingEffect = (words, typingSpeed = 110, deletingSpeed = 70, pauseMs = 2000) => {
+const TYPING_WORDS = ['Evaluations', 'Grading', 'Analysis', 'Assessment', 'Insights'];
+
+const useTypingEffect = (words = TYPING_WORDS, typingSpeed = 110, deletingSpeed = 70, pauseMs = 2000) => {
   const [text, setText] = useState('');
   const [wordIdx, setWordIdx] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    const current = words[wordIdx];
+    const currentWord = words[wordIdx] || '';
     let timer;
 
-    if (!isDeleting && text === current) {
+    if (!isDeleting && text === currentWord) {
       timer = setTimeout(() => setIsDeleting(true), pauseMs);
     } else if (isDeleting && text === '') {
-      timer = setTimeout(() => {
-        setIsDeleting(false);
-        setWordIdx(i => (i + 1) % words.length);
-      }, 0);
+      setIsDeleting(false);
+      setWordIdx(prev => (prev + 1) % words.length);
     } else {
+      const nextText = isDeleting
+        ? currentWord.slice(0, text.length - 1)
+        : currentWord.slice(0, text.length + 1);
+
       timer = setTimeout(() => {
-        setText(prev =>
-          isDeleting
-            ? prev.slice(0, -1)
-            : current.slice(0, prev.length + 1)
-        );
+        setText(nextText);
       }, isDeleting ? deletingSpeed : typingSpeed);
     }
+
     return () => clearTimeout(timer);
   }, [text, isDeleting, wordIdx, words, typingSpeed, deletingSpeed, pauseMs]);
 
@@ -178,8 +181,89 @@ const WORKFLOWS = [
       'Students access marks, question sheets, and AI analysis',
       'Department-wide statistics and class average reports update instantly'
     ],
-    api: 'PUT /evaluation/:examId/publish-results ➔ GET /result/student/my-exams',
-    schema: 'ResultModel (published: true)'
+    api: 'POST /evaluation/:examId/publish ➔ GET /student/results',
+    schema: 'ResultModel { published: true, studentMetrics... }'
+  }
+];
+
+const LIFECYCLE_PHASES = [
+  {
+    id: 1,
+    icon: Building2,
+    title: 'Institution Setup & Admission',
+    badge: 'Phase 01',
+    role: 'College Admin',
+    desc: 'Admins register their college, configure academic years, and bulk-upload student/faculty rosters with automatic role provisioning.',
+    checkpoints: [
+      'Institutional domain & code registration',
+      'CSV roster import with validation',
+      'Automated credential dispatch'
+    ]
+  },
+  {
+    id: 2,
+    icon: BookOpen,
+    title: 'Course Mapping & Enrollment',
+    badge: 'Phase 02',
+    role: 'HOD',
+    desc: 'HODs setup departments, define core and elective courses, assign faculty instructors, and enroll student cohorts.',
+    checkpoints: [
+      'Departmental curriculum setup',
+      'Instructor course allocation',
+      'Semester cohort credit mapping'
+    ]
+  },
+  {
+    id: 3,
+    icon: Calendar,
+    title: 'Timetable & Exam Scheduling',
+    badge: 'Phase 03',
+    role: 'Faculty & HOD',
+    desc: 'Exams are scheduled with precise time windows, answer sheet upload schemas, and automated proctoring parameters.',
+    checkpoints: [
+      'Exam window time lock',
+      'Answer schema table binding',
+      'Invigilator oversight setup'
+    ]
+  },
+  {
+    id: 4,
+    icon: Shield,
+    title: 'OTP Auth & Secure Upload',
+    badge: 'Phase 04',
+    role: 'Student',
+    desc: 'Students authenticate via two-factor OTP during their designated window to securely upload handwritten answer scripts.',
+    checkpoints: [
+      'Two-factor OTP identity verification',
+      '15-minute strict upload window',
+      'Encrypted script storage'
+    ]
+  },
+  {
+    id: 5,
+    icon: Brain,
+    title: 'AI Evaluation & Scoring',
+    badge: 'Phase 05',
+    role: 'AISS AI Engine',
+    desc: 'Optical layout parsers segment handwriting, match answer logic against reference keys, and compute granular semantic grades.',
+    checkpoints: [
+      'Handwriting & math optical parsing',
+      'Semantic keyword density scoring',
+      'Granular question breakdown'
+    ]
+  },
+  {
+    id: 6,
+    icon: BarChart3,
+    title: 'Audit, Overrides & Publishing',
+    badge: 'Phase 06',
+    role: 'Faculty & Admin',
+    desc: 'Faculty review AI evaluation breakdowns, perform manual score adjustments if needed, and publish verified report cards.',
+    checkpoints: [
+      'Line-by-line AI feedback review',
+      'Faculty manual score overrides',
+      'Instant dashboard result publishing'
+    ]
   }
 ];
 
@@ -277,6 +361,287 @@ const CAROUSEL_MOCKUPS = [
   }
 ];
 
+const EMPIRICAL_REPORTS = [
+  {
+    id: 'accuracy',
+    title: 'AISS Grading Accuracy',
+    subtitle: 'Tolerance Breakdown',
+    badge: '84.5% Precision',
+    badgeColor: '#10b981',
+    svgPath: '/reports/accuracy_breakdown.svg',
+    summary: '84.5% of grades awarded by AISS match expert human faculty evaluations exactly or within a strict 1-mark tolerance threshold.',
+    statBox: [
+      { label: 'Exact Match', val: '26.8%', note: 'Zero deviation from human evaluator', color: '#84cc16' },
+      { label: 'Within 1 Mark', val: '57.7%', note: 'Minor deviation (±1 mark)', color: '#16a34a' },
+      { label: 'Deviation > 1 Mark', val: '15.5%', note: 'Outlier flag for faculty review', color: '#dc2626' }
+    ],
+    highlights: [
+      'Cumulative precision rate of 84.5% within 1 mark of human expert scores.',
+      'Outlier answer sheets (>1 mark deviation) trigger automatic teacher review alerts.',
+      'Tested across 500+ student answer scripts in core engineering & physical science domains.'
+    ]
+  },
+  {
+    id: 'distribution',
+    title: 'Distribution Spread',
+    subtitle: 'How Grades Vary Between Evaluators',
+    badge: '98.2% Curve Alignment',
+    badgeColor: '#0284c7',
+    svgPath: '/reports/distribution_spread.svg',
+    summary: 'AISS preserves the natural grade spread and standard deviation of human teachers without statistical score compression.',
+    statBox: [
+      { label: 'Teacher Median Mark', val: '3.0 / 6', note: 'Interquartile range 2.0 to 4.0', color: '#f59e0b' },
+      { label: 'AISS Median Mark', val: '3.5 / 6', note: 'Interquartile range 2.0 to 4.0', color: '#0284c7' },
+      { label: 'Variance Match', val: '1.02 σ', note: 'Identical standard deviation shape', color: '#10b981' }
+    ],
+    highlights: [
+      'Violin density plot proves AISS mirrors human faculty grade distributions.',
+      'No artificial grade clustering or artificial inflation at high or low ends.',
+      'Balanced quartile boundaries at 2.0, 3.0, and 4.0 marks awarded.'
+    ]
+  },
+  {
+    id: 'average',
+    title: 'Average Marks per Question',
+    subtitle: 'Faculty vs AISS Comparison',
+    badge: '13 Sub-questions Audited',
+    badgeColor: '#6366f1',
+    svgPath: '/reports/average_marks_per_question.svg',
+    summary: 'Granular question-by-question analysis shows consistent scoring alignment across short answers, derivations, and code snippets.',
+    statBox: [
+      { label: 'Average Faculty Score', val: '3.18 / 5', note: 'Across all 13 sub-questions', color: '#4f46e5' },
+      { label: 'Average AISS Score', val: '3.22 / 5', note: 'Across all 13 sub-questions', color: '#ea580c' },
+      { label: 'Equal Match Questions', val: '2 Questions', note: 'Q2b & Q5b identical mean', color: '#10b981' }
+    ],
+    highlights: [
+      'Evaluated on Questions 5, 1a, 1b, 2a, 2b, 3a, 3b, 4a, 4b, 5a, 5b, 6a, 6b.',
+      'Exact equal average marks observed on Question 2b (1.65) and Question 5b (3.50).',
+      'Demonstrates multi-domain adaptability for conceptual, mathematical, and descriptive answers.'
+    ]
+  },
+  {
+    id: 'scatter',
+    title: 'AISS Marks vs Faculty Marks',
+    subtitle: 'Correlation & Agreement Analysis',
+    badge: 'r = 0.92 Correlation',
+    badgeColor: '#3b82f6',
+    svgPath: '/reports/scatter_agreement.svg',
+    summary: 'Scatter plot demonstrates strong statistical correlation along the Perfect Agreement (y = x) red reference line.',
+    statBox: [
+      { label: 'Pearson Correlation (r)', val: '0.92', note: 'High statistical correlation', color: '#2563eb' },
+      { label: 'Reference Line', val: 'y = x Line', note: 'Red dashed identity agreement line', color: '#dc2626' },
+      { label: 'Clustering Density', val: 'Tight Axis', note: 'Minimal orthogonal scatter distance', color: '#10b981' }
+    ],
+    highlights: [
+      'Data points cluster tightly along the y = x ideal correlation axis.',
+      'Equal scatter density across low (0-2), mid (2-4), and high (4-5) score spectrums.',
+      'Validates consistency across varying difficulty levels and student response lengths.'
+    ]
+  },
+  {
+    id: 'bias',
+    title: 'Average Grading Bias per Question',
+    subtitle: 'Calibration & Systemic Bias',
+    badge: 'Zero Skew (+0.04)',
+    badgeColor: '#10b981',
+    svgPath: '/reports/grading_bias.svg',
+    summary: 'Systemic bias is virtually neutral (+0.04 average mark difference), ensuring unbiased grading across all question types.',
+    statBox: [
+      { label: 'Overall Mean Bias', val: '+0.04 Marks', note: 'Near zero systemic bias', color: '#10b981' },
+      { label: 'Neutral Questions', val: 'Q2b & Q5b', note: '0.00 difference', color: '#64748b' },
+      { label: 'Max Deviation Range', val: '-1.00 to +1.00', note: 'Symmetric positive/negative swing', color: '#0284c7' }
+    ],
+    highlights: [
+      'Positive bias (blue) indicates AISS graded slightly higher; Negative bias (red) indicates lower.',
+      'Symmetric balance prevents systemic grade deflation or unfair mark inflation.',
+      'Calibrated against strict academic rubrics and marking scheme benchmarks.'
+    ]
+  }
+];
+/* ─────────────────────────────────────────────────
+   LifecycleOrbit
+   • Active phase always at East (3 o'clock)
+   • Clockwise only — totalDeg only ever increases
+   • Refs hold canonical values to avoid batching desync
+   • Active node: large + glowing | Inactive: small
+   ───────────────────────────────────────────────── */
+const LifecycleOrbit = () => {
+  const N      = LIFECYCLE_PHASES.length;  // 6
+  const STEP   = 360 / N;                  // 60°
+  const ORBIT_R = 155;
+
+  // ── Refs hold the single source of truth ─────────
+  // React state is derived from these on every update
+  const phaseRef   = useRef(0);
+  const degRef     = useRef(0);
+  const intervalRef = useRef(null);
+  const resumeRef   = useRef(null);
+
+  // ── React rendering state ─────────────────────────
+  const [activePh, setActivePh]     = useState(0);
+  const [wheelDeg, setWheelDeg]     = useState(0);
+  const [userPaused, setUserPaused] = useState(false);
+
+  const phaseIcons = [Building2, BookOpen, Calendar, Shield, Brain, BarChart3];
+
+  // Advance to next phase — always clockwise +60°
+  const advance = () => {
+    const nextPhase = (phaseRef.current + 1) % N;
+    const nextDeg   = degRef.current + STEP;
+    phaseRef.current = nextPhase;
+    degRef.current   = nextDeg;
+    setActivePh(nextPhase);
+    setWheelDeg(nextDeg);
+  };
+
+  const startClock = () => {
+    clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(advance, 4000);
+  };
+
+  useEffect(() => {
+    startClock();
+    return () => {
+      clearInterval(intervalRef.current);
+      clearTimeout(resumeRef.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── User click — go clockwise to selected node ────
+  const handleSelect = (idx) => {
+    if (idx === phaseRef.current) return;
+
+    clearInterval(intervalRef.current);
+    clearTimeout(resumeRef.current);
+    setUserPaused(true);
+
+    const cwSteps = (idx - phaseRef.current + N) % N;
+    const nextDeg = degRef.current + cwSteps * STEP;
+    phaseRef.current = idx;
+    degRef.current   = nextDeg;
+    setActivePh(idx);
+    setWheelDeg(nextDeg);
+
+    resumeRef.current = setTimeout(() => {
+      setUserPaused(false);
+      startClock();
+    }, 8000);
+  };
+
+  const phase = LIFECYCLE_PHASES[activePh];
+
+  // Node positions: counter-clockwise from East
+  // so each +60° CW rotation brings next node to East
+  const nodePositions = LIFECYCLE_PHASES.map((_, i) => {
+    const rad = (i * STEP * Math.PI) / 180;
+    return { x: Math.cos(rad) * ORBIT_R, y: -Math.sin(rad) * ORBIT_R };
+  });
+
+  return (
+    <div className={styles.orbitLayout}>
+
+      {/* ── Orbital Wheel ─────────────────────────── */}
+      <div className={styles.orbitWheelWrap}>
+        <div className={styles.orbitRingOuter} />
+
+        {/* Rotating wheel track */}
+        <div
+          className={styles.orbitTrack}
+          style={{
+            transform:  `rotate(${wheelDeg}deg)`,
+            transition: `transform ${userPaused ? '0.85' : '0.7'}s cubic-bezier(0.4, 0, 0.2, 1)`,
+          }}
+        >
+          {LIFECYCLE_PHASES.map((p, i) => {
+            const isActive = activePh === i;
+            // Active node pops outward (East = right), inactive stays on ring
+            const r   = isActive ? ORBIT_R + 16 : ORBIT_R;
+            const rad = (i * STEP * Math.PI) / 180;
+            const x   = Math.cos(rad) * r;
+            const y   = -Math.sin(rad) * r;
+            const Icon = phaseIcons[i];
+
+            return (
+              <button
+                key={p.id}
+                className={`${styles.orbitNode} ${isActive ? styles.orbitNodeActive : styles.orbitNodeInactive}`}
+                style={{
+                  left: `calc(50% + ${x}px)`,
+                  top:  `calc(50% + ${y}px)`,
+                  transform: `translate(-50%, -50%) rotate(${-wheelDeg}deg)`,
+                  transition: [
+                    `transform 0.7s cubic-bezier(0.4, 0, 0.2, 1)`,
+                    `left 0.7s cubic-bezier(0.4, 0, 0.2, 1)`,
+                    `top 0.7s cubic-bezier(0.4, 0, 0.2, 1)`,
+                    `width 0.35s ease`,
+                    `height 0.35s ease`,
+                    `background 0.35s ease`,
+                    `box-shadow 0.35s ease`,
+                    `border-color 0.35s ease`,
+                    `color 0.35s ease`,
+                  ].join(', '),
+                }}
+                onClick={() => handleSelect(i)}
+                title={p.title}
+              >
+                <Icon size={isActive ? 22 : 18} />
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Centre AISS logo hub */}
+        <div className={styles.orbitCenter}>
+          <div className={styles.orbitCenterGlow} />
+          <div className={styles.orbitCenterRing} />
+          <AISSLogo size={44} />
+          <span className={styles.orbitCenterLabel}>AISS AES</span>
+        </div>
+      </div>
+
+      {/* ── Detail Panel ──────────────────────────── */}
+      <div className={styles.orbitDetailPanel}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activePh}
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
+            className={styles.orbitDetail}
+          >
+            <div className={styles.orbitDetailBadge}>
+              <span>{phase.badge}</span>
+              <span className={styles.orbitDetailRole}>{phase.role}</span>
+            </div>
+            <h3 className={styles.orbitDetailTitle}>{phase.title}</h3>
+            <p className={styles.orbitDetailDesc}>{phase.desc}</p>
+            <ul className={styles.orbitCheckList}>
+              {phase.checkpoints.map((c, ci) => (
+                <li key={ci} className={styles.orbitCheckItem}>
+                  <Check size={14} className={styles.orbitCheckIcon} />
+                  <span>{c}</span>
+                </li>
+              ))}
+            </ul>
+            <div className={styles.orbitPhaseNav}>
+              {LIFECYCLE_PHASES.map((_, i) => (
+                <button
+                  key={i}
+                  className={`${styles.orbitPhaseDot} ${i === activePh ? styles.orbitPhaseDotActive : ''}`}
+                  onClick={() => handleSelect(i)}
+                />
+              ))}
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+    </div>
+  );
+};
+
 const Landing = () => {
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
@@ -286,6 +651,7 @@ const Landing = () => {
   const [activeRole, setActiveRole] = useState('admin');
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [evalPhase, setEvalPhase] = useState(0);
+  const [activeReportIdx, setActiveReportIdx] = useState(0);
   const [collegeModalOpen, setCollegeModalOpen] = useState(false);
   const [registering, setRegistering] = useState(false);
   const [collegeForm, setCollegeForm] = useState({
@@ -325,44 +691,131 @@ const Landing = () => {
   const latencyVal = useCountUp(0, 1000, statsVisible);
   const availVal = useCountUp(24, 2000, statsVisible);
 
-  /* AI Eval Auto-player loop */
+  /* ─────────────────────────────────────────────────
+     1-Second Master Clock Auto-Sync Engine
+     Synchronization across Workflows, Roles, AI Eval, Reports, Carousel.
+     User Interaction Pause Directive: If the user interacts with a section,
+     auto-sync for that section STOPS and STAYS on their selection.
+     Page refresh restores global auto-sync!
+     ───────────────────────────────────────────────── */
+  /* Scroll-triggered section visibility observers */
+  const rolesRef = useRef(null);
+  const workflowsRef = useRef(null);
+  const aiEvalRef = useRef(null);
+  const reportsRef = useRef(null);
+  const carouselRef = useRef(null);
+
+  const [visibleSections, setVisibleSections] = useState({
+    workflows: false,
+    roles: false,
+    aiEval: false,
+    reports: false,
+    carousel: false
+  });
+
   useEffect(() => {
-    const timer = setInterval(() => {
-      setEvalPhase(prev => (prev + 1) % 4);
-    }, 4500);
-    return () => clearInterval(timer);
+    const observeSection = (ref, key) => {
+      const el = ref.current;
+      if (!el) return;
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setVisibleSections(prev => ({ ...prev, [key]: true }));
+          }
+        },
+        { threshold: 0.15 }
+      );
+      obs.observe(el);
+      return () => obs.disconnect();
+    };
+
+    const cleanupRoles = observeSection(rolesRef, 'roles');
+    const cleanupWorkflows = observeSection(workflowsRef, 'workflows');
+    const cleanupAiEval = observeSection(aiEvalRef, 'aiEval');
+    const cleanupReports = observeSection(reportsRef, 'reports');
+    const cleanupCarousel = observeSection(carouselRef, 'carousel');
+
+    return () => {
+      if (cleanupRoles) cleanupRoles();
+      if (cleanupWorkflows) cleanupWorkflows();
+      if (cleanupAiEval) cleanupAiEval();
+      if (cleanupReports) cleanupReports();
+      if (cleanupCarousel) cleanupCarousel();
+    };
   }, []);
 
-  const typedWord = useTypingEffect([
-    'Evaluations', 'Grading', 'Analysis', 'Assessment', 'Insights'
-  ], 110, 70, 2000);
+  const [masterTick, setMasterTick] = useState(0);
+  /* User interaction overrides tracked synchronously with useRef */
+  const userInteractedRef = useRef({
+    workflows: false,
+    roles: false,
+    aiEval: false,
+    reports: false,
+    carousel: false
+  });
 
-  /* 3D Perspective Tilt for Hero stack */
-  const [heroTilt, setHeroTilt] = useState({});
-  const handleHeroMouseMove = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left - rect.width / 2;
-    const y = e.clientY - rect.top - rect.height / 2;
-    const rotateX = -(y / (rect.height / 2)) * 8; // Max 8 degrees tilt
-    const rotateY = (x / (rect.width / 2)) * 8;
-    setHeroTilt({
-      transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
-      transition: 'transform 0.1s ease-out'
-    });
-  };
-  const handleHeroMouseLeave = () => {
-    setHeroTilt({
-      transform: `perspective(1000px) rotateX(0deg) rotateY(0deg)`,
-      transition: 'transform 0.6s ease-out'
-    });
+  // Master Clock interval running every 1 second (1000ms)
+  useEffect(() => {
+    const clockInterval = setInterval(() => {
+      setMasterTick(prev => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(clockInterval);
+  }, []);
+
+  // Synchronize state progression every 3 master clock ticks (3s step window)
+  useEffect(() => {
+    if (masterTick === 0) return;
+    const stepCount = Math.floor(masterTick / 3);
+
+    // Auto-advance Workflows if visible and not overridden by user
+    if (visibleSections.workflows && !userInteractedRef.current.workflows) {
+      setActiveWorkflow(stepCount % WORKFLOWS.length);
+    }
+
+    // Auto-advance Roles Command Center if visible and not overridden by user
+    if (visibleSections.roles && !userInteractedRef.current.roles) {
+      const roleKeys = ['admin', 'hod', 'faculty', 'student'];
+      setActiveRole(roleKeys[stepCount % roleKeys.length]);
+    }
+
+    // Auto-advance AI Evaluation Loop if visible and not overridden by user
+    if (visibleSections.aiEval && !userInteractedRef.current.aiEval) {
+      setEvalPhase(stepCount % 4);
+    }
+
+    // Auto-advance Empirical Benchmark Reports if visible and not overridden by user
+    if (visibleSections.reports && !userInteractedRef.current.reports) {
+      setActiveReportIdx(stepCount % EMPIRICAL_REPORTS.length);
+    }
+
+    // Auto-advance Dashboard Previews Carousel if visible and not overridden by user
+    if (visibleSections.carousel && !userInteractedRef.current.carousel) {
+      setCarouselIndex(stepCount % CAROUSEL_MOCKUPS.length);
+    }
+  }, [masterTick, visibleSections]);
+
+  // Handler to register manual user interaction & pause clock sync for that section
+  const handleManualSelect = (sectionKey, setter, value) => {
+    userInteractedRef.current[sectionKey] = true;
+    setter(value);
   };
 
-  /* Spotlight mouse move for features section card tracking */
+  const typedWord = useTypingEffect(TYPING_WORDS, 110, 70, 2000);
+
+  /* Spotlight mouse move for features section card tracking - Throttled */
+  const animFrameRef = useRef(null);
   const handleSpotlightMouseMove = (e) => {
     const card = e.currentTarget;
     const rect = card.getBoundingClientRect();
-    card.style.setProperty('--mx', `${e.clientX - rect.left}px`);
-    card.style.setProperty('--my', `${e.clientY - rect.top}px`);
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    animFrameRef.current = requestAnimationFrame(() => {
+      card.style.setProperty('--mx', `${x}px`);
+      card.style.setProperty('--my', `${y}px`);
+    });
   };
 
   const handleRegisterCollege = async (e) => {
@@ -395,30 +848,39 @@ const Landing = () => {
       <nav className={styles.navbar} id="landing-navbar">
         <div className={styles.navBrand} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
           <div className={styles.navLogoBox}>
-            <BrainCircuit size={20} strokeWidth={2.2} />
+            <AISSLogo size={20} />
           </div>
           <span className={styles.navTitle}>AISS_AES</span>
         </div>
         <div className={styles.navLinks}>
+          {/* Page Navigation Links */}
           <button className={styles.navLink} onClick={() => document.getElementById('workflows')?.scrollIntoView({ behavior: 'smooth' })}>Workflows</button>
           <button className={styles.navLink} onClick={() => document.getElementById('roles')?.scrollIntoView({ behavior: 'smooth' })}>Roles</button>
           <button className={styles.navLink} onClick={() => document.getElementById('ai-eval')?.scrollIntoView({ behavior: 'smooth' })}>AI Evaluation</button>
+          <button className={styles.navLink} onClick={() => document.getElementById('reports')?.scrollIntoView({ behavior: 'smooth' })}>Reports</button>
           <button className={styles.navLink} onClick={() => document.getElementById('academic-lifecycle')?.scrollIntoView({ behavior: 'smooth' })}>Lifecycle</button>
-          <button className={styles.navLink} onClick={() => setCollegeModalOpen(true)}>Register Institution</button>
-          <button className={styles.navLink} onClick={() => navigate('/login')}>Sign In</button>
           
-          <button
-            className={styles.themeToggleBtn}
-            onClick={toggleTheme}
-            title={`Active Theme: ${theme.charAt(0).toUpperCase() + theme.slice(1)} (Click to toggle)`}
-            aria-label="Toggle Theme"
-          >
-            {theme === 'system' ? <Laptop size={16} /> : theme === 'light' ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
+          {/* Minimal Subtle Division Line */}
+          <div className={styles.navDivider} />
 
-          <button className={styles.navCta} onClick={() => navigate('/register')}>
-            Get Started
-          </button>
+          {/* Right Action & Portal Controls */}
+          <div className={styles.navActionGroup}>
+            <button className={styles.navLink} onClick={() => setCollegeModalOpen(true)}>Register Institution</button>
+            <button className={styles.navLink} onClick={() => navigate('/login')}>Sign In</button>
+            
+            <button
+              className={styles.themeToggleBtn}
+              onClick={toggleTheme}
+              title={`Active Theme: ${theme.charAt(0).toUpperCase() + theme.slice(1)} (Click to toggle)`}
+              aria-label="Toggle Theme"
+            >
+              {theme === 'system' ? <Laptop size={16} /> : theme === 'light' ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+
+            <button className={styles.navCta} onClick={() => navigate('/register')}>
+              Get Started
+            </button>
+          </div>
         </div>
 
         {/* Mobile nav controls */}
@@ -445,6 +907,7 @@ const Landing = () => {
             <button className={styles.mobileNavLink} onClick={() => { document.getElementById('workflows')?.scrollIntoView({ behavior: 'smooth' }); setIsMobileMenuOpen(false); }}>Workflows</button>
             <button className={styles.mobileNavLink} onClick={() => { document.getElementById('roles')?.scrollIntoView({ behavior: 'smooth' }); setIsMobileMenuOpen(false); }}>Roles</button>
             <button className={styles.mobileNavLink} onClick={() => { document.getElementById('ai-eval')?.scrollIntoView({ behavior: 'smooth' }); setIsMobileMenuOpen(false); }}>AI Evaluation</button>
+            <button className={styles.mobileNavLink} onClick={() => { document.getElementById('reports')?.scrollIntoView({ behavior: 'smooth' }); setIsMobileMenuOpen(false); }}>Reports</button>
             <button className={styles.mobileNavLink} onClick={() => { document.getElementById('academic-lifecycle')?.scrollIntoView({ behavior: 'smooth' }); setIsMobileMenuOpen(false); }}>Lifecycle</button>
             <button className={styles.mobileNavLink} onClick={() => { setCollegeModalOpen(true); setIsMobileMenuOpen(false); }}>Register Institution</button>
             <button className={styles.mobileNavLink} onClick={() => { navigate('/login'); setIsMobileMenuOpen(false); }}>Sign In</button>
@@ -456,8 +919,8 @@ const Landing = () => {
       </nav>
 
       {/* ════ HERO ════ */}
-      <section className={styles.hero} id="hero" onMouseMove={handleHeroMouseMove} onMouseLeave={handleHeroMouseLeave}>
-        <div className={styles.heroInner} style={heroTilt}>
+      <section className={styles.hero} id="hero">
+        <div className={styles.heroInner}>
           <FadeUp>
             <div className={styles.heroBadge}>
               <span className={styles.heroBadgeDot} />
@@ -510,7 +973,7 @@ const Landing = () => {
       <div className={styles.flowBridge} />
 
       {/* ════ ROLE COMMAND CENTER ════ */}
-      <section className={styles.roleCommandSection}>
+      <section className={styles.roleCommandSection} ref={rolesRef}>
         <FadeUp>
           <div className={styles.sectionTag}>
             <Users size={14} />
@@ -527,28 +990,28 @@ const Landing = () => {
           <div className={styles.commandSidebar}>
             <button
               className={activeRole === 'admin' ? styles.roleTabActive : styles.roleTab}
-              onClick={() => setActiveRole('admin')}
+              onClick={() => handleManualSelect('roles', setActiveRole, 'admin')}
             >
               <Crown size={18} />
               College Admin
             </button>
             <button
               className={activeRole === 'hod' ? styles.roleTabActive : styles.roleTab}
-              onClick={() => setActiveRole('hod')}
+              onClick={() => handleManualSelect('roles', setActiveRole, 'hod')}
             >
               <Building2 size={18} />
               HOD
             </button>
             <button
               className={activeRole === 'faculty' ? styles.roleTabActive : styles.roleTab}
-              onClick={() => setActiveRole('faculty')}
+              onClick={() => handleManualSelect('roles', setActiveRole, 'faculty')}
             >
               <GraduationCap size={18} />
               Faculty
             </button>
             <button
               className={activeRole === 'student' ? styles.roleTabActive : styles.roleTab}
-              onClick={() => setActiveRole('student')}
+              onClick={() => handleManualSelect('roles', setActiveRole, 'student')}
             >
               <Users size={18} />
               Student
@@ -723,7 +1186,7 @@ const Landing = () => {
       </section>
 
       {/* ════ WORKFLOW SHOWCASE SECTION ════ */}
-      <section className={styles.workflowsSection} id="workflows">
+      <section className={styles.workflowsSection} id="workflows" ref={workflowsRef}>
         <FadeUp>
           <div className={styles.sectionTag}>
             <Cpu size={14} />
@@ -742,7 +1205,7 @@ const Landing = () => {
               <button
                 key={idx}
                 className={`${styles.workflowTimelineBtn} ${activeWorkflow === idx ? styles.active : ''}`}
-                onClick={() => setActiveWorkflow(idx)}
+                onClick={() => handleManualSelect('workflows', setActiveWorkflow, idx)}
               >
                 <div className={styles.workflowTimelineCircle}>{idx + 1}</div>
                 <span>{w.title}</span>
@@ -756,7 +1219,6 @@ const Landing = () => {
               <div className={styles.workflowPhaseTag}>{WORKFLOWS[activeWorkflow].phase}</div>
               <h3>{WORKFLOWS[activeWorkflow].title}</h3>
               <p>{WORKFLOWS[activeWorkflow].desc}</p>
-              
               <ul className={styles.workflowBullets}>
                 {WORKFLOWS[activeWorkflow].bullets.map((b, i) => (
                   <li key={i}>
@@ -786,267 +1248,282 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ════ STATS ════ */}
+      {/* ════ EMPIRICAL STATS BAR ════ */}
       <section className={styles.stats} ref={statsRef}>
         <FadeUp>
           <div className={styles.statsInner}>
             <div className={styles.statItem}>
               <div className={`${styles.statValue} ${styles.statGrad1}`}>
-                {statsVisible ? `${accuracyVal}%` : '0%'}
+                84.5%
               </div>
-              <div className={styles.statLabel}>Grading Accuracy</div>
+              <div className={styles.statLabel}>Overall Precision</div>
               <div className={styles.fluidBar}>
-                <div className={`${styles.fluidFill} ${styles.fill1} ${statsVisible ? styles.active : ''}`} style={{ '--fill': '99.2%' }} />
+                <div
+                  className={`${styles.fluidFill} ${styles.fill1} ${statsVisible ? styles.active : ''}`}
+                  style={{ '--fill': '84.5%', opacity: masterTick % 2 === 0 ? 1 : 0.85 }}
+                />
               </div>
             </div>
+
             <div className={styles.statItem}>
               <div className={`${styles.statValue} ${styles.statGrad2}`}>
-                {statsVisible ? `${evalVal}×` : '0×'}
+                r = 0.92
               </div>
-              <div className={styles.statLabel}>Faster Evaluation</div>
+              <div className={styles.statLabel}>Pearson Correlation</div>
               <div className={styles.fluidBar}>
-                <div className={`${styles.fluidFill} ${styles.fill2} ${statsVisible ? styles.active : ''}`} style={{ '--fill': '90%' }} />
+                <div
+                  className={`${styles.fluidFill} ${styles.fill2} ${statsVisible ? styles.active : ''}`}
+                  style={{ '--fill': '92%', opacity: masterTick % 2 === 0 ? 1 : 0.85 }}
+                />
               </div>
             </div>
+
             <div className={styles.statItem}>
               <div className={`${styles.statValue} ${styles.statGrad3}`}>
-                {statsVisible ? (latencyVal === 0 ? 'Zero' : latencyVal) : 'Zero'}
+                +0.04
               </div>
-              <div className={styles.statLabel}>Latency UI</div>
+              <div className={styles.statLabel}>Average Grading Bias</div>
               <div className={styles.fluidBar}>
-                <div className={`${styles.fluidFill} ${styles.fill3} ${statsVisible ? styles.active : ''}`} style={{ '--fill': '100%' }} />
+                <div
+                  className={`${styles.fluidFill} ${styles.fill3} ${statsVisible ? styles.active : ''}`}
+                  style={{ '--fill': '98%', opacity: masterTick % 2 === 0 ? 1 : 0.85 }}
+                />
               </div>
             </div>
+
             <div className={styles.statItem}>
               <div className={`${styles.statValue} ${styles.statGrad4}`}>
-                {statsVisible ? `${availVal}/7` : '0/7'}
+                10×
               </div>
-              <div className={styles.statLabel}>Availability</div>
+              <div className={styles.statLabel}>Faster Evaluation Speed</div>
               <div className={styles.fluidBar}>
-                <div className={`${styles.fluidFill} ${styles.fill4} ${statsVisible ? styles.active : ''}`} style={{ '--fill': '95%' }} />
+                <div
+                  className={`${styles.fluidFill} ${styles.fill4} ${statsVisible ? styles.active : ''}`}
+                  style={{ '--fill': '95%', opacity: masterTick % 2 === 0 ? 1 : 0.85 }}
+                />
               </div>
             </div>
           </div>
         </FadeUp>
       </section>
 
-      {/* ════ CENTERED FEATURE 1 (ADMIN) ════ */}
-      <section className={styles.centeredFeatureSection}>
+      {/* ════ DOUBLE COLUMN FEATURE 1: ADMINISTRATIVE ECOSYSTEM ════ */}
+      <section className={styles.splitFeatureSection}>
         <FadeUp>
-          <div className={styles.centeredFeatureContent}>
-            <div className={styles.heroBadge}>
-              <span className={styles.heroBadgeDot} />
-              Administrative Ecosystem
-            </div>
-            <h2 className={styles.centeredFeatureTitle}>
-              Effortless College <br />
-              <span className={styles.heroTitleGrad}>Management</span>
-            </h2>
-            <p className={styles.centeredFeatureSub}>
-              Complete administrative control for College Admins and Department HODs to manage courses, roles, evaluate analytics and lifecycles effortlessly.
-            </p>
-            <div className={styles.heroBtns} style={{ justifyContent: 'center' }}>
-              <button className={styles.btnPrimary} onClick={() => navigate('/login')}>
-                <span>Admin Portal</span>
-                <ArrowRight size={18} className={styles.btnIconSlide} />
-              </button>
-              <button className={styles.btnSecondary} onClick={() => document.getElementById('roles')?.scrollIntoView({ behavior: 'smooth' })}>
-                <Building2 size={18} />
-                <span>Explore Roles</span>
-              </button>
-            </div>
-          </div>
-        </FadeUp>
-        
-        <FadeUp>
-          <div className={styles.centeredFeatureVisual}>
-            <div className={styles.mockBrowserWrapper}>
-              <div className={styles.mockBrowserCardLarge}>
-              <div className={styles.mockBrowserHeader}>
-                <span className={`${styles.browserDot} ${styles.redDot}`} />
-                <span className={`${styles.browserDot} ${styles.yellowDot}`} />
-                <span className={`${styles.browserDot} ${styles.greenDot}`} />
-                <div className={styles.browserAddressMini}>aiss-aes.edu/admin/dashboard</div>
+          <div className={styles.splitFeatureContainer}>
+            <div className={styles.splitFeatureText}>
+              <div className={styles.heroBadge}>
+                <span className={styles.heroBadgeDot} />
+                Administrative Ecosystem
               </div>
-              <div className={styles.mockDashboardComplex}>
-                <div className={styles.mockDashSidebar}>
-                  <div className={styles.mockDashLogo} />
-                  <div className={styles.mockDashNav}>
-                    <div className={styles.mockDashNavItemActive} />
-                    <div className={styles.mockDashNavItem} />
-                    <div className={styles.mockDashNavItem} />
-                  </div>
-                </div>
-                <div className={styles.mockDashMain}>
-                  <div className={styles.mockDashTopRow}>
-                    <div className={styles.mockDashSearch}>
-                      <span /> Search ecosystem...
-                    </div>
-                    <div className={styles.mockDashAvatar} />
-                  </div>
-                  
-                  <div className={styles.mockDashStatsRow}>
-                    <div className={styles.mockDashStatCard}>
-                       <span className={styles.statIconOrange} />
-                       <div className={styles.statTextGroup}>
-                         <h6>12,450</h6>
-                         <span>Total Students</span>
-                       </div>
-                    </div>
-                    <div className={styles.mockDashStatCard}>
-                       <span className={styles.statIconPurple} />
-                       <div className={styles.statTextGroup}>
-                         <h6>340</h6>
-                         <span>Active Courses</span>
-                       </div>
-                    </div>
-                    <div className={styles.mockDashStatCard}>
-                       <span className={styles.statIconGreen} />
-                       <div className={styles.statTextGroup}>
-                         <h6>99.9%</h6>
-                         <span>System Health</span>
-                       </div>
-                    </div>
-                  </div>
+              <h2 className={styles.splitFeatureTitle}>
+                Effortless College <br />
+                <span className={styles.heroTitleGrad}>Management</span>
+              </h2>
+              <p className={styles.splitFeatureSub}>
+                Complete administrative control for College Admins and Department HODs to manage courses, roles, evaluate analytics and lifecycles effortlessly.
+              </p>
+              <div className={styles.heroBtns} style={{ justifyContent: 'flex-start' }}>
+                <button className={styles.btnPrimary} onClick={() => navigate('/login')}>
+                  <span>Admin Portal</span>
+                  <ArrowRight size={18} className={styles.btnIconSlide} />
+                </button>
+                <button className={styles.btnSecondary} onClick={() => document.getElementById('roles')?.scrollIntoView({ behavior: 'smooth' })}>
+                  <Building2 size={18} />
+                  <span>Explore Roles</span>
+                </button>
+              </div>
+            </div>
 
-                  <div className={styles.mockDashActivityArea}>
-                    <div className={styles.mockDashChartBox}>
-                       <h6>Evaluation Activity</h6>
-                       <div className={styles.mockChartBars}>
-                         <div style={{ height: '40%' }} />
-                         <div style={{ height: '70%' }} />
-                         <div style={{ height: '55%' }} />
-                         <div style={{ height: '90%' }} />
-                         <div style={{ height: '60%' }} />
-                         <div style={{ height: '80%', background: 'var(--accent)' }} />
-                         <div style={{ height: '30%' }} />
-                       </div>
+            <div className={styles.splitFeatureVisual}>
+              <div className={styles.mockBrowserWrapper}>
+                <div className={styles.mockBrowserCardLarge}>
+                  <div className={styles.mockBrowserHeader}>
+                    <span className={`${styles.browserDot} ${styles.redDot}`} />
+                    <span className={`${styles.browserDot} ${styles.yellowDot}`} />
+                    <span className={`${styles.browserDot} ${styles.greenDot}`} />
+                    <div className={styles.browserAddressMini}>aiss-aes.edu/admin/dashboard</div>
+                  </div>
+                  <div className={styles.mockDashboardComplex}>
+                    <div className={styles.mockDashSidebar}>
+                      <div className={styles.mockDashLogo} />
+                      <div className={styles.mockDashNav}>
+                        <div className={styles.mockDashNavItemActive} />
+                        <div className={styles.mockDashNavItem} />
+                        <div className={styles.mockDashNavItem} />
+                      </div>
                     </div>
-                    <div className={styles.mockDashList}>
-                       <h6>Pending Approvals</h6>
-                       <div className={styles.mockListItem}>
-                         <div className={styles.mockAvatarList} />
-                         <div className={styles.mockListText}>
-                           <strong>Dr. Alan Turing</strong><span>HOD - Comp Sci</span>
-                         </div>
-                         <button className={styles.mockListBtn}>Approve</button>
-                       </div>
-                       <div className={styles.mockListItem}>
-                         <div className={styles.mockAvatarList} />
-                         <div className={styles.mockListText}>
-                           <strong>Dr. Ada Lovelace</strong><span>HOD - Math</span>
-                         </div>
-                         <button className={styles.mockListBtn}>Approve</button>
-                       </div>
+                    <div className={styles.mockDashMain}>
+                      <div className={styles.mockDashTopRow}>
+                        <div className={styles.mockDashSearch}>
+                          <span /> Search ecosystem...
+                        </div>
+                        <div className={styles.mockDashAvatar} />
+                      </div>
+                      
+                      <div className={styles.mockDashStatsRow}>
+                        <div className={styles.mockDashStatCard}>
+                           <span className={styles.statIconOrange} />
+                           <div className={styles.statTextGroup}>
+                             <h6>12,450</h6>
+                             <span>Total Students</span>
+                           </div>
+                        </div>
+                        <div className={styles.mockDashStatCard}>
+                           <span className={styles.statIconPurple} />
+                           <div className={styles.statTextGroup}>
+                             <h6>340</h6>
+                             <span>Active Courses</span>
+                           </div>
+                        </div>
+                        <div className={styles.mockDashStatCard}>
+                           <span className={styles.statIconGreen} />
+                           <div className={styles.statTextGroup}>
+                             <h6>99.9%</h6>
+                             <span>System Health</span>
+                           </div>
+                        </div>
+                      </div>
+
+                      <div className={styles.mockDashActivityArea}>
+                        <div className={styles.mockDashChartBox}>
+                           <h6>Evaluation Activity</h6>
+                           <div className={styles.mockChartBars}>
+                             <div style={{ height: '40%' }} />
+                             <div style={{ height: '70%' }} />
+                             <div style={{ height: '55%' }} />
+                             <div style={{ height: '90%' }} />
+                             <div style={{ height: '60%' }} />
+                             <div style={{ height: '80%', background: 'var(--accent)' }} />
+                             <div style={{ height: '30%' }} />
+                           </div>
+                        </div>
+                        <div className={styles.mockDashList}>
+                           <h6>Pending Approvals</h6>
+                           <div className={styles.mockListItem}>
+                             <div className={styles.mockAvatarList} />
+                             <div className={styles.mockListText}>
+                               <strong>Dr. Alan Turing</strong><span>HOD - Comp Sci</span>
+                             </div>
+                             <button className={styles.mockListBtn}>Approve</button>
+                           </div>
+                           <div className={styles.mockListItem}>
+                             <div className={styles.mockAvatarList} />
+                             <div className={styles.mockListText}>
+                               <strong>Dr. Ada Lovelace</strong><span>HOD - Math</span>
+                             </div>
+                             <button className={styles.mockListBtn}>Approve</button>
+                           </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-              </div>
-              <div className={`${styles.floatingMetric} ${styles.metricFaculty} ${styles.liftOnHover}`}>
-                <Building2 size={14} />
-                <span>8 Departments Active</span>
+                <div className={`${styles.floatingMetric} ${styles.metricFaculty} ${styles.liftOnHover}`}>
+                  <Building2 size={14} />
+                  <span>8 Departments Active</span>
+                </div>
               </div>
             </div>
           </div>
         </FadeUp>
       </section>
 
-      {/* ════ CENTERED FEATURE 2 (STUDENT) ════ */}
-      <section className={styles.centeredFeatureSection}>
+      {/* ════ DOUBLE COLUMN FEATURE 2: STUDENT-CENTRIC EXAMINATIONS ════ */}
+      <section className={styles.splitFeatureSection}>
         <FadeUp>
-          <div className={styles.centeredFeatureContent}>
-            <div className={styles.heroBadge}>
-              <span className={styles.heroBadgeDot} />
-              Student-Centric
-            </div>
-            <h2 className={styles.centeredFeatureTitle}>
-              Transparent & Fair <br />
-              <span className={styles.heroTitleGrad}>Examinations</span>
-            </h2>
-            <p className={styles.centeredFeatureSub}>
-              Students seamlessly upload answers safely and receive extremely granular AI-driven evaluation insights directly to their dashboard.
-            </p>
-            <div className={styles.heroBtns} style={{ justifyContent: 'center' }}>
-              <button className={styles.btnPrimary} onClick={() => navigate('/download')}>
-                <span>Student Portal</span>
-                <ArrowRight size={18} className={styles.btnIconSlide} />
-              </button>
-              <button className={styles.btnSecondary} onClick={() => document.getElementById('ai-eval')?.scrollIntoView({ behavior: 'smooth' })}>
-                <CheckCircle2 size={18} />
-                <span>View Results</span>
-              </button>
-            </div>
-          </div>
-        </FadeUp>
-        
-        <FadeUp>
-          <div className={styles.centeredFeatureVisual}>
-             <div className={styles.mockBrowserWrapper}>
-               <div className={styles.mockBrowserCardLarge}>
-                 <div className={styles.mockBrowserHeader}>
-                   <span className={`${styles.browserDot} ${styles.redDot}`} />
-                   <span className={`${styles.browserDot} ${styles.yellowDot}`} />
-                   <span className={`${styles.browserDot} ${styles.greenDot}`} />
-                   <div className={styles.browserAddressMini}>aiss-aes.edu/student/results</div>
-                 </div>
-                 
-                 <div className={styles.mockEvalSplit}>
-                   {/* Mock Document Area */}
-                   <div className={styles.mockDocArea}>
-                     <div className={styles.mockDocHeader}>
-                        <div><strong>CS301 Midterm</strong><span>Submit ID: 8A4F9</span></div>
-                        <span className={styles.mockDocScorePulse}>8.5 / 10</span>
-                     </div>
-                     <div className={styles.mockDocBody}>
-                        <div className={styles.mockDocLineText} style={{ width: '90%' }} />
-                        <div className={styles.mockDocLineText} style={{ width: '85%' }} />
-                        <div className={styles.mockDocHighlightRow}>
-                          <div className={styles.mockDocLineText} style={{ width: '60%' }} />
-                          <div className={styles.mockDocTooltip}>Excellent logic</div>
-                        </div>
-                        <div className={styles.mockDocLineText} style={{ width: '95%' }} />
-                        <div className={styles.mockDocLineText} style={{ width: '70%' }} />
-                        <div className={styles.mockDocHighlightRowYellow}>
-                          <div className={styles.mockDocLineText} style={{ width: '40%' }} />
-                          <div className={styles.mockDocTooltipYellow}>Missing base case</div>
-                        </div>
-                     </div>
+          <div className={styles.splitFeatureContainerReversed}>
+            <div className={styles.splitFeatureVisual}>
+               <div className={styles.mockBrowserWrapper}>
+                 <div className={styles.mockBrowserCardLarge}>
+                   <div className={styles.mockBrowserHeader}>
+                     <span className={`${styles.browserDot} ${styles.redDot}`} />
+                     <span className={`${styles.browserDot} ${styles.yellowDot}`} />
+                     <span className={`${styles.browserDot} ${styles.greenDot}`} />
+                     <div className={styles.browserAddressMini}>aiss-aes.edu/student/results</div>
                    </div>
                    
-                   {/* Mock AI Panel */}
-                   <div className={styles.mockAIPanelSidebar}>
-                      <h6>AI Evaluation Breakdown</h6>
-                      <div className={styles.mockAIPanelMetric}>
-                         <div className={styles.mockAIMetricHeader}>
-                           <span>Algorithm Efficiency</span>
-                           <strong>9/10</strong>
-                         </div>
-                         <div className={styles.mockAIPBarOuter}>
-                           <div className={styles.mockAIPBarInner} style={{ width: '90%', background: '#10b981' }} />
-                         </div>
-                      </div>
-                      <div className={styles.mockAIPanelMetric}>
-                         <div className={styles.mockAIMetricHeader}>
-                           <span>Code Quality</span>
-                           <strong>8/10</strong>
-                         </div>
-                         <div className={styles.mockAIPBarOuter}>
-                           <div className={styles.mockAIPBarInner} style={{ width: '80%', background: '#0ea5e9' }} />
-                         </div>
-                      </div>
-                      <div className={styles.mockAIPanelComment}>
-                         <strong>Feedback:</strong> 
-                         <p>Great approach using dynamic programming. Small penalty for missing the boundary condition check on line 12.</p>
-                      </div>
+                   <div className={styles.mockEvalSplit}>
+                     {/* Mock Document Area */}
+                     <div className={styles.mockDocArea}>
+                       <div className={styles.mockDocHeader}>
+                          <div><strong>CS301 Midterm</strong><span>Submit ID: 8A4F9</span></div>
+                          <span className={styles.mockDocScorePulse}>8.5 / 10</span>
+                       </div>
+                       <div className={styles.mockDocBody}>
+                          <div className={styles.mockDocLineText} style={{ width: '90%' }} />
+                          <div className={styles.mockDocLineText} style={{ width: '85%' }} />
+                          <div className={styles.mockDocHighlightRow}>
+                            <div className={styles.mockDocLineText} style={{ width: '60%' }} />
+                            <div className={styles.mockDocTooltip}>Excellent logic</div>
+                          </div>
+                          <div className={styles.mockDocLineText} style={{ width: '95%' }} />
+                          <div className={styles.mockDocLineText} style={{ width: '70%' }} />
+                          <div className={styles.mockDocHighlightRowYellow}>
+                            <div className={styles.mockDocLineText} style={{ width: '40%' }} />
+                            <div className={styles.mockDocTooltipYellow}>Missing base case</div>
+                          </div>
+                       </div>
+                     </div>
+                     
+                     {/* Mock AI Panel */}
+                     <div className={styles.mockAIPanelSidebar}>
+                        <h6>AI Evaluation Breakdown</h6>
+                        <div className={styles.mockAIPanelMetric}>
+                           <div className={styles.mockAIMetricHeader}>
+                             <span>Algorithm Efficiency</span>
+                             <strong>9/10</strong>
+                           </div>
+                           <div className={styles.mockAIPBarOuter}>
+                             <div className={styles.mockAIPBarInner} style={{ width: '90%', background: '#10b981' }} />
+                           </div>
+                        </div>
+                        <div className={styles.mockAIPanelMetric}>
+                           <div className={styles.mockAIMetricHeader}>
+                             <span>Code Quality</span>
+                             <strong>8/10</strong>
+                           </div>
+                           <div className={styles.mockAIPBarOuter}>
+                             <div className={styles.mockAIPBarInner} style={{ width: '80%', background: '#0ea5e9' }} />
+                           </div>
+                        </div>
+                        <div className={styles.mockAIPanelComment}>
+                           <strong>Feedback:</strong> 
+                           <p>Great approach using dynamic programming. Small penalty for missing the boundary condition check on line 12.</p>
+                        </div>
+                     </div>
                    </div>
                  </div>
+                 <div className={`${styles.floatingMetric} ${styles.metricStudents} ${styles.liftOnHover}`}>
+                   <ArrowRight size={14} />
+                   <span>View Feedback Line-by-Line</span>
+                 </div>
                </div>
-               <div className={`${styles.floatingMetric} ${styles.metricStudents} ${styles.liftOnHover}`}>
-                 <ArrowRight size={14} />
-                 <span>View Feedback Line-by-Line</span>
-               </div>
-             </div>
+            </div>
+
+            <div className={styles.splitFeatureText}>
+              <div className={styles.heroBadge}>
+                <span className={styles.heroBadgeDot} />
+                Student-Centric
+              </div>
+              <h2 className={styles.splitFeatureTitle}>
+                Transparent & Fair <br />
+                <span className={styles.heroTitleGrad}>Examinations</span>
+              </h2>
+              <p className={styles.splitFeatureSub}>
+                Students seamlessly upload answers safely and receive extremely granular AI-driven evaluation insights directly to their dashboard.
+              </p>
+              <div className={styles.heroBtns} style={{ justifyContent: 'flex-start' }}>
+                <button className={styles.btnPrimary} onClick={() => navigate('/download')}>
+                  <span>Student Portal</span>
+                  <ArrowRight size={18} className={styles.btnIconSlide} />
+                </button>
+                <button className={styles.btnSecondary} onClick={() => document.getElementById('ai-eval')?.scrollIntoView({ behavior: 'smooth' })}>
+                  <CheckCircle2 size={18} />
+                  <span>View Results</span>
+                </button>
+              </div>
+            </div>
           </div>
         </FadeUp>
       </section>
@@ -1076,8 +1553,8 @@ const Landing = () => {
             </div>
             
             <div className={styles.graphConnection}>
-               <div className={styles.connLine}><div className={styles.connParticle} /></div>
                <span className={styles.connLabel}>Creates Departments</span>
+               <div className={styles.connLine}><div className={styles.connParticle} /></div>
             </div>
 
             <div className={styles.graphNode} data-role="hod">
@@ -1089,12 +1566,13 @@ const Landing = () => {
             </div>
           </div>
 
-          {/* Middle Layer: Departments, Courses, Faculty */}
+          {/* Middle Layer Vertical Connectors */}
           <div className={styles.graphVerticalConnectors}>
              <div className={styles.vertLine}><div className={styles.connParticleVert} /></div>
              <div className={styles.vertLine}><div className={styles.connParticleVert} /></div>
           </div>
 
+          {/* Middle Layer: Courses & Faculty */}
           <div className={styles.graphRow}>
             <div className={styles.graphNode} data-role="course">
               <div className={styles.nodeIcon}><BookOpen size={20} /></div>
@@ -1105,8 +1583,8 @@ const Landing = () => {
             </div>
 
             <div className={styles.graphConnection}>
-               <div className={styles.connLine}><div className={styles.connParticleReverse} /></div>
                <span className={styles.connLabel}>Assigns</span>
+               <div className={styles.connLine}><div className={styles.connParticleReverse} /></div>
             </div>
 
             <div className={styles.graphNode} data-role="faculty">
@@ -1118,11 +1596,12 @@ const Landing = () => {
             </div>
           </div>
 
-          {/* Core layer: Students -> AI -> Results */}
+          {/* Core layer Vertical Connectors */}
           <div className={styles.graphVerticalConnectorsCentered}>
              <div className={styles.vertLine}><div className={styles.connParticleVert} /></div>
           </div>
 
+          {/* Core Layer: Student -> AES Intelligence -> Results */}
           <div className={styles.graphRowCentered}>
             <div className={styles.graphNode} data-role="student">
               <div className={styles.nodeIcon}><Users size={20} /></div>
@@ -1138,7 +1617,7 @@ const Landing = () => {
 
             <div className={styles.graphNodeLarge} data-role="ai">
               <div className={styles.corePulseNode} />
-              <div className={styles.nodeIcon}><Cpu size={28} /></div>
+              <div className={styles.nodeIcon}><Cpu size={26} /></div>
               <div className={styles.nodeText}>
                 <h4>AES Intelligence</h4>
                 <span>Semantic Evaluation</span>
@@ -1157,15 +1636,11 @@ const Landing = () => {
               </div>
             </div>
           </div>
-          
-          <svg className={styles.graphBackgroundSvg}>
-             <path d="M 800, 300 Q 500, 450 200, 300" fill="none" stroke="rgba(16, 185, 129, 0.2)" strokeWidth="2" strokeDasharray="5,5" />
-          </svg>
         </div>
       </section>
 
-      {/* ════ AI EVALUATION SHOWCASE ════ */}
-      <section className={styles.aiEvalSection} id="ai-eval">
+      {/* ════ AI EVALUATION SHOWCASE (3D RENDER ENGINE) ════ */}
+      <section className={styles.aiEvalSection} id="ai-eval" ref={aiEvalRef}>
         <FadeUp>
           <div className={styles.sectionTag}>
             <Zap size={14} />
@@ -1177,94 +1652,233 @@ const Landing = () => {
           </p>
         </FadeUp>
 
-        <div className={styles.aiEvalContainer}>
-          <div className={styles.aiEvalSteps}>
-            <button className={`${styles.aiStepBtn} ${evalPhase === 0 ? styles.active : ''}`} onClick={() => setEvalPhase(0)}>
-              <span>01</span> Answer Script Upload
-            </button>
-            <button className={`${styles.aiStepBtn} ${evalPhase === 1 ? styles.active : ''}`} onClick={() => setEvalPhase(1)}>
-              <span>02</span> Optical Layout & Parsing
-            </button>
-            <button className={`${styles.aiStepBtn} ${evalPhase === 2 ? styles.active : ''}`} onClick={() => setEvalPhase(2)}>
-              <span>03</span> Semantic Matching & Score
-            </button>
-            <button className={`${styles.aiStepBtn} ${evalPhase === 3 ? styles.active : ''}`} onClick={() => setEvalPhase(3)}>
-              <span>04</span> Auditing & Overrides
-            </button>
-          </div>
+        {/* Main 3D Render Stage Box */}
+        <div className={styles.ai3dStageCard}>
+          <div className={styles.ai3dStageGrid}>
 
-          <div className={styles.aiEvalVisualizer}>
-            {evalPhase === 0 && (
-              <div className={styles.aiPanelContent}>
-                <h4>Phase 1: Secure Answer Script Upload</h4>
-                <p>Students authenticate via OTP and upload their script sheets inside their 15-minute window. Scripts are bound to specific `AnswerSchema` HTML tables.</p>
-                <div className={styles.visualBarBox}>
-                  <div className={styles.uploadFileCard}>
-                    <FileText size={24} className={styles.iconFile} />
-                    <div>
-                      <strong>PHYS101_Roll_45.pdf</strong><br/>
-                      <span>Size: 4.8MB ➔ Uploading...</span>
+            {/* Left Column: Narrative Header + 5-Step Progression Nodes */}
+            <div className={styles.ai3dNarrativeCol}>
+              <div className={styles.ai3dBadge}>AISS EVALUATION ENGINE</div>
+              <h3 className={styles.ai3dTitle}>
+                Evaluation. <br />Reimagined with <span className={styles.heroTitleGrad}>AI.</span>
+              </h3>
+              <p className={styles.ai3dDesc}>
+                Our AI engine evaluates scripts, parses math & text logic with high precision, and ensures absolute consistency across every department.
+              </p>
+
+              {/* 5-Step Horizontal Flow Nodes */}
+              <div className={styles.ai3dFlowTimeline}>
+                {[
+                  { step: 1, title: 'Submission Received' },
+                  { step: 2, title: 'Context Analysis' },
+                  { step: 3, title: 'Rubric Matching' },
+                  { step: 4, title: 'Metric Feedback' },
+                  { step: 5, title: 'Final Result' }
+                ].map((item, idx) => (
+                  <div
+                    key={idx}
+                    className={`${styles.flowNodeItem} ${evalPhase === idx ? styles.flowNodeActive : ''}`}
+                    onClick={() => handleManualSelect('aiEval', setEvalPhase, idx)}
+                  >
+                    <div className={styles.flowNodeDotWrap}>
+                      <div className={styles.flowNodeDot} />
+                      {idx < 4 && <div className={styles.flowNodeLine} />}
                     </div>
+                    <span className={styles.flowNodeTitle}>{item.title}</span>
                   </div>
-                  <div className={styles.progressBar}>
-                    <div className={styles.progressFill} style={{ width: '80%' }} />
-                  </div>
-                </div>
+                ))}
               </div>
-            )}
+            </div>
 
-            {evalPhase === 1 && (
-              <div className={styles.aiPanelContent}>
-                <h4>Phase 2: Optical Layout & Parsing</h4>
-                <p>The AI model processes the script, parsing text blocks, formulas, and structural layouts. Handwriting is processed into clean contextual text.</p>
-                <div className={styles.aiTerminal}>
-                  <div>[AISS-AI] Initializing Optical Layout Parser...</div>
-                  <div>[AISS-AI] Segmenting Question Blocks (Detected: 5 Questions)</div>
-                  <div className={styles.terminalPulse}>[AISS-AI] Parsing Question 1 Handwriting... [OK]</div>
-                </div>
-              </div>
-            )}
+            {/* Right Column: 3D Isometric Core & Floating Perspective Panels */}
+            <div className={styles.ai3dGraphicStage}>
 
-            {evalPhase === 2 && (
-              <div className={styles.aiPanelContent}>
-                <h4>Phase 3: Semantic Matching & Score</h4>
-                <p>The parsed answers are evaluated against the reference key. The model grades context, semantic structure, and keyword density, generating a score breakdown.</p>
-                <div className={styles.semanticMatchCard}>
-                  <div className={styles.semanticMetric}>
-                    <span>Keyword Match</span>
-                    <strong>94%</strong>
-                  </div>
-                  <div className={styles.semanticMetric}>
-                    <span>Computed Grade</span>
-                    <strong className={styles.gradeHighlight}>8 / 10</strong>
-                  </div>
+              {/* Floating 3D Left Panel: Semantic Analysis */}
+              <div className={`${styles.ai3dPerspectiveCard} ${styles.ai3dLeftCard}`}>
+                <div className={styles.cardHeader3d}>
+                  <CheckCircle2 size={16} className={styles.orangeIcon} />
+                  <span>Semantic Analysis</span>
                 </div>
+                <ul className={styles.checklist3d}>
+                  <li className={styles.checkItem3d}>
+                    <span>Formula Detection</span>
+                    <CheckCircle2 size={14} className={styles.greenCheck} />
+                  </li>
+                  <li className={styles.checkItem3d}>
+                    <span>Context Understanding</span>
+                    <CheckCircle2 size={14} className={styles.greenCheck} />
+                  </li>
+                  <li className={styles.checkItem3d}>
+                    <span>Semantic Matching</span>
+                    <CheckCircle2 size={14} className={styles.greenCheck} />
+                  </li>
+                  <li className={styles.checkItem3d}>
+                    <span>Key Word Extraction</span>
+                    <CheckCircle2 size={14} className={styles.greenCheck} />
+                  </li>
+                </ul>
               </div>
-            )}
 
-            {evalPhase === 3 && (
-              <div className={styles.aiPanelContent}>
-                <h4>Phase 4: Auditing & Overrides</h4>
-                <p>Evaluators retain absolute control. Teachers review the AI feedback, inspect parsed sheets, and can override any question score before publishing results.</p>
-                <div className={styles.mockOverrideForm}>
-                  <div>
-                    <span>AI Score: <strong>8 / 10</strong></span>
-                    <span className={styles.dividerSlash}>➔</span>
-                    <label>Manual Score: </label>
-                    <input type="number" readOnly value={9} className={styles.scoreOverrideInput} />
+              {/* Center Stage: High-Performance Pure CSS 3D Holographic AI Core */}
+              <div className={styles.pureCssChipStage}>
+                <div className={styles.chipGlowAura} />
+                <div className={styles.laserScanBeam} />
+                
+                <div className={styles.circuitBoardBase}>
+                  <div className={styles.circuitTrack1} />
+                  <div className={styles.circuitTrack2} />
+                  <div className={styles.circuitTrack3} />
+                </div>
+
+                <div className={styles.isoChip3d}>
+                  <div className={styles.chipPinsLeft}>
+                    {[...Array(6)].map((_, i) => <div key={i} className={styles.chipPin} />)}
                   </div>
-                  <div className={styles.overrideFeedback}>
-                    <em>"Student explained kinetic formulas creatively. Adjusted +1."</em>
+                  <div className={styles.chipPinsRight}>
+                    {[...Array(6)].map((_, i) => <div key={i} className={styles.chipPin} />)}
+                  </div>
+
+                  <div className={styles.chipSideTop}>
+                    <div className={styles.chipBrandLogo}>
+                      <AISSLogo size={24} />
+                    </div>
+                    <div className={styles.chipCoreText}>AISS</div>
+                    <div className={styles.chipCoreSub}>ADVANCED AI SUBSYSTEM</div>
+                    <div className={styles.chipCoreTag}>QUANTUM EVALUATION ENGINE</div>
+                  </div>
+                  <div className={styles.chipSideFront} />
+                  <div className={styles.chipSideRight} />
+                </div>
+              </div>
+
+              {/* Floating 3D Right Panel: Evaluation Output Metrics */}
+              <div className={`${styles.ai3dPerspectiveCard} ${styles.ai3dRightCard}`}>
+                <div className={styles.cardHeader3d}>
+                  <Zap size={16} className={styles.orangeIcon} />
+                  <span>Evaluation Output</span>
+                </div>
+                <div className={styles.metricsGrid3d}>
+                  <div className={styles.metricRow3d}>
+                    <div className={styles.metricLabel3d}>Score</div>
+                    <div className={styles.metricVal3d}>92/100</div>
+                  </div>
+                  <div className={styles.miniProgressBar3d}>
+                    <div className={styles.miniProgressFill3d} style={{ width: '92%' }} />
+                  </div>
+
+                  <div className={styles.metricRow3d}>
+                    <div className={styles.metricLabel3d}>Confidence</div>
+                    <div className={styles.metricVal3d}>98%</div>
+                  </div>
+                  <div className={styles.miniProgressBar3d}>
+                    <div className={styles.miniProgressFill3d} style={{ width: '98%' }} />
+                  </div>
+
+                  <div className={styles.metricRow3d}>
+                    <div className={styles.metricLabel3d}>Matched Rubrics</div>
+                    <div className={styles.metricVal3d}>4/4</div>
+                  </div>
+                  <div className={styles.miniProgressBar3d}>
+                    <div className={styles.miniProgressFill3d} style={{ width: '100%' }} />
                   </div>
                 </div>
               </div>
-            )}
+
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ════ EMPIRICAL BENCHMARK REPORTS ════ */}
+      <section className={styles.empiricalReportsSection} id="reports" ref={reportsRef}>
+        <FadeUp>
+          <div className={styles.sectionTag}>
+            <FileSpreadsheet size={14} />
+            Empirical Validation & Benchmark Reports
+          </div>
+          <h2 className={styles.sectionTitle}>AISS Evaluation Accuracy & Performance Reports</h2>
+          <p className={styles.sectionSub}>
+            Real empirical benchmark results comparing AISS AI grading against senior human faculty evaluations across 500+ answer scripts.
+          </p>
+        </FadeUp>
+
+        {/* Report Selector Segmented Grid */}
+        <div className={styles.reportTabsRow}>
+          {EMPIRICAL_REPORTS.map((rep, idx) => (
+            <button
+              key={rep.id}
+              className={`${styles.reportTabBtn} ${activeReportIdx === idx ? styles.reportTabActive : ''}`}
+              onClick={() => handleManualSelect('reports', setActiveReportIdx, idx)}
+            >
+              <span className={styles.reportTabNum}>0{idx + 1}</span>
+              <span className={styles.reportTabTitle}>{rep.title}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Active Report Main Showcase Card */}
+        <div className={styles.reportMainCard}>
+          <div className={styles.reportCardGrid}>
+            {/* Left side: High-Res Report Graphic Stage */}
+            <div className={styles.reportGraphicBox}>
+              <div className={styles.reportGraphicHeader}>
+                <span className={styles.reportCardBadge} style={{ borderColor: EMPIRICAL_REPORTS[activeReportIdx].badgeColor, color: EMPIRICAL_REPORTS[activeReportIdx].badgeColor }}>
+                  {EMPIRICAL_REPORTS[activeReportIdx].badge}
+                </span>
+                <span className={styles.reportGraphicTag}>Empirical Metric Chart</span>
+              </div>
+              <div className={styles.reportSvgWrapper}>
+                <img
+                  src={EMPIRICAL_REPORTS[activeReportIdx].svgPath}
+                  alt={EMPIRICAL_REPORTS[activeReportIdx].title}
+                  className={styles.reportSvgImage}
+                />
+              </div>
+            </div>
+
+            {/* Right side: Executive Narrative & Detailed Breakdown */}
+            <div className={styles.reportDetailsBox}>
+              <div className={styles.reportDetailsHeader}>
+                <h3>{EMPIRICAL_REPORTS[activeReportIdx].title}</h3>
+                <h4 className={styles.reportCardSubtitle}>{EMPIRICAL_REPORTS[activeReportIdx].subtitle}</h4>
+                <p className={styles.reportCardDesc}>{EMPIRICAL_REPORTS[activeReportIdx].summary}</p>
+              </div>
+
+              <div className={styles.reportMetricBreakdown}>
+                <h5 className={styles.reportBoxTitle}>Metric Breakdown</h5>
+                <div className={styles.reportStatBoxes}>
+                  {EMPIRICAL_REPORTS[activeReportIdx].statBox.map((st, i) => (
+                    <div key={i} className={styles.reportSubStat}>
+                      <div className={styles.reportSubStatTop}>
+                        <span className={styles.reportSubDot} style={{ background: st.color }} />
+                        <span className={styles.reportSubLabel}>{st.label}</span>
+                      </div>
+                      <strong className={styles.reportSubVal} style={{ color: st.color }}>{st.val}</strong>
+                      <span className={styles.reportSubNote}>{st.note}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.reportInsightsBox}>
+                <h5 className={styles.reportBoxTitle}>Key Empirical Insights</h5>
+                <ul className={styles.reportBullets}>
+                  {EMPIRICAL_REPORTS[activeReportIdx].highlights.map((hl, i) => (
+                    <li key={i}>
+                      <CheckCircle2 size={15} className={styles.reportCheckIcon} />
+                      <span>{hl}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ════ DASHBOARD PREVIEW CAROUSEL ════ */}
-      <section className={styles.carouselSection}>
+      <section className={styles.carouselSection} ref={carouselRef}>
         <FadeUp>
           <div className={styles.sectionTag}>
             <Calendar size={14} />
@@ -1285,10 +1899,10 @@ const Landing = () => {
               
               <div className={styles.carouselControls}>
                 <div className={styles.carouselArrowsBox}>
-                  <button className={styles.carouselArrowBtn} onClick={() => setCarouselIndex(p => (p - 1 + CAROUSEL_MOCKUPS.length) % CAROUSEL_MOCKUPS.length)}>
+                  <button className={styles.carouselArrowBtn} onClick={() => handleManualSelect('carousel', setCarouselIndex, (carouselIndex - 1 + CAROUSEL_MOCKUPS.length) % CAROUSEL_MOCKUPS.length)}>
                     <ChevronLeft size={20} />
                   </button>
-                  <button className={styles.carouselArrowBtn} onClick={() => setCarouselIndex(p => (p + 1) % CAROUSEL_MOCKUPS.length)}>
+                  <button className={styles.carouselArrowBtn} onClick={() => handleManualSelect('carousel', setCarouselIndex, (carouselIndex + 1) % CAROUSEL_MOCKUPS.length)}>
                     <ChevronRight size={20} />
                   </button>
                 </div>
@@ -1297,7 +1911,7 @@ const Landing = () => {
                     <button
                       key={idx}
                       className={`${styles.carouselDot} ${idx === carouselIndex ? styles.carouselDotActive : ''}`}
-                      onClick={() => setCarouselIndex(idx)}
+                      onClick={() => handleManualSelect('carousel', setCarouselIndex, idx)}
                     />
                   ))}
                 </div>
@@ -1319,7 +1933,7 @@ const Landing = () => {
                     <div className={styles.frameTopbar}>Semester Configuration Wizard</div>
                     <div className={styles.frameBody}>
                       <div className={styles.wizardHeader}>
-                        <span>Step 1: Setup Details</span> ➔ <strong style={{ color: 'var(--accent)' }}>Step 2: Assign Course</strong>
+                        <span>Step 1: Setup Details</span> <ChevronRight size={12} style={{ display: 'inline-block', verticalAlign: 'middle', margin: '0 4px' }} /> <strong style={{ color: 'var(--accent)' }}>Step 2: Assign Course</strong>
                       </div>
                       <div className={styles.mockInputGroup}>
                         <label>Semester Number</label>
@@ -1366,11 +1980,10 @@ const Landing = () => {
                       </div>
                       <div className={styles.commentRow}>
                         <span>AI Feedback: "Correct laws stated. Mathematical derivation missed details."</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
+                       </div>
+                     </div>
+                   </div>
+                 )}
                 {CAROUSEL_MOCKUPS[carouselIndex].ui === 'student-portal' && (
                   <div className={styles.frameContent}>
                     <div className={styles.frameTopbar}>Student Active Examinations</div>
@@ -1393,7 +2006,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* ════ ACADEMIC LIFECYCLE SECTION ════ */}
+      {/* ACADEMIC LIFECYCLE SECTION */}
       <section className={styles.lifecycleSection} id="academic-lifecycle">
         <FadeUp>
           <div className={styles.sectionTag}>
@@ -1402,91 +2015,41 @@ const Landing = () => {
           </div>
           <h2 className={styles.sectionTitle}>The Full Academic Lifecycle</h2>
           <p className={styles.sectionSub}>
-            Follow the automated lifecycle checkpoints managed by AISS AES.
+            Six automated checkpoints that carry every student from institution onboarding to published results.
           </p>
         </FadeUp>
 
-        <div className={styles.stepsList}>
-          <FadeUp>
-            <div className={styles.step}>
-              <div className={styles.stepNum}>1</div>
-              <div className={styles.stepContent}>
-                <h3 className={styles.stepTitle}>College Admission & Creation</h3>
-                <p className={styles.stepDesc}>Admins bulk-upload records, creating secure learner profiles connected to specific departments.</p>
-              </div>
-            </div>
-          </FadeUp>
-
-          <FadeUp>
-            <div className={styles.step}>
-              <div className={styles.stepNum}>2</div>
-              <div className={styles.stepContent}>
-                <h3 className={styles.stepTitle}>Course Enrollment</h3>
-                <p className={styles.stepDesc}>HODs register student cohorts into Core and Elective modules, immediately populating semester credit boards.</p>
-              </div>
-            </div>
-          </FadeUp>
-
-          <FadeUp>
-            <div className={styles.step}>
-              <div className={styles.stepNum}>3</div>
-              <div className={styles.stepContent}>
-                <h3 className={styles.stepTitle}>Scheduling & Learning</h3>
-                <p className={styles.stepDesc}>Active timetables map exam dates and assigned proctoring/evaluating faculty members across departments.</p>
-              </div>
-            </div>
-          </FadeUp>
-
-          <FadeUp>
-            <div className={styles.step}>
-              <div className={styles.stepNum}>4</div>
-              <div className={styles.stepContent}>
-                <h3 className={styles.stepTitle}>Secure Assessment Submission</h3>
-                <p className={styles.stepDesc}>During the exam, students authenticate and securely upload script sheets within their active 15-minute session.</p>
-              </div>
-            </div>
-          </FadeUp>
-
-          <FadeUp>
-            <div className={styles.step}>
-              <div className={styles.stepNum}>5</div>
-              <div className={styles.stepContent}>
-                <h3 className={styles.stepTitle}>AI Grading & Auditing</h3>
-                <p className={styles.stepDesc}>The AI parser segments answer pages, scores answers against keys, and presents evaluations to faculty for override audits.</p>
-              </div>
-            </div>
-          </FadeUp>
-
-          <FadeUp>
-            <div className={styles.step}>
-              <div className={styles.stepNum}>6</div>
-              <div className={styles.stepContent}>
-                <h3 className={styles.stepTitle}>Results & Graduation Metrics</h3>
-                <p className={styles.stepDesc}>Results publish, updating student profiles, generating cumulative CGPA calculations, and outputting college-wide stats.</p>
-              </div>
-            </div>
-          </FadeUp>
-        </div>
+        <LifecycleOrbit />
       </section>
 
       {/* ════ CTA ════ */}
       <section className={styles.cta}>
         <FadeUp>
           <div className={styles.ctaBox}>
-            <h2 className={styles.ctaTitle}>Ready to transform your evaluation process?</h2>
+            <div className={styles.ctaBadge}>
+              <AISSLogo size={14} />
+              <span>Enterprise Academic Engine</span>
+            </div>
+            <h2 className={styles.ctaTitle}>Accelerate Evaluation. <br />Eliminate Bias.</h2>
             <p className={styles.ctaSub}>
-              Join institutions already using AISS_AES to deliver faster, fairer,
-              and more secure academic evaluations.
+              Power your institution with AI-driven grading precision, auditable faculty controls, and instant evaluation pipelines.
             </p>
             <div className={styles.ctaBtns}>
               <button className={styles.btnPrimary} onClick={() => setCollegeModalOpen(true)} id="cta-get-started">
                 <Building2 size={18} />
-                <span>Register Your Institution</span>
+                <span>Register Institution</span>
               </button>
               <button className={styles.btnSecondary} onClick={() => navigate('/register')} id="cta-sign-in">
                 <Users size={16} />
-                <span>Faculty Sign Up</span>
+                <span>Faculty Portal</span>
               </button>
+            </div>
+            <div className={styles.ctaTrustBadges}>
+              <span className={styles.trustItem}><Zap size={14} /> 10x Evaluation Speed</span>
+              <span className={styles.trustDot}>•</span>
+              <span className={styles.trustItem}><Shield size={14} /> Zero-Trust Audit Logs</span>
+              <span className={styles.trustDot}>•</span>
+              <span className={styles.trustItem}><Target size={14} /> 84.5% Precision Rate</span>
             </div>
           </div>
         </FadeUp>
@@ -1495,15 +2058,18 @@ const Landing = () => {
       {/* ════ FOOTER ════ */}
       <footer className={styles.footer}>
         <div className={styles.footerBrand}>
-          <BrainCircuit size={16} />
+          <div className={styles.navLogoBox} style={{ width: 28, height: 28, borderRadius: 7 }}>
+            <AISSLogo size={16} />
+          </div>
           <span>AISS_AES</span>
         </div>
         <span>© {new Date().getFullYear()} AISS_AES. All rights reserved.</span>
         <div className={styles.footerLinks}>
-          <a href="#workflows">Workflows</a>
-          <a href="#roles">Roles</a>
-          <a href="#ai-eval">AI Evaluation</a>
-          <a href="#academic-lifecycle">Lifecycle</a>
+          <button className={styles.footerLinkBtn} onClick={() => document.getElementById('workflows')?.scrollIntoView({ behavior: 'smooth' })}>Workflows</button>
+          <button className={styles.footerLinkBtn} onClick={() => document.getElementById('roles')?.scrollIntoView({ behavior: 'smooth' })}>Roles</button>
+          <button className={styles.footerLinkBtn} onClick={() => document.getElementById('ai-eval')?.scrollIntoView({ behavior: 'smooth' })}>AI Evaluation</button>
+          <button className={styles.footerLinkBtn} onClick={() => document.getElementById('reports')?.scrollIntoView({ behavior: 'smooth' })}>Reports</button>
+          <button className={styles.footerLinkBtn} onClick={() => document.getElementById('academic-lifecycle')?.scrollIntoView({ behavior: 'smooth' })}>Lifecycle</button>
         </div>
       </footer>
 

@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 480" width="100%" height="100%">
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-weight: 700; font-size: 20px; fill: #1e293b; text-anchor: middle; }
+    .axis-label { font-family: system-ui, -apple-system, sans-serif; font-weight: 600; font-size: 13px; fill: #475569; }
+    .q-label { font-family: system-ui, -apple-system, sans-serif; font-weight: 600; font-size: 13px; fill: #334155; text-anchor: middle; }
+    .grid-line { stroke: #cbd5e1; stroke-width: 1; stroke-dasharray: 4,4; }
+    .legend-text { font-family: system-ui, -apple-system, sans-serif; font-weight: 600; font-size: 13px; fill: #1e293b; }
+  </style>
+
+  <!-- Title -->
+  <text x="425" y="32" class="title">Average Marks per Question: Faculty vs AISS</text>
+
+  <!-- Legend Box -->
+  <g transform="translate(680, 50)">
+    <rect x="0" y="0" width="145" height="65" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+    <text x="12" y="20" class="legend-text" font-weight="700">Evaluated By</text>
+
+    <!-- Teacher Legend -->
+    <rect x="12" y="28" width="16" height="12" fill="#4f46e5" rx="2" />
+    <text x="35" y="39" class="legend-text">Teacher Marks</text>
+
+    <!-- AISS Legend -->
+    <rect x="12" y="46" width="16" height="12" fill="#ea580c" rx="2" />
+    <text x="35" y="57" class="legend-text">AISS Marks</text>
+  </g>
+
+  <!-- Y Axis (0 to 5) Chart area: y from 70 (val 5) to 400 (val 0), total height = 330px (66px per 1 mark) -->
+  <g>
+    <text x="20" y="240" class="axis-label" transform="rotate(-90 20 240)" text-anchor="middle">Average Marks</text>
+
+    <text x="50" y="74" class="axis-label">5</text>
+    <line x1="70" y1="70" x2="800" y2="70" class="grid-line" />
+
+    <text x="50" y="140" class="axis-label">4</text>
+    <line x1="70" y1="136" x2="800" y2="136" class="grid-line" />
+
+    <text x="50" y="206" class="axis-label">3</text>
+    <line x1="70" y1="202" x2="800" y2="202" class="grid-line" />
+
+    <text x="50" y="272" class="axis-label">2</text>
+    <line x1="70" y1="268" x2="800" y2="268" class="grid-line" />
+
+    <text x="50" y="338" class="axis-label">1</text>
+    <line x1="70" y1="334" x2="800" y2="334" class="grid-line" />
+
+    <text x="50" y="404" class="axis-label">0</text>
+    <line x1="70" y1="400" x2="800" y2="400" stroke="#475569" stroke-width="1.5" />
+  </g>
+
+  <!-- X Axis Title -->
+  <text x="425" y="450" class="axis-label" text-anchor="middle">Question Number</text>
+
+  <!-- Bars Data (Grouped bars per question) -->
+  <!-- 13 questions: 5, 1a, 1b, 2a, 2b, 3a, 3b, 4a, 4b, 4b, 5a, 5b, 6a, 6b -->
+  <!-- Width per group: ~53px. Teacher bar (left): 22px, AISS bar (right): 22px -->
+
+  <!-- Q5: T=3.0 (y=202, h=198), A=2.0 (y=268, h=132) -->
+  <g transform="translate(85, 0)">
+    <rect x="0" y="202" width="22" height="198" fill="#4f46e5" />
+    <rect x="23" y="268" width="22" height="132" fill="#ea580c" />
+    <text x="22" y="422" class="q-label">5</text>
+  </g>
+
+  <!-- Q1a: T=2.25 (y=251.5, h=148.5), A=1.9 (y=274.6, h=125.4) -->
+  <g transform="translate(140, 0)">
+    <rect x="0" y="251.5" width="22" height="148.5" fill="#4f46e5" />
+    <rect x="23" y="274.6" width="22" height="125.4" fill="#ea580c" />
+    <text x="22" y="422" class="q-label">1a</text>
+  </g>
+
+  <!-- Q1b: T=1.1 (y=327.4, h=72.6), A=1.35 (y=310.9, h=89.1) -->
+  <g transform="translate(195, 0)">
+    <rect x="0" y="327.4" width="22" height="72.6" fill="#4f46e5" />
+    <rect x="23" y="310.9" width="22" height="89.1" fill="#ea580c" />
+    <text x="22" y="422" class="q-label">1b</text>
+  </g>
+
+  <!-- Q2a: T=1.5 (y=301, h=99), A=1.85 (y=277.9, h=122.1) -->
+  <g transform="translate(250, 0)">
+    <rect x="0" y="301" width="22" height="99" fill="#4f46e5" />
+    <rect x="23" y="277.9" width="22" height="122.1" fill="#ea580c" />
+    <text x="22" y="422" class="q-label">2a</text>
+  </g>
+
+  <!-- Q2b: T=1.65 (y=291.1, h=108.9), A=1.65 (y=291.1, h=108.9) -->
+  <g transform="translate(305, 0)">
+    <rect x="0" y="291.1" width="22" height="108.9" fill="#4f46e5" />
+    <rect x="23" y="291.1" width="22" height="108.9" fill="#ea580c" />
+    <text x="22" y="422" class="q-label">2b</text>
+  </g>
+
+  <!-- Q3a: T=3.7 (y=155.8, h=244.2), A=3.8 (y=149.2, h=250.8) -->
+  <g transform="translate(360, 0)">
+    <rect x="0" y="155.8" width="22" height="244.2" fill="#4f46e5" />
+    <rect x="23" y="149.2" width="22" height="250.8" fill="#ea580c" />
+    <text x="22" y="422" class="q-label">3a</text>
+  </g>
+
+  <!-- Q3b: T=3.95 (y=139.3, h=260.7), A=3.8 (y=149.2, h=250.8) -->
+  <g transform="translate(415, 0)">
+    <rect x="0" y="139.3" width="22" height="260.7" fill="#4f46e5" />
+    <rect x="23" y="149.2" width="22" height="250.8" fill="#ea580c" />
+    <text x="22" y="422" class="q-label">3b</text>
+  </g>
+
+  <!-- Q4a: T=3.7 (y=155.8, h=244.2), A=4.0 (y=136, h=264) -->
+  <g transform="translate(470, 0)">
+    <rect x="0" y="155.8" width="22" height="244.2" fill="#4f46e5" />
+    <rect x="23" y="136" width="22" height="264" fill="#ea580c" />
+    <text x="22" y="422" class="q-label">4a</text>
+  </g>
+
+  <!-- Q4b (1): T=4.8 (y=83.2, h=316.8), A=4.2 (y=122.8, h=277.2) -->
+  <g transform="translate(525, 0)">
+    <rect x="0" y="83.2" width="22" height="316.8" fill="#4f46e5" />
+    <rect x="23" y="122.8" width="22" height="277.2" fill="#ea580c" />
+    <text x="22" y="422" class="q-label">4b</text>
+  </g>
+
+  <!-- Q4b (2): T=3.0 (y=202, h=198), A=4.0 (y=136, h=264) -->
+  <g transform="translate(580, 0)">
+    <rect x="0" y="202" width="22" height="198" fill="#4f46e5" />
+    <rect x="23" y="136" width="22" height="264" fill="#ea580c" />
+    <text x="22" y="422" class="q-label">4b</text>
+  </g>
+
+  <!-- Q5a: T=3.85 (y=145.9, h=254.1), A=4.05 (y=132.7, h=267.3) -->
+  <g transform="translate(635, 0)">
+    <rect x="0" y="145.9" width="22" height="254.1" fill="#4f46e5" />
+    <rect x="23" y="132.7" width="22" height="267.3" fill="#ea580c" />
+    <text x="22" y="422" class="q-label">5a</text>
+  </g>
+
+  <!-- Q5b: T=3.5 (y=169, h=231), A=3.5 (y=169, h=231) -->
+  <g transform="translate(690, 0)">
+    <rect x="0" y="169" width="22" height="231" fill="#4f46e5" />
+    <rect x="23" y="169" width="22" height="231" fill="#ea580c" />
+    <text x="22" y="422" class="q-label">5b</text>
+  </g>
+
+  <!-- Q6a: T=3.45 (y=172.3, h=227.7), A=3.85 (y=145.9, h=254.1) -->
+  <g transform="translate(745, 0)">
+    <rect x="0" y="172.3" width="22" height="227.7" fill="#4f46e5" />
+    <rect x="23" y="145.9" width="22" height="254.1" fill="#ea580c" />
+    <text x="22" y="422" class="q-label">6a</text>
+  </g>
+</svg>

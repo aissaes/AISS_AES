@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { authAPI, collegeAPI } from '../../api/client';
 import { useToast } from '../../components/Toast/Toast';
+import AISSLogo from '../../components/AISSLogo/AISSLogo';
 import styles from './Register.module.css';
 
 /* Searchable dropdown sub-component */
@@ -126,7 +127,7 @@ const Register = () => {
       <div className={styles.box}>
         {/* Logo */}
         <div className={styles.logoWrap}>
-          <div className={styles.logo}><BrainCircuit size={26} strokeWidth={2} /></div>
+          <div className={styles.logo}><AISSLogo size={32} /></div>
         </div>
 
         <h1 className={styles.title}>Request Access</h1>

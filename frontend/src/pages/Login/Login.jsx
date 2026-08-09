@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, ShieldCheck, ArrowRight, BrainCircuit, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, ShieldCheck, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { authAPI, facultyAPI } from '../../api/client';
 import { useToast } from '../../components/Toast/Toast';
 import { useAuth } from '../../context/AuthContext';
+import AISSLogo from '../../components/AISSLogo/AISSLogo';
 import styles from './Login.module.css';
 
 const ROLE_ROUTES = {
@@ -111,7 +112,7 @@ const Login = () => {
         {/* Logo */}
         <div className={styles.logoWrap}>
           <div className={styles.logo}>
-            <BrainCircuit size={28} strokeWidth={2} />
+            <AISSLogo size={32} />
           </div>
         </div>
 

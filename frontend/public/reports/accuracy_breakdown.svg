@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 650 560" width="100%" height="100%">
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-weight: 800; font-size: 24px; fill: #1e293b; text-anchor: middle; }
+    .subtitle { font-family: system-ui, -apple-system, sans-serif; font-weight: 700; font-size: 18px; fill: #334155; text-anchor: middle; }
+    .label { font-family: system-ui, -apple-system, sans-serif; font-weight: 800; font-size: 17px; fill: #0f172a; }
+    .percentage { font-family: system-ui, -apple-system, sans-serif; font-weight: 900; font-size: 18px; fill: #000000; text-anchor: middle; }
+  </style>
+
+  <!-- Title -->
+  <text x="325" y="45" class="title">AISS Grading Accuracy</text>
+  <text x="325" y="75" class="subtitle">(Tolerance Breakdown)</text>
+
+  <!-- Center (325, 300), Radius R = 180 -->
+  <!-- 1. Red Slice: Deviation > 1 Mark (15.5%, 55.8deg, angle -55.8deg to 0deg) -->
+  <!-- Start: (325 + 180*sin(-55.8°), 300 - 180*cos(-55.8°)) = (176.2, 198.8) -->
+  <!-- End: (325, 120) -->
+  <path d="M 325 300 L 176.2 198.8 A 180 180 0 0 1 325 120 Z" fill="#dc2626" stroke="#ffffff" stroke-width="2.5" />
+
+  <!-- 2. Light Green Slice: Exact Match (26.8%, 96.48deg, angle 0deg to 96.48deg) -->
+  <!-- Start: (325, 120) -->
+  <!-- End: (325 + 180*sin(96.48°), 300 - 180*cos(96.48°)) = (503.8, 320.3) -->
+  <path d="M 325 300 L 325 120 A 180 180 0 0 1 503.8 320.3 Z" fill="#9ec54d" stroke="#ffffff" stroke-width="2.5" />
+
+  <!-- 3. Dark Green Slice: Within 1 Mark (57.7%, 207.72deg, angle 96.48deg to 304.2deg) -->
+  <!-- Large arc flag = 1 -->
+  <path d="M 325 300 L 503.8 320.3 A 180 180 0 1 1 176.2 198.8 Z" fill="#16a34a" stroke="#ffffff" stroke-width="2.5" />
+
+  <!-- Percentage text inside slices (r = 105) -->
+  <!-- Red 15.5% (angle -27.9deg) -> (325 - 49.1, 300 - 92.8) = (275.9, 207.2) -->
+  <text x="276" y="210" class="percentage">15.5%</text>
+
+  <!-- Light Green 26.8% (angle 48.24deg) -> (325 + 78.3, 300 - 69.9) = (403.3, 230.1) -->
+  <text x="403" y="233" class="percentage">26.8%</text>
+
+  <!-- Dark Green 57.7% (angle 200.34deg) -> (325 - 36.5, 300 + 98.5) = (288.5, 398.5) -->
+  <text x="288" y="401" class="percentage">57.7%</text>
+
+  <!-- Outer Text Labels -->
+  <!-- Top Left: Deviation > 1 Mark -->
+  <text x="75" y="115" class="label">Deviation &gt; 1 Mark</text>
+
+  <!-- Top Right: Exact Match -->
+  <text x="485" y="185" class="label">Exact Match</text>
+
+  <!-- Bottom Left: Within 1 Mark -->
+  <text x="95" y="485" class="label">Within 1 Mark</text>
+</svg>

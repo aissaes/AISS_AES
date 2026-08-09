@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- AISS Brand Logo (Light Mode Theme: Dark Slate #0F172A + Brand Orange #FF6A00) -->
+  
+  <!-- 1. Integrated Cap Apex -->
+  <polygon points="256,36 396,88 256,140 116,88" fill="#0F172A"/>
+  <rect x="184" y="128" width="144" height="20" rx="6" fill="#0F172A"/>
+
+  <!-- 2. Symmetrical 'A' Legs Meeting at Apex (256, 144) -->
+  <!-- Left Leg (Brand Orange) -->
+  <path d="M 256 144 L 102 432 C 98 440 106 448 116 448 H 182 C 188 448 194 444 198 438 L 256 280 Z" fill="#FF6A00"/>
+
+  <!-- Right Leg (Dark Slate) -->
+  <path d="M 256 144 L 410 432 C 414 440 406 448 396 448 H 330 C 324 448 318 444 314 438 L 256 280 Z" fill="#0F172A"/>
+
+  <!-- 3. Integrated AI Core Diamond ✦ -->
+  <path d="M 256 320 Q 256 348 230 348 Q 256 348 256 376 Q 256 348 282 348 Q 256 348 256 320 Z" fill="#FF6A00"/>
+</svg>

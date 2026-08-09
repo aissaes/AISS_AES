@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 650 520" width="100%" height="100%">
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-weight: 700; font-size: 20px; fill: #1e293b; text-anchor: middle; }
+    .axis-label { font-family: system-ui, -apple-system, sans-serif; font-weight: 600; font-size: 13px; fill: #475569; }
+    .grid-line { stroke: #e2e8f0; stroke-width: 1; stroke-dasharray: 4,4; }
+    .legend-text { font-family: system-ui, -apple-system, sans-serif; font-weight: 600; font-size: 13px; fill: #1e293b; }
+    .point { fill: #2563eb; fill-opacity: 0.65; stroke: #1d4ed8; stroke-width: 1.5; }
+  </style>
+
+  <!-- Title -->
+  <text x="325" y="32" class="title">AISS Marks vs Faculty Marks</text>
+
+  <!-- Legend -->
+  <g transform="translate(70, 50)">
+    <rect x="0" y="0" width="165" height="36" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+    <line x1="10" y1="18" x2="35" y2="18" stroke="#dc2626" stroke-width="2" stroke-dasharray="4,3" />
+    <text x="42" y="22" class="legend-text">Perfect Agreement</text>
+  </g>
+
+  <!-- Chart Area: x from 90 (0) to 570 (5), width = 480 (96px per unit) -->
+  <!-- y from 430 (0) to 70 (5), height = 360 (72px per unit) -->
+  <g>
+    <!-- Y Axis Title -->
+    <text x="25" y="250" class="axis-label" transform="rotate(-90 25 250)" text-anchor="middle">AISS Score</text>
+
+    <!-- Y Grid & Labels -->
+    <text x="65" y="74" class="axis-label">5</text>
+    <line x1="85" y1="70" x2="575" y2="70" class="grid-line" />
+
+    <text x="65" y="146" class="axis-label">4</text>
+    <line x1="85" y1="142" x2="575" y2="142" class="grid-line" />
+
+    <text x="65" y="218" class="axis-label">3</text>
+    <line x1="85" y1="214" x2="575" y2="214" class="grid-line" />
+
+    <text x="65" y="290" class="axis-label">2</text>
+    <line x1="85" y1="286" x2="575" y2="286" class="grid-line" />
+
+    <text x="65" y="362" class="axis-label">1</text>
+    <line x1="85" y1="358" x2="575" y2="358" class="grid-line" />
+
+    <text x="65" y="434" class="axis-label">0</text>
+    <line x1="85" y1="430" x2="575" y2="430" stroke="#475569" stroke-width="1.5" />
+  </g>
+
+  <!-- X Grid & Labels -->
+  <g>
+    <text x="330" y="480" class="axis-label" text-anchor="middle">Marks by Faculty</text>
+
+    <text x="90" y="450" class="axis-label" text-anchor="middle">0</text>
+    <line x1="90" y1="70" x2="90" y2="430" class="grid-line" />
+
+    <text x="186" y="450" class="axis-label" text-anchor="middle">1</text>
+    <line x1="186" y1="70" x2="186" y2="430" class="grid-line" />
+
+    <text x="282" y="450" class="axis-label" text-anchor="middle">2</text>
+    <line x1="282" y1="70" x2="282" y2="430" class="grid-line" />
+
+    <text x="378" y="450" class="axis-label" text-anchor="middle">3</text>
+    <line x1="378" y1="70" x2="378" y2="430" class="grid-line" />
+
+    <text x="474" y="450" class="axis-label" text-anchor="middle">4</text>
+    <line x1="474" y1="70" x2="474" y2="430" class="grid-line" />
+
+    <text x="570" y="450" class="axis-label" text-anchor="middle">5</text>
+    <line x1="570" y1="70" x2="570" y2="430" class="grid-line" />
+  </g>
+
+  <!-- Perfect Agreement Diagonal Line (y = x) -->
+  <line x1="90" y1="430" x2="570" y2="70" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="6,4" />
+
+  <!-- Scatter Points (Faculty, AISS) -->
+  <g>
+    <!-- (0,0) --> <circle cx="90" cy="430" r="7" class="point" />
+    <!-- (0,1) --> <circle cx="90" cy="358" r="7" class="point" />
+    <!-- (1,1) --> <circle cx="186" cy="358" r="7" class="point" />
+    <!-- (1,1.5) --> <circle cx="186" cy="322" r="7" class="point" />
+    <!-- (1,2) --> <circle cx="186" cy="286" r="7" class="point" />
+    <!-- (1.5,1) --> <circle cx="234" cy="358" r="7" class="point" />
+    <!-- (1.5,1.5) --> <circle cx="234" cy="322" r="7" class="point" />
+    <!-- (1.5,2) --> <circle cx="234" cy="286" r="7" class="point" />
+    <!-- (2,1) --> <circle cx="282" cy="358" r="7" class="point" />
+    <!-- (2,1.5) --> <circle cx="282" cy="322" r="7" class="point" />
+    <!-- (2,2) --> <circle cx="282" cy="286" r="7" class="point" />
+    <!-- (2,2.5) --> <circle cx="282" cy="250" r="7" class="point" />
+    <!-- (2,3) --> <circle cx="282" cy="214" r="7" class="point" />
+    <!-- (2,3.5) --> <circle cx="282" cy="178" r="7" class="point" />
+    <!-- (2,4) --> <circle cx="282" cy="142" r="7" class="point" />
+    <!-- (2.5,1) --> <circle cx="330" cy="358" r="7" class="point" />
+    <!-- (2.5,2) --> <circle cx="330" cy="286" r="7" class="point" />
+    <!-- (2.5,2.5) --> <circle cx="330" cy="250" r="7" class="point" />
+    <!-- (2.5,3) --> <circle cx="330" cy="214" r="7" class="point" />
+    <!-- (3,2) --> <circle cx="378" cy="286" r="7" class="point" />
+    <!-- (3,3) --> <circle cx="378" cy="214" r="7" class="point" />
+    <!-- (3,3.5) --> <circle cx="378" cy="178" r="7" class="point" />
+    <!-- (3,4) --> <circle cx="378" cy="142" r="7" class="point" />
+    <!-- (3,4.5) --> <circle cx="378" cy="106" r="7" class="point" />
+    <!-- (4,1) --> <circle cx="474" cy="358" r="7" class="point" />
+    <!-- (4,3.5) --> <circle cx="474" cy="178" r="7" class="point" />
+    <!-- (4,4) --> <circle cx="474" cy="142" r="7" class="point" />
+    <!-- (4,4.5) --> <circle cx="474" cy="106" r="7" class="point" />
+    <!-- (4,5) --> <circle cx="474" cy="70" r="7" class="point" />
+    <!-- (4.5,3.5) --> <circle cx="522" cy="178" r="7" class="point" />
+    <!-- (4.5,4) --> <circle cx="522" cy="142" r="7" class="point" />
+    <!-- (5,2.5) --> <circle cx="570" cy="250" r="7" class="point" />
+    <!-- (5,3) --> <circle cx="570" cy="214" r="7" class="point" />
+    <!-- (5,3.5) --> <circle cx="570" cy="178" r="7" class="point" />
+    <!-- (5,4) --> <circle cx="570" cy="142" r="7" class="point" />
+    <!-- (5,4.5) --> <circle cx="570" cy="106" r="7" class="point" />
+    <!-- (5,5) --> <circle cx="570" cy="70" r="7" class="point" />
+  </g>
+</svg>

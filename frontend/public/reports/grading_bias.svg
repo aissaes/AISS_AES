@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 480" width="100%" height="100%">
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-weight: 700; font-size: 20px; fill: #1e293b; text-anchor: middle; }
+    .subtitle { font-family: system-ui, -apple-system, sans-serif; font-weight: 600; font-size: 14px; fill: #475569; text-anchor: middle; }
+    .axis-label { font-family: system-ui, -apple-system, sans-serif; font-weight: 600; font-size: 13px; fill: #475569; }
+    .q-label { font-family: system-ui, -apple-system, sans-serif; font-weight: 600; font-size: 13px; fill: #334155; text-anchor: middle; }
+    .grid-line { stroke: #cbd5e1; stroke-width: 1; }
+  </style>
+
+  <!-- Titles -->
+  <text x="425" y="32" class="title">Average Grading Bias per Question</text>
+  <text x="425" y="55" class="subtitle">(Positive = AISS Graded Higher, Negative = AISS Graded Lower)</text>
+
+  <!-- Y Axis Range: -1.00 to +1.00 -->
+  <!-- Zero line y = 250. Height range: -1.00 (y = 400), +1.00 (y = 100). 1.0 unit = 150px -->
+  <g>
+    <text x="20" y="250" class="axis-label" transform="rotate(-90 20 250)" text-anchor="middle">Average Difference (AISS - Faculty)</text>
+
+    <text x="45" y="104" class="axis-label">1.00</text>
+    <line x1="75" y1="100" x2="810" y2="100" class="grid-line" />
+
+    <text x="45" y="179" class="axis-label">0.50</text>
+    <line x1="75" y1="175" x2="810" y2="175" class="grid-line" opacity="0.5" />
+
+    <text x="45" y="254" class="axis-label">0.00</text>
+    <line x1="75" y1="250" x2="810" y2="250" stroke="#1e293b" stroke-width="2" />
+
+    <text x="40" y="329" class="axis-label">-0.50</text>
+    <line x1="75" y1="325" x2="810" y2="325" class="grid-line" opacity="0.5" />
+
+    <text x="40" y="404" class="axis-label">-1.00</text>
+    <line x1="75" y1="400" x2="810" y2="400" class="grid-line" />
+  </g>
+
+  <!-- X Axis Title -->
+  <text x="425" y="450" class="axis-label" text-anchor="middle">Question Number</text>
+
+  <!-- Bars Data per question: 13 questions -->
+  <!-- Center zero is y = 250. Width per bar = 32px -->
+
+  <!-- Q5: -1.00 (y=250, h=150, Red) -->
+  <g transform="translate(85, 0)">
+    <rect x="0" y="250" width="34" height="150" fill="#dc2626" />
+    <text x="17" y="425" class="q-label">5</text>
+  </g>
+
+  <!-- Q1a: -0.35 (y=250, h=52.5, Red) -->
+  <g transform="translate(138, 0)">
+    <rect x="0" y="250" width="34" height="52.5" fill="#dc2626" />
+    <text x="17" y="425" class="q-label">1a</text>
+  </g>
+
+  <!-- Q1b: +0.22 (y=217, h=33, Blue) -->
+  <g transform="translate(191, 0)">
+    <rect x="0" y="217" width="34" height="33" fill="#2563eb" />
+    <text x="17" y="425" class="q-label">1b</text>
+  </g>
+
+  <!-- Q2a: +0.33 (y=200.5, h=49.5, Blue) -->
+  <g transform="translate(244, 0)">
+    <rect x="0" y="200.5" width="34" height="49.5" fill="#2563eb" />
+    <text x="17" y="425" class="q-label">2a</text>
+  </g>
+
+  <!-- Q2b: 0.00 -->
+  <g transform="translate(297, 0)">
+    <text x="17" y="425" class="q-label">2b</text>
+  </g>
+
+  <!-- Q3a: +0.10 (y=235, h=15, Blue) -->
+  <g transform="translate(350, 0)">
+    <rect x="0" y="235" width="34" height="15" fill="#2563eb" />
+    <text x="17" y="425" class="q-label">3a</text>
+  </g>
+
+  <!-- Q3b: -0.12 (y=250, h=18, Red) -->
+  <g transform="translate(403, 0)">
+    <rect x="0" y="250" width="34" height="18" fill="#dc2626" />
+    <text x="17" y="425" class="q-label">3b</text>
+  </g>
+
+  <!-- Q4a: +0.28 (y=208, h=42, Blue) -->
+  <g transform="translate(456, 0)">
+    <rect x="0" y="208" width="34" height="42" fill="#2563eb" />
+    <text x="17" y="425" class="q-label">4a</text>
+  </g>
+
+  <!-- Q4b (1): -0.60 (y=250, h=90, Red) -->
+  <g transform="translate(509, 0)">
+    <rect x="0" y="250" width="34" height="90" fill="#dc2626" />
+    <text x="17" y="425" class="q-label">4b</text>
+  </g>
+
+  <!-- Q4b (2): +1.00 (y=100, h=150, Blue) -->
+  <g transform="translate(562, 0)">
+    <rect x="0" y="100" width="34" height="150" fill="#2563eb" />
+    <text x="17" y="425" class="q-label">4b</text>
+  </g>
+
+  <!-- Q5a: +0.21 (y=218.5, h=31.5, Blue) -->
+  <g transform="translate(615, 0)">
+    <rect x="0" y="218.5" width="34" height="31.5" fill="#2563eb" />
+    <text x="17" y="425" class="q-label">5a</text>
+  </g>
+
+  <!-- Q5b: 0.00 -->
+  <g transform="translate(668, 0)">
+    <text x="17" y="425" class="q-label">5b</text>
+  </g>
+
+  <!-- Q6a: +0.43 (y=185.5, h=64.5, Blue) -->
+  <g transform="translate(721, 0)">
+    <rect x="0" y="185.5" width="34" height="64.5" fill="#2563eb" />
+    <text x="17" y="425" class="q-label">6a</text>
+  </g>
+
+  <!-- Q6b: +0.21 (y=218.5, h=31.5, Blue) -->
+  <g transform="translate(774, 0)">
+    <rect x="0" y="218.5" width="34" height="31.5" fill="#2563eb" />
+    <text x="17" y="425" class="q-label">6b</text>
+  </g>
+</svg>
